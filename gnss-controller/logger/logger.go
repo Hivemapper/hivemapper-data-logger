@@ -24,6 +24,7 @@ type Data struct {
 	Satellites *Satellites `json:"satellites"`
 	Sep        float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph        float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	loggers    []Logger
 }
 type Dop struct {
 	GDop float64 `json:"gdop"`
@@ -40,8 +41,9 @@ type Satellites struct {
 	Used int `json:"used"`
 }
 
-func NewLoggerData() *Data {
+func NewLoggerData(loggers ...Logger) *Data {
 	return &Data{
+		loggers: loggers,
 		Dop: &Dop{
 			GDop: 99.99,
 			HDop: 99.99,
@@ -58,7 +60,7 @@ func NewLoggerData() *Data {
 // GNSSfix Type: 0: no fix 1: dead reckoning only 2: 2D-fix 3: 3D-fix 4: GNSS + dead reckoning combined 5: time only fix
 var fix = []string{"none", "dead reckoning only", "2D", "3D", "GNSS + dead reckoning combined", "time only fix"}
 
-func (d *Data) HandleMessage(msg interface{}) error {
+func (d *Data) HandleUbxMessage(msg interface{}) error {
 	d.SystemTime = time.Now()
 
 	switch m := msg.(type) {
@@ -74,7 +76,7 @@ func (d *Data) HandleMessage(msg interface{}) error {
 		} else {
 			d.Altitude = float64(m.HMSL_mm) / 1000 //tv.Althmsl
 		}
-		//d.Sep = tv.Sep //todo: implement
+		d.Sep = float64(m.HAcc_mm) / 1000
 		//d.Eph = tv.Eph //todo: implement
 		d.Heading = float64(m.HeadMot_dege5) * 1e-5 //tv.HeadMot
 		d.Speed = float64(m.GSpeed_mm_s) / 1000     //tv.Speed
@@ -90,6 +92,12 @@ func (d *Data) HandleMessage(msg interface{}) error {
 		d.Dop.YDop = float64(m.NDOP) * 0.01
 	case *ubx.NavSat:
 		d.Satellites.Seen = int(m.NumSvs)
+	}
+
+	for _, logger := range d.loggers {
+		if err := logger.Log(d); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -36,6 +36,16 @@ func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Durat
 }
 
 func (j *JsonFile) Init() error {
+	latestLog := path.Join(j.destFolder, "latest.log")
+	if fileExists(latestLog) {
+		err := os.Remove(latestLog)
+		if err != nil {
+			return fmt.Errorf("removing latest.log: %w", err)
+		}
+		fmt.Println("removed:", latestLog)
+		return nil
+	}
+
 	if !fileExists(j.destFolder) {
 		fmt.Printf("Creating destination folder: %s\n", j.destFolder)
 		err := os.MkdirAll(j.destFolder, os.ModePerm)
@@ -70,6 +80,10 @@ func (j *JsonFile) Init() error {
 		j.addFile(fi)
 	}
 
+	return nil
+}
+
+func (j *JsonFile) startStoring() {
 	go func() {
 		for {
 			time.Sleep(j.saveInterval)
@@ -79,8 +93,6 @@ func (j *JsonFile) Init() error {
 			}
 		}
 	}()
-
-	return nil
 }
 
 func (j *JsonFile) addFile(f *FileInfo) {
