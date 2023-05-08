@@ -3,6 +3,7 @@ package logger
 import (
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -41,6 +42,7 @@ DELETE FROM gnss WHERE time < ?;
 `
 
 type Sqlite struct {
+	lock sync.Mutex
 	db   *sql.DB
 	file string
 }
@@ -80,6 +82,8 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 }
 
 func (s *Sqlite) Purge(ttl time.Duration) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.db == nil {
 		return fmt.Errorf("database not initialized")
 	}
@@ -97,6 +101,9 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 }
 
 func (s *Sqlite) Log(data *Data) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if s.db == nil {
 		return fmt.Errorf("database not initialized")
 	}
