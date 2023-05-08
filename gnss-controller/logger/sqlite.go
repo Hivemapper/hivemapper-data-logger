@@ -101,7 +101,6 @@ func (s *Sqlite) Log(data *Data) error {
 		return fmt.Errorf("database not initialized")
 	}
 
-	fmt.Println("logging data to sqlite:", data)
 	_, err := s.db.Exec(
 		insertQuery,
 		data.Timestamp,
@@ -127,6 +126,5 @@ func (s *Sqlite) Log(data *Data) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("logged data to sqlite")
 	return nil
 }

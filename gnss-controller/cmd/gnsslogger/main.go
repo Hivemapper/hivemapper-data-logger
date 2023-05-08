@@ -43,7 +43,6 @@ func main() {
 	d := ublox.NewDecoder(stream)
 	loggerData := logger.NewLoggerData()
 	for {
-		fmt.Println("Waiting for message to decode")
 		msg, err := d.Decode()
 		if err != nil {
 			if err == io.EOF {

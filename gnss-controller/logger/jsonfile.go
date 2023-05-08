@@ -58,6 +58,10 @@ func (j *JsonFile) Init() error {
 			return fmt.Errorf("getting file info: %s , %w", f.Name(), err)
 		}
 
+		if f.Name() == "latest.log" {
+			continue
+		}
+
 		fi := &FileInfo{
 			path:             path.Join(j.destFolder, f.Name()),
 			size:             i.Size(),
@@ -88,6 +92,10 @@ func (j *JsonFile) Log(data *Data) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
 	j.data = data
+	err := writeToFile(path.Join(j.destFolder, "latest.log"), j.data)
+	if err != nil {
+		return fmt.Errorf("writing latest file: %w", err)
+	}
 	return nil
 }
 
@@ -100,16 +108,13 @@ func (j *JsonFile) toFile() error {
 
 	fileName := fmt.Sprintf("%s.json", j.data.Timestamp.Format("2006-01-02T15:04:05.000Z"))
 	filePath := path.Join(j.destFolder, fileName)
-	f, err := os.Create(filePath)
+
+	err := writeToFile(filePath, j.data)
 	if err != nil {
-		return fmt.Errorf("creating file %s : %w", filePath, err)
+		return fmt.Errorf("writing to file: %w", err)
 	}
-	jsonData, err := json.Marshal(j.data)
-	if err != nil {
-		return fmt.Errorf("marshaling data: %w", err)
-	}
-	_, err = f.Write(jsonData)
-	fi, err := f.Stat()
+
+	fi, err := os.Stat(filePath)
 	if err != nil {
 		return fmt.Errorf("getting file info: %w", err)
 	}
@@ -122,6 +127,19 @@ func (j *JsonFile) toFile() error {
 	if err != nil {
 		return fmt.Errorf("freeing up space: %w", err)
 	}
+	return nil
+}
+
+func writeToFile(filePath string, data *Data) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("marshaling data: %w", err)
+	}
+	err = os.WriteFile(filePath, jsonData, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("writing file '%s': %w", filePath, err)
+	}
+
 	return nil
 }
 
