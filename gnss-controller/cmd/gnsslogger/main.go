@@ -46,10 +46,6 @@ func main() {
 	handleError("initializing json logger", err)
 
 	loggerData := logger.NewLoggerData(sqlite, jsonLogger)
-	fmt.Println("Registering logger ubx message handlers")
-	messageHandlers[reflect.TypeOf(&ubx.NavPvt{})] = []gnss_logger.UbxMessageHandler{loggerData}
-	messageHandlers[reflect.TypeOf(&ubx.NavDop{})] = []gnss_logger.UbxMessageHandler{loggerData}
-	messageHandlers[reflect.TypeOf(&ubx.NavSat{})] = []gnss_logger.UbxMessageHandler{loggerData}
 
 	config := &serial.Config{
 		Name:     "/dev/ttyAMA1", //todo: make this configurable???
@@ -101,7 +97,7 @@ func main() {
 			}
 			newHandlers = append(newHandlers, handler)
 		}
-		delete(messageHandlers, reflect.TypeOf(&ubx.NavPvt{})) //todo: this is a hack, we should have a way to unregister handlers
+		messageHandlers[reflect.TypeOf(&ubx.NavPvt{})] = newHandlers
 		messageHandlersLock.Unlock()
 
 	case <-time.After(5 * time.Second):
@@ -112,17 +108,38 @@ func main() {
 	if _, err := os.Stat(*mgaOfflineFilePath); errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("File %s does not exist\n", *mgaOfflineFilePath)
 	} else {
-		loader := gnss_logger.NewAnoLoader()
-		messageHandlers[reflect.TypeOf(&ubx.MgaAckData0{})] = []gnss_logger.UbxMessageHandler{loader}
-		err = loader.LoadAnoFile(*mgaOfflineFilePath, loadAll, now, stream)
-		handleError("loading ano file", err)
+		go func() {
+			loader := gnss_logger.NewAnoLoader()
+			messageHandlers[reflect.TypeOf(&ubx.MgaAckData0{})] = []gnss_logger.UbxMessageHandler{loader}
+			err = loader.LoadAnoFile(*mgaOfflineFilePath, loadAll, now, stream)
+			if err != nil {
+				fmt.Println("ERROR loading ano file:", err)
+			}
+		}()
 	}
 
 	if now == (time.Time{}) {
 		fmt.Println("Waiting for time")
 		now = <-timeSet
+		messageHandlersLock.Lock()
+		var newHandlers []gnss_logger.UbxMessageHandler
+		handlers := messageHandlers[reflect.TypeOf(&ubx.NavPvt{})]
+		for _, handler := range handlers {
+			if _, ok := handler.(*gnss_logger.TimeGetter); ok {
+				fmt.Println("unregistering time getter")
+				continue
+			}
+			newHandlers = append(newHandlers, handler)
+		}
+		messageHandlers[reflect.TypeOf(&ubx.NavPvt{})] = newHandlers
+		messageHandlersLock.Unlock()
+
 		fmt.Println("Got time:", now)
 	}
+	fmt.Println("Registering logger ubx message handlers")
+	messageHandlers[reflect.TypeOf(&ubx.NavPvt{})] = []gnss_logger.UbxMessageHandler{loggerData}
+	messageHandlers[reflect.TypeOf(&ubx.NavDop{})] = []gnss_logger.UbxMessageHandler{loggerData}
+	messageHandlers[reflect.TypeOf(&ubx.NavSat{})] = []gnss_logger.UbxMessageHandler{loggerData}
 
 	if err := <-done; err != nil {
 		log.Fatalln(err)

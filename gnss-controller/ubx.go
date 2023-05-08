@@ -49,7 +49,7 @@ func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream
 		ano := msg.(*ubx.MgaAno)
 		anoDate := time.Date(int(ano.Year)+2000, time.Month(ano.Month), int(ano.Day), 0, 0, 0, 0, time.UTC)
 		if loadAll || (anoDate.Year() == now.Year() && anoDate.Month() == now.Month() && anoDate.Day() == now.Day()) { //todo: get system date
-			fmt.Println("processing an ANO message")
+			fmt.Print(".")
 			encoded, err := ubx.Encode(msg.(ubx.Message))
 			if err != nil {
 				return fmt.Errorf("encoding ano message: %w", err)
@@ -73,7 +73,7 @@ func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream
 					return errors.New("timeout waiting for ack")
 				}
 			}
-			fmt.Print(".")
+			fmt.Print("!")
 			sentCount++
 		}
 	}
