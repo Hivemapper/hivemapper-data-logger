@@ -1,53 +1,65 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
+	"flag"
 	"fmt"
-	"gnss-logger/gnss"
 	"gnss-logger/logger"
+	"io"
 	"log"
-	"net"
+	"time"
+
+	"github.com/daedaleanai/ublox"
+	"github.com/tarm/serial"
 )
 
 func main() {
+	databasePath := flag.String("db-path", "/mnt/data/gnss.v1.0.2.db", "path to sqlite database")
+	logTTl := flag.Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
-	sqlite := logger.NewSqlite("/mnt/data/gnss.v1.0.2.db")
-	err := sqlite.Init()
+	jsonDestinationFolder := flag.String("json-destination-folder", "/mnt/data/gps", "json destination folder")
+	jsonSaveInterval := flag.Duration("json-save-interval", 15*time.Second, "json save interval")
+	jsonDestinationFolderMaxSize := flag.Int64("json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
+
+	flag.Parse()
+
+	sqlite := logger.NewSqlite(*databasePath)
+	err := sqlite.Init(*logTTl)
 	handleError("initializing sqlite", err)
 
-	loggerData := &logger.Data{
-		Dop: &logger.Dop{
-			GDop: 99.99,
-			HDop: 99.99,
-			PDop: 99.99,
-			TDop: 99.99,
-			VDop: 99.99,
-			XDop: 99.99,
-			YDop: 99.99,
-		},
-		Satellites: &logger.Satellites{},
+	jsonLogger := logger.NewJsonFile(*jsonDestinationFolder, *jsonDestinationFolderMaxSize, *jsonSaveInterval)
+	err = jsonLogger.Init()
+	handleError("initializing json logger", err)
+
+	config := &serial.Config{
+		Name:     "/dev/ttyAMA1", //todo: make this configurable???
+		Baud:     38400,
+		Parity:   serial.ParityNone,
+		StopBits: serial.Stop1,
 	}
 
-	gpsd, err := net.Dial("tcp", "localhost:2947")
-	handleError("Dialing gpsd", err)
+	stream, err := serial.OpenPort(config)
+	handleError("opening gps serial port", err)
 
-	_, err = fmt.Fprintf(gpsd, "?WATCH={\"enable\":true,\"json\":true}")
-	handleError("Enabling gpsd", err)
-
-	reader := bufio.NewReader(gpsd)
+	d := ublox.NewDecoder(stream)
+	loggerData := logger.NewLoggerData()
 	for {
-		buffer, _ := reader.ReadBytes('\n')
-		msg := &gnss.Message{}
-
-		err = json.Unmarshal(buffer, &msg)
-		handleError("unmarshalling message", err)
-
-		err = msg.UpdateLoggerData(loggerData)
+		fmt.Println("Waiting for message to decode")
+		msg, err := d.Decode()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			fmt.Println("WARNING: error decoding ubx", err)
+			continue
+		}
+		err = loggerData.HandleMessage(msg)
 		handleError("updating logger data", err)
 
 		err = sqlite.Log(loggerData)
-		handleError("logging data", err)
+		handleError("logging data to sqlite", err)
+
+		err = jsonLogger.Log(loggerData)
+		handleError("logging data to json", err)
 	}
 }
 

@@ -3,8 +3,8 @@ package logger
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
-	//_ "github.com/mattn/go-sqlite3"
 	_ "modernc.org/sqlite"
 )
 
@@ -32,8 +32,12 @@ const create string = `
 	used INTEGER NOT NULL
   );`
 
-const insert string = `
+const insertQuery string = `
 INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+`
+
+const purgeQuery string = `
+DELETE FROM gnss WHERE time < ?;
 `
 
 type Sqlite struct {
@@ -47,7 +51,7 @@ func NewSqlite(file string) *Sqlite {
 	}
 }
 
-func (s *Sqlite) Init() error {
+func (s *Sqlite) Init(logTTL time.Duration) error {
 	db, err := sql.Open("sqlite", s.file)
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
@@ -56,7 +60,39 @@ func (s *Sqlite) Init() error {
 	if _, err := db.Exec(create); err != nil {
 		return fmt.Errorf("creating table: %s", err.Error())
 	}
+
+	fmt.Println("database initialized, will purge every:", logTTL.String())
+
+	if logTTL > 0 {
+		go func() {
+			for {
+				err := s.Purge(logTTL)
+				if err != nil {
+					panic(fmt.Errorf("purging database: %s", err.Error()))
+				}
+				time.Sleep(time.Minute)
+			}
+		}()
+	}
+
 	s.db = db
+	return nil
+}
+
+func (s *Sqlite) Purge(ttl time.Duration) error {
+	if s.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	t := time.Now().Add(ttl * -1)
+	fmt.Println("purging database older than:", t)
+	if res, err := s.db.Exec(purgeQuery, t); err != nil {
+		return err
+	} else {
+		c, _ := res.RowsAffected()
+		fmt.Println("purged rows:", c)
+	}
+
 	return nil
 }
 
@@ -65,8 +101,9 @@ func (s *Sqlite) Log(data *Data) error {
 		return fmt.Errorf("database not initialized")
 	}
 
+	fmt.Println("logging data to sqlite:", data)
 	_, err := s.db.Exec(
-		insert,
+		insertQuery,
 		data.Timestamp,
 		data.SystemTime,
 		data.Fix,
@@ -90,6 +127,6 @@ func (s *Sqlite) Log(data *Data) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("logged data to sqlite")
 	return nil
 }
