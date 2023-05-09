@@ -81,7 +81,6 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		d.Heading = float64(m.HeadMot_dege5) * 1e-5 //tv.HeadMot
 		d.Speed = float64(m.GSpeed_mm_s) / 1000     //tv.Speed
 
-		d.Satellites.Seen = int(m.NumSV)
 	case *ubx.NavDop:
 		d.Dop.GDop = float64(m.GDOP) * 0.01
 		d.Dop.HDop = float64(m.HDOP) * 0.01
@@ -92,6 +91,11 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		d.Dop.YDop = float64(m.NDOP) * 0.01
 	case *ubx.NavSat:
 		d.Satellites.Seen = int(m.NumSvs)
+		for _, sv := range m.Svs {
+			if sv.Flags&ubx.NavSatSvUsed != 0x00 {
+				d.Satellites.Used++
+			}
+		}
 	}
 
 	for _, logger := range d.loggers {
