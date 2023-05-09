@@ -30,11 +30,12 @@ const create string = `
 	xdop REAL NOT NULL,
 	ydop REAL NOT NULL,
 	seen INTEGER NOT NULL,
-	used INTEGER NOT NULL
+	used INTEGER NOT NULL,
+	ttff INTEGER NOT NULL
   );`
 
 const insertQuery string = `
-INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 `
 
 const purgeQuery string = `
@@ -137,6 +138,7 @@ func (s *Sqlite) Log(data *Data) error {
 		data.Dop.YDop,
 		data.Satellites.Seen,
 		data.Satellites.Used,
+		data.Ttff,
 	)
 	if err != nil {
 		return err
