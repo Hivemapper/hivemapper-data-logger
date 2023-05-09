@@ -25,10 +25,6 @@ func (g *TimeGetter) HandleUbxMessage(message interface{}) error {
 	now := time.Date(int(navPvt.Year_y), time.Month(int(navPvt.Month_month)), int(navPvt.Day_d), int(navPvt.Hour_h), int(navPvt.Min_min), int(navPvt.Sec_s), int(navPvt.Nano_ns), time.UTC)
 	fmt.Println("Got a valid date:", now)
 
-	err := SetSystemDate(now)
-	if err != nil {
-		return fmt.Errorf("setting system date: %w", err)
-	}
 	g.done <- now
 	return nil
 }

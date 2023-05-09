@@ -1,20 +1,23 @@
 package logger
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/daedaleanai/ublox/ubx"
 )
+
+var noTime = time.Time{}
 
 type Logger interface {
 	Log(data *Data) error
 }
 
 type Data struct {
-	SystemTime time.Time `json:"systemtime"`
-	Fix        string    `json:"fix"`
-	Timestamp  time.Time `json:"timestamp"`
-
+	Ttff       int64       `json:"ttff"`
+	SystemTime time.Time   `json:"systemtime"`
+	Timestamp  time.Time   `json:"timestamp"`
+	Fix        string      `json:"fix"`
 	Latitude   float64     `json:"latitude"`
 	Longitude  float64     `json:"longitude"`
 	Altitude   float64     `json:"height"`
@@ -25,6 +28,7 @@ type Data struct {
 	Sep        float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph        float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
 	loggers    []Logger
+	startTime  time.Time
 }
 type Dop struct {
 	GDop float64 `json:"gdop"`
@@ -43,7 +47,9 @@ type Satellites struct {
 
 func NewLoggerData(loggers ...Logger) *Data {
 	return &Data{
-		loggers: loggers,
+		SystemTime: noTime,
+		Timestamp:  noTime,
+		loggers:    loggers,
 		Dop: &Dop{
 			GDop: 99.99,
 			HDop: 99.99,
@@ -68,6 +74,10 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
 		d.Timestamp = now
 		d.Fix = fix[m.FixType]
+		if d.Fix == "3D" && d.Ttff == 0 {
+			fmt.Println("setting ttff to: ", now)
+			d.Ttff = time.Since(d.startTime).Milliseconds()
+		}
 		d.Latitude = float64(m.Lat_dege7) * 1e-7
 		d.Longitude = float64(m.Lon_dege7) * 1e-7
 
@@ -105,4 +115,8 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (d *Data) SetStartTime(startTime time.Time) {
+	d.startTime = startTime
 }
