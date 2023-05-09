@@ -91,6 +91,7 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		d.Dop.YDop = float64(m.NDOP) * 0.01
 	case *ubx.NavSat:
 		d.Satellites.Seen = int(m.NumSvs)
+		d.Satellites.Used = 0
 		for _, sv := range m.Svs {
 			if sv.Flags&ubx.NavSatSvUsed != 0x00 {
 				d.Satellites.Used++
