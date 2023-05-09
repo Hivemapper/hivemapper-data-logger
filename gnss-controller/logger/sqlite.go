@@ -42,9 +42,10 @@ DELETE FROM gnss WHERE time < ?;
 `
 
 type Sqlite struct {
-	lock sync.Mutex
-	db   *sql.DB
-	file string
+	lock     sync.Mutex
+	db       *sql.DB
+	file     string
+	doInsert bool
 }
 
 func NewSqlite(file string) *Sqlite {
@@ -99,8 +100,15 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 
 	return nil
 }
+func (s *Sqlite) StartStoring() {
+	s.doInsert = true
+}
 
 func (s *Sqlite) Log(data *Data) error {
+	if !s.doInsert {
+		return nil
+	}
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

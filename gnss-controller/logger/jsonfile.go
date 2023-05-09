@@ -83,14 +83,16 @@ func (j *JsonFile) Init() error {
 	return nil
 }
 
-func (j *JsonFile) startStoring() {
+func (j *JsonFile) StartStoring() {
 	go func() {
 		for {
-			time.Sleep(j.saveInterval)
-			err := j.toFile()
-			if err != nil {
-				panic(fmt.Errorf("writing to file: %w", err))
+			if j.data != nil {
+				err := j.toFile()
+				if err != nil {
+					panic(fmt.Errorf("writing to file: %w", err))
+				}
 			}
+			time.Sleep(j.saveInterval)
 		}
 	}()
 }

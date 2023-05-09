@@ -1,8 +1,6 @@
-package gnss_logger
+package handlers
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,23 +10,19 @@ import (
 	"github.com/daedaleanai/ublox/ubx"
 )
 
-type UbxMessageHandler interface {
-	HandleUbxMessage(interface{}) error
-}
-
-type AnoLoader struct {
+type MgaAnoLoader struct {
 	anoPerSatellite map[uint8]int
 	ackChannel      chan *ubx.MgaAckData0
 }
 
-func NewAnoLoader() *AnoLoader {
-	return &AnoLoader{
+func NewAnoLoader() *MgaAnoLoader {
+	return &MgaAnoLoader{
 		anoPerSatellite: map[uint8]int{},
 		ackChannel:      make(chan *ubx.MgaAckData0),
 	}
 }
 
-func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream io.Writer) error {
+func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream io.Writer) error {
 	fmt.Println("loading mga offline file:", file)
 	mgaOfflineFile, err := os.Open(file)
 	if err != nil {
@@ -37,10 +31,23 @@ func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream
 
 	mgaOfflineDecoder := ublox.NewDecoder(mgaOfflineFile)
 	sentCount := 0
+	ackCount := 0
+	lastDay := 0
+	go func() {
+		for {
+			select {
+			case <-l.ackChannel:
+				fmt.Print("!")
+				ackCount++
+			}
+		}
+	}()
+
 	for {
 		msg, err := mgaOfflineDecoder.Decode()
 		if err != nil {
 			if err == io.EOF {
+				fmt.Println()
 				fmt.Println("reach mga EOF")
 				break
 			}
@@ -49,6 +56,9 @@ func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream
 		ano := msg.(*ubx.MgaAno)
 		anoDate := time.Date(int(ano.Year)+2000, time.Month(ano.Month), int(ano.Day), 0, 0, 0, 0, time.UTC)
 		if loadAll || (anoDate.Year() == now.Year() && anoDate.Month() == now.Month() && anoDate.Day() == now.Day()) { //todo: get system date
+			if lastDay != now.Day() {
+			}
+			lastDay = anoDate.Day()
 			fmt.Print(".")
 			encoded, err := ubx.Encode(msg.(ubx.Message))
 			if err != nil {
@@ -58,30 +68,18 @@ func (l *AnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream
 			if err != nil {
 				return fmt.Errorf("writing to stream: %w", err)
 			}
-			time.Sleep(100 * time.Millisecond)
-
-		goAck:
-			for {
-				select {
-				case ack := <-l.ackChannel:
-					_, err := json.Marshal(ack)
-					if err != nil {
-						return err
-					}
-					break goAck
-				case <-time.After(5 * time.Second):
-					return errors.New("timeout waiting for ack")
-				}
-			}
-			fmt.Print("!")
+			fmt.Print(".")
 			sentCount++
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
+	time.Sleep(2 * time.Second)
+	fmt.Println("sent", sentCount, "messages and received", ackCount, "acks")
 
 	return nil
 }
 
-func (l *AnoLoader) HandleUbxMessage(message interface{}) error {
+func (l *MgaAnoLoader) HandleUbxMessage(message interface{}) error {
 	ack := message.(*ubx.MgaAckData0)
 	l.ackChannel <- ack
 	return nil

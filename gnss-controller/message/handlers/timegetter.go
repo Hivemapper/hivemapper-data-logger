@@ -1,4 +1,4 @@
-package gnss_logger
+package handlers
 
 import (
 	"fmt"
