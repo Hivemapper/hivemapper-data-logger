@@ -55,7 +55,8 @@ func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, str
 		}
 		ano := msg.(*ubx.MgaAno)
 		anoDate := time.Date(int(ano.Year)+2000, time.Month(ano.Month), int(ano.Day), 0, 0, 0, 0, time.UTC)
-		if loadAll || (anoDate.Year() == now.Year() && anoDate.Month() == now.Month() && anoDate.Day() == now.Day()) { //todo: get system date
+
+		if loadAll || (anoDate.After(now.Add(-48*time.Hour)) && anoDate.Before(now.Add(48*time.Hour))) {
 			if lastDay != now.Day() {
 			}
 			lastDay = anoDate.Day()

@@ -17,7 +17,7 @@ type FileInfo struct {
 }
 
 type JsonFile struct {
-	data          *Data
+	datas         []*Data
 	lock          sync.Mutex
 	destFolder    string
 	maxFolderSize int64
@@ -86,7 +86,7 @@ func (j *JsonFile) Init() error {
 func (j *JsonFile) StartStoring() {
 	go func() {
 		for {
-			if j.data != nil {
+			if len(j.datas) > 0 {
 				err := j.toFile()
 				if err != nil {
 					panic(fmt.Errorf("writing to file: %w", err))
@@ -105,8 +105,8 @@ func (j *JsonFile) addFile(f *FileInfo) {
 func (j *JsonFile) Log(data *Data) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
-	j.data = data
-	err := writeToFile(path.Join(j.destFolder, "latest.log"), j.data)
+	j.datas = append(j.datas, data)
+	err := writeToFile(path.Join(j.destFolder, "latest.log"), data)
 	if err != nil {
 		return fmt.Errorf("writing latest file: %w", err)
 	}
@@ -116,14 +116,14 @@ func (j *JsonFile) Log(data *Data) error {
 func (j *JsonFile) toFile() error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
-	if j.data == nil {
+	if len(j.datas) == 0 {
 		return nil
 	}
 
-	fileName := fmt.Sprintf("%s.json", j.data.Timestamp.Format("2006-01-02T15:04:05.000Z"))
+	fileName := fmt.Sprintf("%s.json", j.datas[0].Timestamp.Format("2006-01-02T15:04:05.000Z"))
 	filePath := path.Join(j.destFolder, fileName)
 
-	err := writeToFile(filePath, j.data)
+	err := writeAllToFile(filePath, j.datas)
 	if err != nil {
 		return fmt.Errorf("writing to file: %w", err)
 	}
@@ -144,6 +144,18 @@ func (j *JsonFile) toFile() error {
 	return nil
 }
 
+func writeAllToFile(filePath string, data []*Data) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("marshaling data: %w", err)
+	}
+	err = os.WriteFile(filePath, jsonData, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("writing file '%s': %w", filePath, err)
+	}
+
+	return nil
+}
 func writeToFile(filePath string, data *Data) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
