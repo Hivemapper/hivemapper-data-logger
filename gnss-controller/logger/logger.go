@@ -63,6 +63,39 @@ func NewLoggerData(loggers ...Logger) *Data {
 	}
 }
 
+func (d *Data) Clone() Data {
+	clone := Data{
+		Ttff:       d.Ttff,
+		SystemTime: d.SystemTime,
+		Timestamp:  d.Timestamp,
+		Fix:        d.Fix,
+		Latitude:   d.Latitude,
+		Longitude:  d.Longitude,
+		Altitude:   d.Altitude,
+		Heading:    d.Heading,
+		Speed:      d.Speed,
+		Dop: &Dop{
+			GDop: d.Dop.GDop,
+			HDop: d.Dop.HDop,
+			PDop: d.Dop.PDop,
+			TDop: d.Dop.TDop,
+			VDop: d.Dop.VDop,
+			XDop: d.Dop.XDop,
+			YDop: d.Dop.YDop,
+		},
+		Satellites: &Satellites{
+			Seen: d.Satellites.Seen,
+			Used: d.Satellites.Used,
+		},
+		Sep:       d.Sep,
+		Eph:       d.Eph,
+		loggers:   d.loggers,
+		startTime: d.startTime,
+	}
+
+	return clone
+}
+
 // GNSSfix Type: 0: no fix 1: dead reckoning only 2: 2D-fix 3: 3D-fix 4: GNSS + dead reckoning combined 5: time only fix
 var fix = []string{"none", "dead reckoning only", "2D", "3D", "GNSS + dead reckoning combined", "time only fix"}
 
@@ -90,7 +123,6 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 
 		d.Heading = float64(m.HeadMot_dege5) * 1e-5 //tv.HeadMot
 		d.Speed = float64(m.GSpeed_mm_s) / 1000     //tv.Speed
-
 	case *ubx.NavDop:
 		d.Dop.GDop = float64(m.GDOP) * 0.01
 		d.Dop.HDop = float64(m.HDOP) * 0.01
@@ -99,6 +131,12 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		d.Dop.VDop = float64(m.VDOP) * 0.01
 		d.Dop.XDop = float64(m.EDOP) * 0.01
 		d.Dop.YDop = float64(m.NDOP) * 0.01
+		for _, logger := range d.loggers {
+			c := d.Clone()
+			if err := logger.Log(&c); err != nil {
+				return err
+			}
+		}
 	case *ubx.NavSat:
 		d.Satellites.Seen = int(m.NumSvs)
 		d.Satellites.Used = 0
@@ -109,11 +147,6 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		}
 	}
 
-	for _, logger := range d.loggers {
-		if err := logger.Log(d); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

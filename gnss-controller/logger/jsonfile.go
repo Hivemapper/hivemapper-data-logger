@@ -86,6 +86,7 @@ func (j *JsonFile) Init() error {
 func (j *JsonFile) StartStoring() {
 	go func() {
 		for {
+			fmt.Println("saving to file with entry count:", len(j.datas))
 			if len(j.datas) > 0 {
 				err := j.toFile()
 				if err != nil {
