@@ -91,6 +91,7 @@ func (j *JsonFile) StartStoring() {
 				if err != nil {
 					panic(fmt.Errorf("writing to file: %w", err))
 				}
+				j.datas = nil
 			}
 			time.Sleep(j.saveInterval)
 		}
