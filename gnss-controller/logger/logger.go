@@ -86,8 +86,8 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		} else {
 			d.Altitude = float64(m.HMSL_mm) / 1000 //tv.Althmsl
 		}
-		d.Sep = float64(m.HAcc_mm) / 1000
-		//d.Eph = tv.Eph //todo: implement
+		d.Eph = float64(m.HAcc_mm) / 1000
+
 		d.Heading = float64(m.HeadMot_dege5) * 1e-5 //tv.HeadMot
 		d.Speed = float64(m.GSpeed_mm_s) / 1000     //tv.Speed
 
