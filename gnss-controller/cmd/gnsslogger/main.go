@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/daedaleanai/ublox/ubx"
 
 	"github.com/tarm/serial"
 )
@@ -59,11 +62,23 @@ func main() {
 	////        m_data[1] = (reset_type >> 8) & 0xff
 	////        self.gps_send(6, 0x4, m_data)
 	//
-	//reset := ubx.CfgRst{
-	//	NavBbrMask: 0,
-	//	ResetMode:  0,
-	//	Reserved1:  0,
-	//}
+
+	//b562
+	//0604
+	//04
+	//0002000100116e
+
+	reset := ubx.CfgRst{
+		NavBbrMask: ubx.CfgRstAlm,
+		ResetMode:  0x01,
+	}
+
+	encoded, err := ubx.Encode(reset)
+	handleError("encoding reset message:", err)
+
+	fmt.Println("Sending reset message:", hex.EncodeToString(encoded))
+	_, err = stream.Write(encoded)
+	handleError("writing reset message:", err)
 
 	timeSet := make(chan time.Time)
 	timeGetter := handlers.NewTimeGetter(timeSet)

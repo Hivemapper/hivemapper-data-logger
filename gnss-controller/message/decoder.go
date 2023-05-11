@@ -5,6 +5,8 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/daedaleanai/ublox/nmea"
+
 	"github.com/daedaleanai/ublox"
 	"github.com/tarm/serial"
 )
@@ -32,6 +34,9 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 				}
 				fmt.Println("WARNING: error decoding ubx", err)
 				continue
+			}
+			if txt, ok := msg.(*nmea.TXT); ok {
+				fmt.Println("TXT:", txt.Text)
 			}
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
 				err := handler.HandleUbxMessage(msg)
