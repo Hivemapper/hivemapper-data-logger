@@ -107,7 +107,7 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
 		d.Timestamp = now
 		d.Fix = fix[m.FixType]
-		if d.Fix == "3D" && d.Ttff == 0 {
+		if d.Ttff == 0 && d.Fix == "3D" && d.Dop.HDop < 5.0 {
 			fmt.Println("setting ttff to: ", now)
 			d.Ttff = time.Since(d.startTime).Milliseconds()
 		}
