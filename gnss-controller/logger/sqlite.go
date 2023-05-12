@@ -31,11 +31,22 @@ const create string = `
 	ydop REAL NOT NULL,
 	seen INTEGER NOT NULL,
 	used INTEGER NOT NULL,
-	ttff INTEGER NOT NULL
+	ttff INTEGER NOT NULL,
+	rf_jamming_state STRING NOT NULL,
+	rf_ant_status STRING NOT NULL,
+	rf_ant_power STRING NOT NULL,
+	rf_post_status INTEGER NOT NULL,
+	rf_noise_per_ms INTEGER NOT NULL,
+	rf_agc_cnt INTEGER NOT NULL,
+	rf_jam_ind INTEGER NOT NULL,
+	rf_ofsi INTEGER NOT NULL,
+	rf_magif INTEGER NOT NULL,
+	rf_ofsq INTEGER NOT NULL,
+	rf_magq INTEGER NOT NULL
   );`
 
 const insertQuery string = `
-INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 `
 
 const purgeQuery string = `
@@ -139,6 +150,17 @@ func (s *Sqlite) Log(data *Data) error {
 		data.Satellites.Seen,
 		data.Satellites.Used,
 		data.Ttff,
+		data.RF.JammingState,
+		data.RF.AntStatus,
+		data.RF.AntPower,
+		data.RF.PostStatus,
+		data.RF.NoisePerMS,
+		data.RF.AgcCnt,
+		data.RF.JamInd,
+		data.RF.OfsI,
+		data.RF.MagI,
+		data.RF.OfsQ,
+		data.RF.MagQ,
 	)
 	if err != nil {
 		return err

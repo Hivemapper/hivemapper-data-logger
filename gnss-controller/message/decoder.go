@@ -5,6 +5,8 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/daedaleanai/ublox/ubx"
+
 	"github.com/daedaleanai/ublox/nmea"
 
 	"github.com/daedaleanai/ublox"
@@ -38,6 +40,10 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 			if txt, ok := msg.(*nmea.TXT); ok {
 				fmt.Println("TXT:", txt.Text)
 			}
+			if nack, ok := msg.(*ubx.AckNak); ok {
+				fmt.Println("NACK:", nack)
+			}
+			//fmt.Printf("Decoded: %T\n", msg)
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
 				err := handler.HandleUbxMessage(msg)
 				if err != nil {

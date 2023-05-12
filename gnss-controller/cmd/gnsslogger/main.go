@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -18,7 +17,7 @@ import (
 )
 
 func main() {
-	databasePath := flag.String("db-path", "/mnt/data/gnss.v1.0.2.db", "path to sqlite database")
+	databasePath := flag.String("db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqlite database")
 	logTTl := flag.Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 	jsonDestinationFolder := flag.String("json-destination-folder", "/mnt/data/gps", "json destination folder")
 	jsonSaveInterval := flag.Duration("json-save-interval", 15*time.Second, "json save interval")
@@ -52,33 +51,42 @@ func main() {
 	stream, err := serial.OpenPort(config)
 	handleError("opening gps serial port", err)
 
-	////    def send_cfg_rst(self, reset_type):
-	////        """UBX-CFG-RST, reset"""
-	////        # Always do a hardware reset
-	////        # If on native USB: both Hardware reset (0) and Software reset (1)
-	////        # will disconnect and reconnect, giving you a new /dev/tty.
-	////        m_data = bytearray(4)
-	////        m_data[0] = reset_type & 0xff
-	////        m_data[1] = (reset_type >> 8) & 0xff
-	////        self.gps_send(6, 0x4, m_data)
-	//
-
-	//b562
-	//0604
-	//04
-	//0002000100116e
+	output := make(chan ubx.Message)
+	go func() {
+		for {
+			msg := <-output
+			fmt.Printf("sending message: %T\n", msg)
+			if _, ok := msg.(*ubx.MonRf); ok {
+				encoded, err := ubx.EncodeReq(msg)
+				_, err = stream.Write(encoded)
+				//fmt.Println("sent monrf:", hex.EncodeToString(encoded))
+				handleError("writing message:", err)
+			}
+			encoded, err := ubx.Encode(msg)
+			_, err = stream.Write(encoded)
+			handleError("writing message:", err)
+		}
+	}()
 
 	reset := ubx.CfgRst{
 		NavBbrMask: ubx.CfgRstAlm,
 		ResetMode:  0x01,
 	}
+	output <- &reset
 
-	encoded, err := ubx.Encode(reset)
-	handleError("encoding reset message:", err)
+	cfg := ubx.CfgValSet{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		CfgData: []*ubx.CfgData{
+			{
+				Key:   546374490, //0x2091035a CFG-MSGOUT-UBX_MON_RF_UART1
+				Value: []byte{0x01},
+			},
+		},
+	}
 
-	fmt.Println("Sending reset message:", hex.EncodeToString(encoded))
-	_, err = stream.Write(encoded)
-	handleError("writing reset message:", err)
+	fmt.Println("sending cfg val set")
+	output <- &cfg
 
 	timeSet := make(chan time.Time)
 	timeGetter := handlers.NewTimeGetter(timeSet)
@@ -112,7 +120,7 @@ func main() {
 		go func() {
 			loader := handlers.NewAnoLoader()
 			handlersRegistry.RegisterHandler(message.UbxMsgMgaAckData, loader)
-			err = loader.LoadAnoFile(*mgaOfflineFilePath, loadAll, now, stream)
+			err = loader.LoadAnoFile(*mgaOfflineFilePath, loadAll, now, output)
 			if err != nil {
 				fmt.Println("ERROR loading ano file:", err)
 			}
@@ -123,6 +131,7 @@ func main() {
 	handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, loggerData)
 	handlersRegistry.RegisterHandler(message.UbxMsgNavDop, loggerData)
 	handlersRegistry.RegisterHandler(message.UbxMsgNavSat, loggerData)
+	handlersRegistry.RegisterHandler(message.UbxMsgMonRf, loggerData)
 
 	if now == (time.Time{}) {
 		fmt.Println("Waiting for time")

@@ -22,7 +22,7 @@ func NewAnoLoader() *MgaAnoLoader {
 	}
 }
 
-func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, stream io.Writer) error {
+func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, output chan ubx.Message) error {
 	fmt.Println("loading mga offline file:", file)
 	mgaOfflineFile, err := os.Open(file)
 	if err != nil {
@@ -60,15 +60,7 @@ func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, str
 			if lastDay != now.Day() {
 			}
 			lastDay = anoDate.Day()
-			fmt.Print(".")
-			encoded, err := ubx.Encode(msg.(ubx.Message))
-			if err != nil {
-				return fmt.Errorf("encoding ano message: %w", err)
-			}
-			_, err = stream.Write(encoded)
-			if err != nil {
-				return fmt.Errorf("writing to stream: %w", err)
-			}
+			output <- ano
 			fmt.Print(".")
 			sentCount++
 			time.Sleep(10 * time.Millisecond)

@@ -27,6 +27,7 @@ type Data struct {
 	Satellites *Satellites `json:"satellites"`
 	Sep        float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph        float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	RF         *RF         `json:"rf,omitempty"`
 	loggers    []Logger
 	startTime  time.Time
 }
@@ -60,6 +61,7 @@ func NewLoggerData(loggers ...Logger) *Data {
 			YDop: 99.99,
 		},
 		Satellites: &Satellites{},
+		RF:         &RF{},
 	}
 }
 
@@ -87,10 +89,24 @@ func (d *Data) Clone() Data {
 			Seen: d.Satellites.Seen,
 			Used: d.Satellites.Used,
 		},
-		Sep:       d.Sep,
-		Eph:       d.Eph,
-		loggers:   d.loggers,
-		startTime: d.startTime,
+		Sep: d.Sep,
+		Eph: d.Eph,
+	}
+
+	if d.RF != nil {
+		clone.RF = &RF{
+			JammingState: d.RF.JammingState,
+			AntStatus:    d.RF.AntStatus,
+			AntPower:     d.RF.AntPower,
+			PostStatus:   d.RF.PostStatus,
+			NoisePerMS:   d.RF.NoisePerMS,
+			AgcCnt:       d.RF.AgcCnt,
+			JamInd:       d.RF.JamInd,
+			OfsI:         d.RF.OfsI,
+			MagI:         d.RF.MagI,
+			OfsQ:         d.RF.OfsQ,
+			MagQ:         d.RF.MagQ,
+		}
 	}
 
 	return clone
@@ -98,6 +114,20 @@ func (d *Data) Clone() Data {
 
 // GNSSfix Type: 0: no fix 1: dead reckoning only 2: 2D-fix 3: 3D-fix 4: GNSS + dead reckoning combined 5: time only fix
 var fix = []string{"none", "dead reckoning only", "2D", "3D", "GNSS + dead reckoning combined", "time only fix"}
+
+type RF struct {
+	JammingState string `json:"jamming_state"`
+	AntStatus    string `json:"ant_status"`
+	AntPower     string `json:"ant_power"`
+	PostStatus   uint32 `json:"post_status"`
+	NoisePerMS   uint16 `json:"noise_per_ms"`
+	AgcCnt       uint16 `json:"agc_cnt"`
+	JamInd       uint8  `json:"jam_ind"`
+	OfsI         int8   `json:"ofs_i"`
+	MagI         byte   `json:"mag_i"`
+	OfsQ         int8   `json:"ofs_q"`
+	MagQ         byte   `json:"mag_q"`
+}
 
 func (d *Data) HandleUbxMessage(msg interface{}) error {
 	d.SystemTime = time.Now()
@@ -144,6 +174,21 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 			if sv.Flags&ubx.NavSatSvUsed != 0x00 {
 				d.Satellites.Used++
 			}
+		}
+	case *ubx.MonRf:
+		b := m.RFBlocks[0]
+		d.RF = &RF{
+			JammingState: b.Flags.String(),
+			AntStatus:    b.AntStatus.String(),
+			AntPower:     b.AntPower.String(),
+			PostStatus:   b.PostStatus,
+			NoisePerMS:   b.NoisePerMS,
+			AgcCnt:       b.AgcCnt,
+			JamInd:       b.JamInd,
+			OfsI:         b.OfsI,
+			MagI:         b.MagI,
+			OfsQ:         b.OfsQ,
+			MagQ:         b.MagQ,
 		}
 	}
 

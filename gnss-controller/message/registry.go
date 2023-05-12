@@ -14,6 +14,7 @@ var UbxMsgNavPvt = reflect.TypeOf(&ubx.NavPvt{})
 var UbxMsgNavDop = reflect.TypeOf(&ubx.NavDop{})
 var UbxMsgNavSat = reflect.TypeOf(&ubx.NavSat{})
 var UbxMsgMgaAckData = reflect.TypeOf(&ubx.MgaAckData0{})
+var UbxMsgMonRf = reflect.TypeOf(&ubx.MonRf{})
 
 type HandlerRegistry struct {
 	lock     sync.Mutex
