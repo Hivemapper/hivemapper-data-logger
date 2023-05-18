@@ -5,11 +5,9 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/daedaleanai/ublox/ubx"
-
-	"github.com/daedaleanai/ublox/nmea"
-
 	"github.com/daedaleanai/ublox"
+	"github.com/daedaleanai/ublox/nmea"
+	"github.com/daedaleanai/ublox/ubx"
 	"github.com/tarm/serial"
 )
 

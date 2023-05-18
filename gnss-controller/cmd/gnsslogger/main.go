@@ -55,7 +55,7 @@ func main() {
 	go func() {
 		for {
 			msg := <-output
-			fmt.Printf("sending message: %T\n", msg)
+			//fmt.Printf("sending message: %T\n", msg)
 			if _, ok := msg.(*ubx.MonRf); ok {
 				encoded, err := ubx.EncodeReq(msg)
 				_, err = stream.Write(encoded)

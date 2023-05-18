@@ -28,7 +28,9 @@ type JsonFile struct {
 }
 
 func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Duration) *JsonFile {
+	fmt.Println("creating json file logger:", destFolder, "max folder size:", maxFolderSize, "save interval:", saveInterval.String())
 	return &JsonFile{
+		maxSize:       maxFolderSize,
 		saveInterval:  saveInterval,
 		destFolder:    destFolder,
 		maxFolderSize: maxFolderSize,
@@ -36,6 +38,7 @@ func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Durat
 }
 
 func (j *JsonFile) Init() error {
+	fmt.Println("initializing json file logger")
 	latestLog := path.Join(j.destFolder, "latest.log")
 	if fileExists(latestLog) {
 		err := os.Remove(latestLog)
@@ -43,7 +46,6 @@ func (j *JsonFile) Init() error {
 			return fmt.Errorf("removing latest.log: %w", err)
 		}
 		fmt.Println("removed:", latestLog)
-		return nil
 	}
 
 	if !fileExists(j.destFolder) {
@@ -59,6 +61,7 @@ func (j *JsonFile) Init() error {
 		panic(fmt.Errorf("listing destionation folder %s : %w", j.destFolder, err))
 	}
 
+	fmt.Println("adding files to list:", len(files))
 	for _, f := range files {
 		if f.IsDir() {
 			continue
@@ -78,6 +81,12 @@ func (j *JsonFile) Init() error {
 			modificationTime: i.ModTime(),
 		}
 		j.addFile(fi)
+	}
+
+	fmt.Println("initialized with file count:", len(j.files), "size:", j.currentSize)
+	err = j.freeUpSpace(0)
+	if err != nil {
+		return fmt.Errorf("freeing up space: %w", err)
 	}
 
 	return nil
@@ -172,8 +181,11 @@ func writeToFile(filePath string, data *Data) error {
 }
 
 func (j *JsonFile) freeUpSpace(nextFileSize int64) error {
+	fmt.Println("free up space: current size:", j.currentSize, "next file size:", nextFileSize, "max size:", j.maxSize)
 	if j.currentSize+nextFileSize > j.maxSize {
-		spaceToReclaim := j.maxSize * 10 / 100
+		tenPercent := j.maxSize - (j.maxSize * 90 / 100)
+		spaceToReclaim := j.currentSize - j.maxSize + tenPercent
+		spaceReclaimed := int64(0)
 		for spaceToReclaim > 0 {
 			fi := j.files[0]
 			j.files = j.files[1:]
@@ -189,7 +201,9 @@ func (j *JsonFile) freeUpSpace(nextFileSize int64) error {
 
 			j.currentSize -= fi.size
 			spaceToReclaim -= fi.size
+			spaceReclaimed += fi.size
 		}
+		fmt.Println("reclaimed space:", spaceReclaimed, "new size:", j.currentSize, nextFileSize, "max size:", j.maxSize)
 	}
 
 	return nil
