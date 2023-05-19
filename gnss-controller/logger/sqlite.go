@@ -53,6 +53,13 @@ const purgeQuery string = `
 DELETE FROM gnss WHERE time < ?;
 `
 
+const lastPositionQuery string = `
+SELECT latitude, longitude, altitude
+FROM gnss
+WHERE fix = '3D' or fix = '2D'
+ORDER BY time DESC LIMIT 1;
+`
+
 type Sqlite struct {
 	lock     sync.Mutex
 	db       *sql.DB
@@ -67,6 +74,7 @@ func NewSqlite(file string) *Sqlite {
 }
 
 func (s *Sqlite) Init(logTTL time.Duration) error {
+	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
@@ -81,11 +89,11 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	if logTTL > 0 {
 		go func() {
 			for {
+				time.Sleep(time.Minute)
 				err := s.Purge(logTTL)
 				if err != nil {
 					panic(fmt.Errorf("purging database: %s", err.Error()))
 				}
-				time.Sleep(time.Minute)
 			}
 		}()
 	}
@@ -117,12 +125,12 @@ func (s *Sqlite) StartStoring() {
 }
 
 func (s *Sqlite) Log(data *Data) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if !s.doInsert {
 		return nil
 	}
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
 
 	if s.db == nil {
 		return fmt.Errorf("database not initialized")
@@ -163,7 +171,31 @@ func (s *Sqlite) Log(data *Data) error {
 		data.RF.MagQ,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("inserting data: %s", err.Error())
 	}
 	return nil
+}
+
+func (s *Sqlite) GetLastPosition() (*Position, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	fmt.Println("getting last position")
+
+	rows, err := s.db.Query(lastPositionQuery)
+	if err != nil {
+		return nil, fmt.Errorf("querying last position: %s", err.Error())
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		position := &Position{}
+		err := rows.Scan(&position.Latitude, &position.Longitude, &position.Altitude)
+		if err != nil {
+			return nil, fmt.Errorf("scanning last position: %s", err.Error())
+		}
+		return position, nil
+	}
+
+	return nil, nil
 }

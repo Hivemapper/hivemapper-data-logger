@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	databasePath := flag.String("db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqlite database")
+	databasePath := flag.String("db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
 	logTTl := flag.Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 	jsonDestinationFolder := flag.String("json-destination-folder", "/mnt/data/gps", "json destination folder")
 	jsonSaveInterval := flag.Duration("json-save-interval", 15*time.Second, "json save interval")
@@ -36,15 +36,20 @@ func main() {
 
 	handlersRegistry := message.NewHandlerRegistry()
 
-	sqlite := logger.NewSqlite(*databasePath)
-	err := sqlite.Init(*logTTl)
-	handleError("initializing sqlite", err)
+	sqliteLogger := logger.NewSqlite(*databasePath)
+	err := sqliteLogger.Init(*logTTl)
+	handleError("initializing sqliteLogger", err)
+
+	lastPosition, err := sqliteLogger.GetLastPosition()
+	if err != nil {
+		handleError("getting last position from sqliteLogger", err)
+	}
 
 	jsonLogger := logger.NewJsonFile(*jsonDestinationFolder, *jsonDestinationFolderMaxSize, *jsonSaveInterval)
 	err = jsonLogger.Init()
 	handleError("initializing json logger", err)
 
-	loggerData := logger.NewLoggerData(sqlite, jsonLogger)
+	loggerData := logger.NewLoggerData(sqliteLogger, jsonLogger)
 	loggerData.SetStartTime(startTime)
 	decoder := message.NewDecoder(handlersRegistry)
 
@@ -65,6 +70,7 @@ func main() {
 			encoded, err := ubx.Encode(msg)
 			_, err = stream.Write(encoded)
 			handleError("writing message:", err)
+			//fmt.Println("sent:", hex.EncodeToString(encoded))
 		}
 	}()
 
@@ -73,6 +79,16 @@ func main() {
 		ResetMode:  0x01,
 	}
 	output <- &reset
+
+	if lastPosition != nil {
+		fmt.Println("last position:", lastPosition)
+		initPos := &ubx.MgaIniPos_llh3{
+			Lat_dege7: int32(lastPosition.Latitude * 1e7),
+			Lon_dege7: int32(lastPosition.Longitude * 1e7),
+			PosAcc_cm: 1000 * 100,
+		}
+		output <- initPos
+	}
 
 	cfg := ubx.CfgValSet{
 		Version: 0x00,
@@ -152,7 +168,7 @@ func main() {
 	}
 
 	jsonLogger.StartStoring()
-	sqlite.StartStoring()
+	sqliteLogger.StartStoring()
 
 	if err := <-done; err != nil {
 		log.Fatalln(err)
