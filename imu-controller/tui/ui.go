@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"imu-logger/device/iim42652"
 	"strings"
 )
 
@@ -10,17 +11,11 @@ const GraphHeader = " |                                                         
 const GraphFooter = "-1                                                   0                                                   1 \n"
 
 type Model struct {
-	XAxisG float64
-	YAxisG float64
-	ZAxisG float64
+	Acceleration iim42652.Acceleration
 }
 
-func initialModel() Model {
-	return Model{
-		XAxisG: 0.0,
-		YAxisG: 0.0,
-		ZAxisG: 0.0,
-	}
+func InitialModel(acceleration iim42652.Acceleration) Model {
+	return Model{Acceleration: acceleration}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -46,9 +41,9 @@ func (m Model) View() string {
 
 	var graphBody strings.Builder
 
-	graphBody.WriteString(createAxisGString(m.XAxisG, "X"))
-	graphBody.WriteString(createAxisGString(m.YAxisG, "Y"))
-	graphBody.WriteString(createAxisGString(m.ZAxisG, "Z"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.X, "X"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.Y, "Y"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.Z, "Z"))
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)

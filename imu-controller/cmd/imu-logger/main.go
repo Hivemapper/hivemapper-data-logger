@@ -59,6 +59,18 @@ func main() {
 	//	//}
 	//	time.Sleep(10 * time.Millisecond)
 	//}
+
+	// TODO: this for loop here would need to send messages to the
+	//if err != nil {
+	//	panic(fmt.Errorf("getting acceleration: %w", err))
+	//}
+	//ui := tea.NewProgram(tui.InitialModel(*acceleration))
+
+	// this is blocking ...
+	//if _, err := ui.Run(); err != nil {
+	//	fmt.Printf("Alas, there's been an error: %v", err)
+	//	os.Exit(1)
+	//}
 	for {
 		acceleration, err := imu.GetAcceleration()
 		if err != nil {
