@@ -26,7 +26,7 @@ type Acceleration struct {
 
 func NewAcceleration(x, y, z int16, sensitivity AccelerationSensitivity) *Acceleration {
 	r := func(v float64) float64 {
-		return math.Round(v*100) / 100
+		return math.Round(v*10) / 10
 	}
 
 	return &Acceleration{

@@ -14,10 +14,11 @@ const GraphFooter = "-1                                                   0     
 
 type Model struct {
 	Acceleration *iim42652.Acceleration
+	Speed        float64
 }
 
-func InitialModel(acceleration *iim42652.Acceleration) Model {
-	return Model{Acceleration: acceleration}
+func InitialModel(acceleration *iim42652.Acceleration, speed float64) Model {
+	return Model{Acceleration: acceleration, Speed: speed}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -33,6 +34,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case *iim42652.Acceleration:
 		m.Acceleration = msg
+	case float64:
+		m.Speed = msg
 	}
 
 	return m, nil
@@ -50,6 +53,7 @@ func (m Model) View() string {
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
+	graph.WriteString(fmt.Sprintf("Speed: %.2f\n", m.Speed))
 
 	return graph.String()
 }
@@ -62,7 +66,7 @@ func createAxisGString(gValue float64, axis string) string {
 
 	numberOfDashes := int(math.Abs(val) * 50)
 
-	if val <= 0.0 {
+	if val >= 0.0 {
 		sb.WriteString(strings.Repeat(" ", 50))
 		sb.WriteString("|")
 		str := fmt.Sprintf("%s", strings.Repeat(">", numberOfDashes))

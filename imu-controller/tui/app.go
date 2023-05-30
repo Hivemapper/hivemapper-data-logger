@@ -16,7 +16,7 @@ type App struct {
 func NewApp(p *data.Pipeline) *App {
 	sub := p.SubscribeAcceleration("tui")
 
-	model := InitialModel(&iim42652.Acceleration{})
+	model := InitialModel(&iim42652.Acceleration{}, 0.0)
 	ui := tea.NewProgram(model)
 
 	return &App{
@@ -26,10 +26,6 @@ func NewApp(p *data.Pipeline) *App {
 }
 
 func (a *App) Run() (err error) {
-
-	//todo: compute and keep speed in KM/H
-	//todo: detect sharp turns
-
 	go func() {
 		lastUpdate := time.Time{}
 		var lastAcceleration iim42652.Acceleration
@@ -37,14 +33,17 @@ func (a *App) Run() (err error) {
 			select {
 			case acceleration := <-a.sub.IncomingAcceleration:
 				a.ui.Send(acceleration)
+
 				if lastUpdate == (time.Time{}) {
 					lastAcceleration = *acceleration
 					lastUpdate = time.Now()
 					continue
 				}
+
 				timeSinceLastUpdate := time.Since(lastUpdate)
-				//todo: compute velocity in m/s
-				//todo: compute speed in km/h
+
+				speed := computeSpeed(timeSinceLastUpdate.Seconds(), lastAcceleration.CamX())
+				a.ui.Send(speed)
 
 				lastAcceleration = *acceleration
 			}
