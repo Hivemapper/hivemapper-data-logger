@@ -179,7 +179,7 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 			rightTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
 			accelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
 			decelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
-			stopTracker.track(acceleration, xAvg, yAvg, magnitudeAvg)
+			stopTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
 
 			lastUpdate = time.Now()
 		}

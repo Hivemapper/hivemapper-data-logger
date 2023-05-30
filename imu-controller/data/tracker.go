@@ -19,7 +19,7 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+func (t *LeftTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, _ *AverageFloat64, _ *AverageFloat64) {
 	magnitude := computeTotalMagnitude(imuAccel.CamX(), imuAccel.CamY())
 	if magnitude > t.config.MinimumMagnitudeThreshold && imuAccel.CamY() > t.config.LeftTurnThreshold {
 		t.continuousCount++
@@ -44,7 +44,7 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+func (t *RightTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, _ *AverageFloat64, _ *AverageFloat64) {
 	magnitude := computeTotalMagnitude(imuAccel.CamX(), imuAccel.CamY())
 	if magnitude > t.config.MinimumMagnitudeThreshold && imuAccel.CamY() < t.config.RightTurnThreshold {
 		t.continuousCount++
@@ -70,7 +70,7 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, xAvg *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+func (t *AccelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, _ *AverageFloat64, _ *AverageFloat64, _ *AverageFloat64) {
 	if acceleration.CamX() > t.config.GForceAcceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -98,7 +98,7 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, xAvg *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+func (t *DecelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, _ *AverageFloat64, _ *AverageFloat64, _ *AverageFloat64) {
 	if acceleration.CamX() < t.config.GForceDeceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -119,10 +119,26 @@ func (t *DecelerationTracker) track(lastUpdate time.Time, acceleration *iim42652
 }
 
 type StopTracker struct {
-	config   config.Config
-	emitFunc emit
+	continuousCount int
+	start           time.Time
+	config          config.Config
+	emitFunc        emit
 }
 
-func (t *StopTracker) track(acceleration *iim42652.Acceleration, xAvg *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
-	// todo: implement stop tracker and emit StopEvent
+func (t *StopTracker) track(_ time.Time, acceleration *iim42652.Acceleration, _ *AverageFloat64, _ *AverageFloat64, _ *AverageFloat64) {
+	if acceleration.CamX() == 0.0 && acceleration.CamY() == 0.0 && acceleration.CamZ() == 1.0 {
+		t.continuousCount++
+		if t.continuousCount == 1 {
+			t.start = time.Now()
+			t.emitFunc(&StopDetectEvent{})
+		}
+	} else {
+		if t.continuousCount > t.config.ContinuousCountWindow {
+			t.emitFunc(&StopEndEvent{
+				Duration: time.Since(t.start),
+			})
+		}
+
+		t.continuousCount = 0
+	}
 }
