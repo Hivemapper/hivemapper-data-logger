@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/charmbracelet/lipgloss"
 	"math"
 	"strings"
 
@@ -81,8 +82,17 @@ func (m Model) View() string {
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
-	graph.WriteString(fmt.Sprintf("speed: %.2f\n", m.MotionModel.speed))
-	graph.WriteString(fmt.Sprintf("Average magnitude: %.2f \n", m.MotionModel.averageMagnitude))
+
+	graph.WriteString("\n")
+	if m.MotionModel.speed > 0.0 {
+		graph.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575")).Render(fmt.Sprintf("SPEED: %.2f \n", m.MotionModel.speed)))
+	} else if m.MotionModel.speed < 0.0 {
+		graph.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Render(fmt.Sprintf("SPEED: %.2f \n", m.MotionModel.speed)))
+	} else {
+		graph.WriteString(fmt.Sprintf("SPEED: %.2f\n", 0.0))
+	}
+	graph.WriteString("\n")
+	graph.WriteString(fmt.Sprintf("AVERAGE MAGNITUDE: %.2f \n", m.MotionModel.averageMagnitude))
 	graph.WriteString(fmt.Sprintf("Average X: %.2f \n", m.MotionModel.xAvg))
 	graph.WriteString(fmt.Sprintf("Average Y: %.2f \n", m.MotionModel.yAvg))
 
