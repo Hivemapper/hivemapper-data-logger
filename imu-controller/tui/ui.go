@@ -2,11 +2,12 @@ package tui
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
 	"math"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/streamingfast/hm-imu-logger/data"
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 )
 
@@ -30,9 +31,9 @@ type MotionModelMsg struct {
 	Acceleration      *iim42652.Acceleration
 	speedVariation    float64
 	speed             float64
-	xAvg              *AverageFloat64
-	yAvg              *AverageFloat64
-	totalMagnitudeAvg *AverageFloat64
+	xAvg              *data.AverageFloat64
+	yAvg              *data.AverageFloat64
+	totalMagnitudeAvg *data.AverageFloat64
 }
 
 func InitialModel() Model {

@@ -42,7 +42,15 @@ func main() {
 		}
 	}()
 
-	app := tui.NewApp(p)
+	eventEmitter := data.NewEventEmitter()
+	go func() {
+		err := eventEmitter.Run(p)
+		if err != nil {
+			panic(fmt.Errorf("running event emitter: %w", err))
+		}
+	}()
+
+	app := tui.NewApp(eventEmitter)
 	err = app.Run()
 	if err != nil {
 		panic(fmt.Errorf("running app: %w", err))

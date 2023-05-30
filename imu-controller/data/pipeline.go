@@ -26,6 +26,7 @@ func NewPipeline(imu *iim42652.IIM42652) *AccelerationPipeline {
 }
 
 func (p *AccelerationPipeline) Run() error {
+	fmt.Printf("Running pipeline\n")
 	err := p.run()
 	if err != nil {
 		return fmt.Errorf("running pipeline: %w", err)
