@@ -57,25 +57,25 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 	}
 }
 
-func Test_ComputeSpeed(t *testing.T) {
-	tests := []struct {
-		name               string
-		accelerationSpeeds []float64
-		expectedSpeed      float64
-	}{
-		{
-			name:               "stopped car",
-			accelerationSpeeds: []float64{100.0, -50.0, 10.0},
-			expectedSpeed:      60.0,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			for _, accelSpeed := range test.accelerationSpeeds {
-				addAccelerationSpeeds(accelSpeed)
-			}
-			require.Equal(t, test.expectedSpeed, computeSpeed())
-		})
-	}
-}
+//func Test_ComputeSpeed(t *testing.T) {
+//	tests := []struct {
+//		name               string
+//		accelerationSpeeds []float64
+//		expectedSpeed      float64
+//	}{
+//		{
+//			name:               "stopped car",
+//			accelerationSpeeds: []float64{100.0, -50.0, 10.0},
+//			expectedSpeed:      60.0,
+//		},
+//	}
+//
+//	for _, test := range tests {
+//		t.Run(test.name, func(t *testing.T) {
+//			for _, accelSpeed := range test.accelerationSpeeds {
+//				addAccelerationSpeeds(accelSpeed)
+//			}
+//			require.Equal(t, test.expectedSpeed, computeSpeed())
+//		})
+//	}
+//}

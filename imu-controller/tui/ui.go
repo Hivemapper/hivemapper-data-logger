@@ -15,6 +15,7 @@ const GraphFooter = "-1                                                   0     
 
 type MotionModel struct {
 	Acceleration     *iim42652.Acceleration
+	speedVariation   float64
 	speed            float64
 	averageMagnitude float64
 	xAvg             float64
@@ -27,7 +28,8 @@ type Model struct {
 
 type MotionModelMsg struct {
 	Acceleration      *iim42652.Acceleration
-	accelerationSpeed *float64
+	speedVariation    float64
+	speed             float64
 	xAvg              *AverageFloat64
 	yAvg              *AverageFloat64
 	totalMagnitudeAvg *AverageFloat64
@@ -58,10 +60,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Acceleration != nil {
 			m.MotionModel.Acceleration = msg.Acceleration
 		}
-		if msg.accelerationSpeed != nil {
-			addAccelerationSpeeds(*msg.accelerationSpeed)
-			m.MotionModel.speed = computeSpeed()
-		}
 		if msg.xAvg != nil {
 			m.MotionModel.xAvg = msg.xAvg.Average
 		}
@@ -72,6 +70,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.MotionModel.averageMagnitude = msg.totalMagnitudeAvg.Average
 		}
 
+		m.MotionModel.speedVariation = msg.speedVariation
+		m.MotionModel.speed = msg.speed
 	}
 
 	return m, nil

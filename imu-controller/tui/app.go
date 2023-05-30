@@ -50,18 +50,21 @@ func (a *App) Run() (err error) {
 				xAvg.Add(lastAcceleration.CamX())
 				yAvg.Add(lastAcceleration.CamY())
 				totalMagnitudeAvg.Add(math.Sqrt(math.Pow(lastAcceleration.CamX(), 2) + math.Pow(lastAcceleration.CamY(), 2)))
+				speed := computeSpeed(accelerationSpeed)
 
 				lastAcceleration = *acceleration
 
 				motionModel := &MotionModelMsg{
 					Acceleration:      acceleration,
-					accelerationSpeed: &accelerationSpeed,
+					speed:             speed,
+					speedVariation:    accelerationSpeed,
 					xAvg:              xAvg,
 					yAvg:              yAvg,
 					totalMagnitudeAvg: totalMagnitudeAvg,
 				}
 
 				a.ui.Send(motionModel)
+				lastUpdate = time.Now()
 			}
 		}
 	}()

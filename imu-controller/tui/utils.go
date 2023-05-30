@@ -36,28 +36,21 @@ const (
 	TurnThreshold = 0.3 // Threshold value for detecting a turn
 )
 
-var AccelerationSpeeds []float64
+var Speed float64
 
-func addAccelerationSpeeds(accelSpeed float64) {
-	AccelerationSpeeds = append(AccelerationSpeeds, accelSpeed)
-}
-
-func computeSpeed() float64 {
-	speed := 0.0
-	for _, s := range AccelerationSpeeds {
-		speed += s
-	}
-	return speed
+func computeSpeed(accelSpeed float64) float64 {
+	Speed += accelSpeed
+	return Speed
 }
 
 func computeAccelerationSpeed(timeInSeconds float64, gForce float64) float64 {
 	// Convert g-force to meters per second squared
 	acceleration := gForce * 9.8
 
-	// Calculate accelerationSpeed in meters per second
+	// Calculate speedVariation in meters per second
 	speed := acceleration * timeInSeconds
 
-	// Convert accelerationSpeed from meters per second to kilometers per hour
+	// Convert speedVariation from meters per second to kilometers per hour
 	speedKMH := speed * 3.6
 
 	return speedKMH
