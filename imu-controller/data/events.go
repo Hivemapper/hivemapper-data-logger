@@ -2,7 +2,6 @@ package data
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
@@ -74,6 +73,22 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 		emitFunc: e.emit,
 	}
 
+	rightTurnTracker := &RightTurnTracker{
+		emitFunc: e.emit,
+	}
+
+	accelerationTracker := &AccelerationTracker{
+		emitFunc: e.emit,
+	}
+
+	decelerationTracker := &DecelerationTracker{
+		emitFunc: e.emit,
+	}
+
+	stopTracker := &StopTracker{
+		emitFunc: e.emit,
+	}
+
 	for {
 		lastUpdate := time.Time{}
 		select {
@@ -85,12 +100,16 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 			//timeSinceLastUpdate := time.Since(lastUpdate)
 			//speedVariation := computeSpeedVariation(timeSinceLastUpdate.Seconds(), acceleration.CamX())
 
-			totalMagnitudeAvg.Add(math.Sqrt(math.Pow(acceleration.CamX(), 2) + math.Pow(acceleration.CamY(), 2)))
+			totalMagnitudeAvg.Add(computeTotalMagnitude(acceleration.CamX(), acceleration.CamY()))
 
 			xAvg.Add(acceleration.CamX())
 			yAvg.Add(acceleration.CamY())
 
-			leftTurnTracker.track(acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			leftTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			rightTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			accelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			decelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			stopTracker.track(acceleration, xAvg, yAvg, totalMagnitudeAvg)
 
 			lastUpdate = time.Now()
 		}

@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"math"
 )
 
 type AverageFloat64 struct {
@@ -54,4 +55,8 @@ func computeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
 	speedKMH := speed * 3.6
 
 	return speedKMH
+}
+
+func computeTotalMagnitude(xAcceleration float64, yAcceleration float64) float64 {
+	return math.Sqrt(math.Pow(xAcceleration, 2) + math.Pow(yAcceleration, 2))
 }
