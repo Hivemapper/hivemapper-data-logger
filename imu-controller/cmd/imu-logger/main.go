@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"imu-logger/device/iim42652"
+	"imu-logger/tui"
 	"time"
 )
 
@@ -61,24 +63,32 @@ func main() {
 	//}
 
 	// TODO: this for loop here would need to send messages to the
-	//if err != nil {
-	//	panic(fmt.Errorf("getting acceleration: %w", err))
-	//}
-	//ui := tea.NewProgram(tui.InitialModel(*acceleration))
+	acceleration, err := imu.GetAcceleration()
+	if err != nil {
+		panic(fmt.Errorf("getting acceleration: %w", err))
+	}
+	ui := tea.NewProgram(tui.InitialModel(acceleration))
 
-	// this is blocking ...
-	//if _, err := ui.Run(); err != nil {
-	//	fmt.Printf("Alas, there's been an error: %v", err)
-	//	os.Exit(1)
-	//}
+	go func() {
+		if _, err := ui.Run(); err != nil {
+			if err != tea.ErrProgramKilled {
+				// tea library handles the error weirdly. It will return  an ErrProgramKilled when
+				// the context has been canceled. This occurs when the program shutdowns, which should not
+				// actually be an error
+				fmt.Printf("Failed bubble tea program: %s\n", err)
+			}
+		}
+	}()
+
 	for {
-		acceleration, err := imu.GetAcceleration()
+		acceleration, err = imu.GetAcceleration()
 		if err != nil {
 			panic(fmt.Errorf("getting acceleration: %w", err))
 		}
+		ui.Send(acceleration)
 
-		fmt.Print("\033[u\033[K")
-		imu.Debugln("Acceleration:", acceleration)
+		//fmt.Print("\033[u\033[K")
+		//imu.Debugln("Acceleration:", acceleration)
 		//j, err := json.Marshal(acceleration)
 		//if err != nil {
 		//	panic(fmt.Errorf("marshaling acceleration: %w", err))
