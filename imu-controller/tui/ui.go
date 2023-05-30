@@ -62,9 +62,9 @@ func createAxisGString(gValue float64, axis string) string {
 
 	numberOfDashes := int(math.Abs(val) * 50)
 
-	if val >= 0.0 {
+	if val <= 0.0 {
 		sb.WriteString(strings.Repeat(" ", 50))
-		sb.WriteString("-")
+		sb.WriteString("|")
 		str := fmt.Sprintf("%s", strings.Repeat(">", numberOfDashes))
 		sb.WriteString(str)
 		if numberOfDashes < 50 {
@@ -76,7 +76,7 @@ func createAxisGString(gValue float64, axis string) string {
 		}
 		str := fmt.Sprintf("%s", strings.Repeat("<", numberOfDashes))
 		sb.WriteString(str)
-		sb.WriteString("-")
+		sb.WriteString("|")
 		sb.WriteString(strings.Repeat(" ", 50))
 	}
 
