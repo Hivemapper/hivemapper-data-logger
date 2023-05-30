@@ -46,7 +46,7 @@ func (a *App) Run() (err error) {
 
 				timeSinceLastUpdate := time.Since(lastUpdate)
 
-				speed := computeSpeed(timeSinceLastUpdate.Seconds(), lastAcceleration.CamX())
+				accelerationSpeed := computeAccelerationSpeed(timeSinceLastUpdate.Seconds(), lastAcceleration.CamX())
 				xAvg.Add(lastAcceleration.CamX())
 				yAvg.Add(lastAcceleration.CamY())
 				totalMagnitudeAvg.Add(math.Sqrt(math.Pow(lastAcceleration.CamX(), 2) + math.Pow(lastAcceleration.CamY(), 2)))
@@ -55,7 +55,7 @@ func (a *App) Run() (err error) {
 
 				motionModel := &MotionModelMsg{
 					Acceleration:      acceleration,
-					speed:             &speed,
+					accelerationSpeed: &accelerationSpeed,
 					xAvg:              xAvg,
 					yAvg:              yAvg,
 					totalMagnitudeAvg: totalMagnitudeAvg,
