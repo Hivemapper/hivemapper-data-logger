@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/streamingfast/hm-imu-logger/data"
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
@@ -25,11 +27,26 @@ func NewApp(p *data.Pipeline) *App {
 
 func (a *App) Run() (err error) {
 
+	//todo: compute and keep speed in KM/H
+	//todo: detect sharp turns
+
 	go func() {
+		lastUpdate := time.Time{}
+		var lastAcceleration iim42652.Acceleration
 		for {
 			select {
 			case acceleration := <-a.sub.IncomingAcceleration:
 				a.ui.Send(acceleration)
+				if lastUpdate == (time.Time{}) {
+					lastAcceleration = *acceleration
+					lastUpdate = time.Now()
+					continue
+				}
+				timeSinceLastUpdate := time.Since(lastUpdate)
+				//todo: compute velocity in m/s
+				//todo: compute speed in km/h
+
+				lastAcceleration = *acceleration
 			}
 		}
 	}()

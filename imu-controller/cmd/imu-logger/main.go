@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/streamingfast/hm-imu-logger/tui"
-
 	"github.com/streamingfast/hm-imu-logger/data"
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
+	"github.com/streamingfast/hm-imu-logger/tui"
 )
 
 func main() {
