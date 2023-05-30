@@ -27,11 +27,17 @@ func (a *App) HandleEvent(event data.Event) {
 		msg.Acceleration = event.Acceleration
 		msg.xAvg = event.AvgX
 		msg.yAvg = event.AvgY
+		msg.magnitudeAvg = event.AvgMagnitude
+	case *data.StopEndEvent:
+		msg.event = event.String()
+	case *data.StopDetectEvent:
+		msg.event = event.String()
 	case *data.TurnEvent:
+		msg.event = event.String()
 	case *data.AccelerationEvent:
+		msg.event = event.String()
 	case *data.DecelerationEvent:
-	case *data.HeadingChangeEvent:
-	case *data.StopEvent:
+		msg.event = event.String()
 	}
 	a.ui.Send(msg)
 }

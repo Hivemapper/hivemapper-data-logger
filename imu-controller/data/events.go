@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
@@ -8,10 +9,15 @@ import (
 
 type Event interface {
 	setTime(time.Time)
+	String() string
 }
 
 type BaseEvent struct {
 	time time.Time
+}
+
+func (e *BaseEvent) String() string {
+	return "base"
 }
 
 func (e *BaseEvent) setTime(t time.Time) {
@@ -24,6 +30,11 @@ type ImuAccelerationEvent struct {
 	AvgX         *AverageFloat64
 	AvgY         *AverageFloat64
 	AvgZ         *AverageFloat64
+	AvgMagnitude *AverageFloat64
+}
+
+func (e *ImuAccelerationEvent) String() string {
+	return "imu-acceleration"
 }
 
 type Direction string
@@ -39,10 +50,18 @@ type TurnEvent struct {
 	Duration  time.Duration
 }
 
+func (e *TurnEvent) String() string {
+	return fmt.Sprintf("turn %s in %s", e.Direction, e.Duration)
+}
+
 type AccelerationEvent struct {
 	BaseEvent
 	Speed    float64
 	Duration time.Duration
+}
+
+func (e *AccelerationEvent) String() string {
+	return fmt.Sprintf("acceleration %f km/h in %s", e.Speed, e.Duration)
 }
 
 type DecelerationEvent struct {
@@ -51,14 +70,34 @@ type DecelerationEvent struct {
 	Duration time.Duration
 }
 
+func (e *DecelerationEvent) String() string {
+	return fmt.Sprintf("deceleration %f km/h in %s", e.Speed, e.Duration)
+}
+
 type HeadingChangeEvent struct {
 	BaseEvent
 	Heading float64
 }
 
-type StopEvent struct {
+func (e *HeadingChangeEvent) String() string {
+	return fmt.Sprintf("heading change %f", e.Heading)
+}
+
+type StopDetectEvent struct {
+	BaseEvent
+}
+
+func (e *StopDetectEvent) String() string {
+	return "stop detect"
+}
+
+type StopEndEvent struct {
 	BaseEvent
 	Duration time.Duration
+}
+
+func (e *StopEndEvent) String() string {
+	return fmt.Sprintf("stop for %s", e.Duration)
 }
 
 type emit func(event Event)
@@ -72,6 +111,9 @@ func NewEventEmitter() *EventEmitter {
 }
 
 func (e *EventEmitter) emit(event Event) {
+	if e.eventHandler == nil {
+		return
+	}
 	event.setTime(time.Now())
 	e.eventHandler(event)
 }
@@ -81,7 +123,7 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 	xAvg := NewAverageFloat64("X average")
 	yAvg := NewAverageFloat64("Y average")
 	zAvg := NewAverageFloat64("Y average")
-	totalMagnitudeAvg := NewAverageFloat64("Total magnitude average")
+	magnitudeAvg := NewAverageFloat64("Total magnitude average")
 
 	leftTurnTracker := &LeftTurnTracker{
 		emitFunc: e.emit,
@@ -114,7 +156,7 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 			//timeSinceLastUpdate := time.Since(lastUpdate)
 			//speedVariation := computeSpeedVariation(timeSinceLastUpdate.Seconds(), acceleration.CamX())
 
-			totalMagnitudeAvg.Add(computeTotalMagnitude(acceleration.CamX(), acceleration.CamY()))
+			magnitudeAvg.Add(computeTotalMagnitude(acceleration.CamX(), acceleration.CamY()))
 
 			xAvg.Add(acceleration.CamX())
 			yAvg.Add(acceleration.CamY())
@@ -125,13 +167,14 @@ func (e *EventEmitter) Run(p *AccelerationPipeline) (err error) {
 				AvgX:         xAvg,
 				AvgY:         yAvg,
 				AvgZ:         zAvg,
+				AvgMagnitude: magnitudeAvg,
 			})
 
-			leftTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
-			rightTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
-			accelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
-			decelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, totalMagnitudeAvg)
-			stopTracker.track(acceleration, xAvg, yAvg, totalMagnitudeAvg)
+			leftTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
+			rightTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
+			accelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
+			decelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
+			stopTracker.track(acceleration, xAvg, yAvg, magnitudeAvg)
 
 			lastUpdate = time.Now()
 		}

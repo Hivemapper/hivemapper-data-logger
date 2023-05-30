@@ -16,8 +16,9 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(_ time.Time, _ *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
-	if totalMagnitudeAvg.Average > 0.2 && yAvg.Average > 0.15 {
+func (t *LeftTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+	magnitude := computeTotalMagnitude(imuAccel.CamX(), imuAccel.CamY())
+	if magnitude > 0.2 && imuAccel.CamY() > 0.15 {
 		t.continuousCount++
 		if t.continuousCount == 1 {
 			t.start = time.Now()
@@ -39,8 +40,9 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(_ time.Time, _ *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
-	if totalMagnitudeAvg.Average > 0.2 && yAvg.Average < -0.15 {
+func (t *RightTurnTracker) track(_ time.Time, imuAccel *iim42652.Acceleration, _ *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
+	magnitude := computeTotalMagnitude(imuAccel.CamX(), imuAccel.CamY())
+	if magnitude > 0.2 && imuAccel.CamY() < -0.15 {
 		t.continuousCount++
 		if t.continuousCount == 1 {
 			t.start = time.Now()
@@ -57,30 +59,56 @@ func (t *RightTurnTracker) track(_ time.Time, _ *iim42652.Acceleration, _ *Avera
 }
 
 type AccelerationTracker struct {
-	emitFunc emit
+	continuousCount int
+	speed           float64
+	start           time.Time
+	emitFunc        emit
 }
 
 func (t *AccelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, xAvg *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
-	if xAvg.Average > 0 {
+	if acceleration.CamX() > 0.25 {
+		t.continuousCount++
 		duration := time.Since(lastUpdate)
-		t.emitFunc(&AccelerationEvent{
-			Speed:    computeSpeedVariation(duration.Seconds(), acceleration.CamX()),
-			Duration: duration,
-		})
+		t.speed += computeSpeedVariation(duration.Seconds(), acceleration.CamX())
+		if t.continuousCount == 1 {
+			t.start = time.Now()
+		}
+	} else {
+		if t.continuousCount > 10 {
+			t.emitFunc(&AccelerationEvent{
+				Speed:    t.speed,
+				Duration: time.Since(t.start),
+			})
+		}
+		t.speed = 0
+		t.continuousCount = 0
 	}
 }
 
 type DecelerationTracker struct {
-	emitFunc emit
+	continuousCount int
+	speed           float64
+	start           time.Time
+	emitFunc        emit
 }
 
 func (t *DecelerationTracker) track(lastUpdate time.Time, acceleration *iim42652.Acceleration, xAvg *AverageFloat64, yAvg *AverageFloat64, totalMagnitudeAvg *AverageFloat64) {
-	if xAvg.Average < 0 {
+	if acceleration.CamX() < -0.25 {
+		t.continuousCount++
 		duration := time.Since(lastUpdate)
-		t.emitFunc(&DecelerationEvent{
-			Speed:    computeSpeedVariation(duration.Seconds(), acceleration.CamX()),
-			Duration: duration,
-		})
+		t.speed += computeSpeedVariation(duration.Seconds(), acceleration.CamX())
+		if t.continuousCount == 1 {
+			t.start = time.Now()
+		}
+	} else {
+		if t.continuousCount > 10 {
+			t.emitFunc(&DecelerationEvent{
+				Speed:    t.speed,
+				Duration: time.Since(t.start),
+			})
+		}
+		t.speed = 0
+		t.continuousCount = 0
 	}
 }
 
