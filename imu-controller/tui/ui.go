@@ -12,13 +12,24 @@ import (
 const GraphHeader = " |                                                                                                       | \n"
 const GraphFooter = "-1                                                   0                                                   1 \n"
 
-type Model struct {
-	Acceleration *iim42652.Acceleration
-	Speed        float64
+type MotionModel struct {
+	Acceleration     *iim42652.Acceleration
+	speed            float64
+	averageMagnitude float64
 }
 
-func InitialModel(acceleration *iim42652.Acceleration, speed float64) Model {
-	return Model{Acceleration: acceleration, Speed: speed}
+type Model struct {
+	MotionModel *MotionModel
+}
+
+type MotionModelMsg struct {
+	Acceleration     *iim42652.Acceleration
+	speed            *float64
+	averageMagnitude *float64
+}
+
+func InitialModel() Model {
+	return Model{MotionModel: &MotionModel{Acceleration: &iim42652.Acceleration{}, speed: 0.0, averageMagnitude: 0.0}}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -32,10 +43,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
-	case *iim42652.Acceleration:
-		m.Acceleration = msg
-	case float64:
-		m.Speed = msg
+	case *MotionModelMsg:
+		if msg.Acceleration != nil {
+			m.MotionModel.Acceleration = msg.Acceleration
+		}
+		if msg.speed != nil {
+			m.MotionModel.speed = *msg.speed
+		}
+		if msg.averageMagnitude != nil {
+			m.MotionModel.averageMagnitude = *msg.averageMagnitude
+		}
+
 	}
 
 	return m, nil
@@ -47,13 +65,14 @@ func (m Model) View() string {
 
 	var graphBody strings.Builder
 
-	graphBody.WriteString(createAxisGString(m.Acceleration.CamX(), "X"))
-	graphBody.WriteString(createAxisGString(m.Acceleration.CamY(), "Y"))
-	graphBody.WriteString(createAxisGString(m.Acceleration.CamZ()-1, "Z"))
+	graphBody.WriteString(createAxisGString(m.MotionModel.Acceleration.CamX(), "X"))
+	graphBody.WriteString(createAxisGString(m.MotionModel.Acceleration.CamY(), "Y"))
+	graphBody.WriteString(createAxisGString(m.MotionModel.Acceleration.CamZ()-1, "Z"))
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
-	graph.WriteString(fmt.Sprintf("Speed: %.2f\n", m.Speed))
+	graph.WriteString(fmt.Sprintf("speed: %.2f\n", m.MotionModel.speed))
+	graph.WriteString(fmt.Sprintf("Average magnitude: %.2f \n", m.MotionModel.averageMagnitude))
 
 	return graph.String()
 }

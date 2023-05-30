@@ -16,7 +16,7 @@ type App struct {
 func NewApp(p *data.Pipeline) *App {
 	sub := p.SubscribeAcceleration("tui")
 
-	model := InitialModel(&iim42652.Acceleration{}, 0.0)
+	model := InitialModel()
 	ui := tea.NewProgram(model)
 
 	return &App{
@@ -32,8 +32,6 @@ func (a *App) Run() (err error) {
 		for {
 			select {
 			case acceleration := <-a.sub.IncomingAcceleration:
-				a.ui.Send(acceleration)
-
 				if lastUpdate == (time.Time{}) {
 					lastAcceleration = *acceleration
 					lastUpdate = time.Now()
@@ -43,9 +41,17 @@ func (a *App) Run() (err error) {
 				timeSinceLastUpdate := time.Since(lastUpdate)
 
 				speed := computeSpeed(timeSinceLastUpdate.Seconds(), lastAcceleration.CamX())
-				a.ui.Send(speed)
+				avgMagnitude := averageMagnitudeForce(lastAcceleration.CamX(), lastAcceleration.CamY())
 
 				lastAcceleration = *acceleration
+
+				motionModel := &MotionModelMsg{
+					Acceleration:     acceleration,
+					speed:            &speed,
+					averageMagnitude: &avgMagnitude,
+				}
+
+				a.ui.Send(motionModel)
 			}
 		}
 	}()
