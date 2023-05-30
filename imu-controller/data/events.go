@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/streamingfast/hm-imu-logger/config"
+
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 )
 
@@ -17,7 +19,7 @@ type BaseEvent struct {
 }
 
 func (e *BaseEvent) String() string {
-	return "base"
+	return "BaseEvent"
 }
 
 func (e *BaseEvent) setTime(t time.Time) {
@@ -34,7 +36,7 @@ type ImuAccelerationEvent struct {
 }
 
 func (e *ImuAccelerationEvent) String() string {
-	return "imu-acceleration"
+	return "ImuAccelerationEvent"
 }
 
 type Direction string
@@ -51,7 +53,7 @@ type TurnEvent struct {
 }
 
 func (e *TurnEvent) String() string {
-	return fmt.Sprintf("turn %s in %s", e.Direction, e.Duration)
+	return fmt.Sprintf("TurnEvent => %s in %s", e.Direction, e.Duration)
 }
 
 type AccelerationEvent struct {
@@ -61,7 +63,7 @@ type AccelerationEvent struct {
 }
 
 func (e *AccelerationEvent) String() string {
-	return fmt.Sprintf("acceleration %f km/h in %s", e.Speed, e.Duration)
+	return fmt.Sprintf("AccelerationEvent => %f km/h in %s", e.Speed, e.Duration)
 }
 
 type DecelerationEvent struct {
@@ -71,7 +73,7 @@ type DecelerationEvent struct {
 }
 
 func (e *DecelerationEvent) String() string {
-	return fmt.Sprintf("deceleration %f km/h in %s", e.Speed, e.Duration)
+	return fmt.Sprintf("DecelerationEvent => %f km/h in %s", e.Speed, e.Duration)
 }
 
 type HeadingChangeEvent struct {
@@ -80,7 +82,7 @@ type HeadingChangeEvent struct {
 }
 
 func (e *HeadingChangeEvent) String() string {
-	return fmt.Sprintf("heading change %f", e.Heading)
+	return fmt.Sprintf("Heading Change Event %f", e.Heading)
 }
 
 type StopDetectEvent struct {
@@ -88,7 +90,7 @@ type StopDetectEvent struct {
 }
 
 func (e *StopDetectEvent) String() string {
-	return "stop detect"
+	return "Stop Detect Event"
 }
 
 type StopEndEvent struct {
@@ -97,17 +99,20 @@ type StopEndEvent struct {
 }
 
 func (e *StopEndEvent) String() string {
-	return fmt.Sprintf("stop for %s", e.Duration)
+	return fmt.Sprintf("Stop End Event for %s", e.Duration)
 }
 
 type emit func(event Event)
 type HandleEvent func(event Event)
 type EventEmitter struct {
+	config       config.Config
 	eventHandler HandleEvent
 }
 
-func NewEventEmitter() *EventEmitter {
-	return &EventEmitter{}
+func NewEventEmitter(config config.Config) *EventEmitter {
+	return &EventEmitter{
+		config: config,
+	}
 }
 
 func (e *EventEmitter) emit(event Event) {

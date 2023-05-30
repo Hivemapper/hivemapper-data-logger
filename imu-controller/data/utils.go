@@ -33,17 +33,6 @@ func (a *AverageFloat64) String() string {
 	return fmt.Sprintf("%s: %f", a.name, a.Average)
 }
 
-const (
-	TurnThreshold = 0.3 // Threshold value for detecting a turn
-)
-
-var Speed float64
-
-func computeSpeed(accelSpeed float64) float64 {
-	Speed += accelSpeed
-	return Speed
-}
-
 func computeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
 	// Convert g-force to meters per second squared
 	acceleration := gForce * 9.8

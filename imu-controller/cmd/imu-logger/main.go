@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/streamingfast/hm-imu-logger/config"
 
 	"github.com/streamingfast/hm-imu-logger/data"
 	"github.com/streamingfast/hm-imu-logger/device/iim42652"
@@ -9,27 +13,45 @@ import (
 )
 
 func main() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+var rootCmd = &cobra.Command{
+	Use:          "imu-logger",
+	Short:        "Run imu-logger",
+	RunE:         imuLoggerRunE,
+	Args:         cobra.ExactArgs(0),
+	SilenceUsage: true,
+}
+
+func init() {
+	rootCmd.Flags().String("config-file", "./imu-logger.json", "Path to imu logger config file, defaults to ./imu-logger.json")
+}
+
+func imuLoggerRunE(cmd *cobra.Command, args []string) error {
 	imu := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, true)
 	err := imu.Init()
 	if err != nil {
-		panic(fmt.Errorf("initializing IMU: %w", err))
+		return fmt.Errorf("initializing IMU: %w", err)
 	}
 
 	aafDelta, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterDelta)
 	if err != nil {
-		panic("failed to read aafDelt")
+		return fmt.Errorf("failed to read aafDelta: %w", err)
 	}
 	fmt.Printf("aafDelt: %b\n", aafDelta)
 
 	affDeltaSqr, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterDeltaSqr)
 	if err != nil {
-		panic("failed to read addDeltaSqr")
+		return fmt.Errorf("failed to read addDeltaSqr: %w", err)
 	}
 	fmt.Printf("addDeltaSqr: %b\n", affDeltaSqr)
 
 	affBitshift, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterBitshift)
 	if err != nil {
-		panic("failed to read affBitshift")
+		return fmt.Errorf("failed to read affBitshift: %w", err)
 	}
 	fmt.Printf("affBitshift: %b\n", affBitshift)
 
@@ -42,7 +64,10 @@ func main() {
 		}
 	}()
 
-	eventEmitter := data.NewEventEmitter()
+	conf := config.LoadConfig(mustGetString(cmd, "config-file"))
+	fmt.Println("Config: ", conf.String())
+
+	eventEmitter := data.NewEventEmitter(conf)
 	go func() {
 		err := eventEmitter.Run(p)
 		if err != nil {
@@ -53,47 +78,16 @@ func main() {
 	app := tui.NewApp(eventEmitter)
 	err = app.Run()
 	if err != nil {
-		panic(fmt.Errorf("running app: %w", err))
+		return fmt.Errorf("running app: %w", err)
 	}
 
-	//for {
-	//	intStatus2, err := imu.ReadRegister(iim42652.RegisterIntStatus2)
-	//	if err != nil {
-	//		panic("failed to read intstatus2")
-	//	}
-	//
-	//	acc, err := imu.GetAcceleration()
-	//	if err != nil {
-	//		panic("failed to read acceleration")
-	//	}
-	//
-	//	if err != nil {
-	//		panic("failed to read whoami")
-	//	}
-	//	if intStatus2 > 0 {
-	//		fmt.Println("Grrrrrrrrr:", intStatus2)
-	//		if intStatus2&0x04 == 0x04 {
-	//			fmt.Println("Cam X!", intStatus2&0x04 == 0x04)
-	//		}
-	//		if intStatus2&0x01 == 0x01 {
-	//			fmt.Println("Cam Y!", intStatus2&0x01 == 0x01)
-	//		}
-	//		if intStatus2&0x02 == 0x02 {
-	//			fmt.Println("Cam Z!", intStatus2&0x02 == 0x02)
-	//		}
-	//		//fmt.Println("Cam X:", intStatus2&0x04 == 0x04, "Y:", intStatus2&0x01 == 0x01, "Z:", intStatus2&0x02 == 0x02, "SMD:", intStatus2&0x08 == 0x08)
-	//		fmt.Println("Acceleration:", acc)
-	//	}
-	//	//if intStatus2&0x08 == 0x08 {
-	//	//	fmt.Println("Significant motion detected!")
-	//	//}
-	//	time.Sleep(10 * time.Millisecond)
-	//}
+	return nil
+}
 
-	//// TODO: this for loop here would need to send messages to the
-	//acceleration, err := imu.GetAcceleration()
-	//if err != nil {
-	//	panic(fmt.Errorf("getting acceleration: %w", err))
-	//}
-
+func mustGetString(cmd *cobra.Command, flagName string) string {
+	val, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
+	}
+	return val
 }
