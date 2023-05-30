@@ -15,6 +15,24 @@ func main() {
 		panic(fmt.Errorf("initializing IMU: %w", err))
 	}
 
+	aafDelta, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterDelta)
+	if err != nil {
+		panic("failed to read aafDelt")
+	}
+	fmt.Printf("aafDelt: %b\n", aafDelta)
+
+	affDeltaSqr, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterDeltaSqr)
+	if err != nil {
+		panic("failed to read addDeltaSqr")
+	}
+	fmt.Printf("addDeltaSqr: %b\n", affDeltaSqr)
+
+	affBitshift, err := imu.ReadRegister(iim42652.RegisterAntiAliasFilterBitshift)
+	if err != nil {
+		panic("failed to read affBitshift")
+	}
+	fmt.Printf("affBitshift: %b\n", affBitshift)
+
 	p := data.NewPipeline(imu)
 
 	go func() {

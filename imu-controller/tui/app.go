@@ -1,11 +1,13 @@
 package tui
 
 import (
+	"math"
 	"time"
+
+	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/streamingfast/hm-imu-logger/data"
-	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 )
 
 type App struct {
@@ -29,6 +31,10 @@ func (a *App) Run() (err error) {
 	go func() {
 		lastUpdate := time.Time{}
 		var lastAcceleration iim42652.Acceleration
+		xAvg := NewAverageFloat64("X average")
+		yAvg := NewAverageFloat64("Y average")
+		totalMagnitudeAvg := NewAverageFloat64("Total magnetude average")
+
 		for {
 			select {
 			case acceleration := <-a.sub.IncomingAcceleration:
@@ -41,14 +47,18 @@ func (a *App) Run() (err error) {
 				timeSinceLastUpdate := time.Since(lastUpdate)
 
 				speed := computeSpeed(timeSinceLastUpdate.Seconds(), lastAcceleration.CamX())
-				avgMagnitude := averageMagnitudeForce(lastAcceleration.CamX(), lastAcceleration.CamY())
+				xAvg.Add(lastAcceleration.CamX())
+				yAvg.Add(lastAcceleration.CamY())
+				totalMagnitudeAvg.Add(math.Sqrt(math.Pow(lastAcceleration.CamX(), 2) + math.Pow(lastAcceleration.CamY(), 2)))
 
 				lastAcceleration = *acceleration
 
 				motionModel := &MotionModelMsg{
-					Acceleration:     acceleration,
-					speed:            &speed,
-					averageMagnitude: &avgMagnitude,
+					Acceleration:      acceleration,
+					speed:             &speed,
+					xAvg:              xAvg,
+					yAvg:              yAvg,
+					totalMagnitudeAvg: totalMagnitudeAvg,
 				}
 
 				a.ui.Send(motionModel)

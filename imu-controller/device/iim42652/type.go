@@ -53,27 +53,17 @@ var (
 	RegisterAccelWomXThreshold = &Register{Bank4, 0x4a}
 	RegisterAccelWomYThreshold = &Register{Bank4, 0x4b}
 	RegisterAccelWomZThreshold = &Register{Bank4, 0x4c}
-	RegisterIntSource1         = &Register{Bank0, 0x66}
-	RegisterIntSource4         = &Register{Bank0, 0x69}
-	RegisterSdmConfig0         = &Register{Bank0, 0x57}
-	RegisterIntStatus2         = &Register{Bank0, 0x37}
-	RegisterAccelConfig        = &Register{Bank0, 0x50}
-)
 
-const (
-	//RegisterBankSel      Address = 0x76
-	DevCfgReg    Address = 0x11
-	TempData1Reg Address = 0x1d
-	//RegisterAccelDataX1  Address = 0x1f
-	AccelDataX0Reg Address = 0x20
-	AccelDataY1Reg Address = 0x21
-	AccelDataY0Reg Address = 0x22
-	AccelDataZ1Reg Address = 0x23
-	AccelDataZ0Reg Address = 0x24
-	GyroDataX1Reg  Address = 0x25
-	//RegisterPwrMgmt0     Address = 0x4e
-	GyroConfig0Reg  Address = 0x4f
-	AccelConfig0Reg Address = 0x50
+	RegisterIntSource1 = &Register{Bank0, 0x66}
+	RegisterIntSource4 = &Register{Bank0, 0x69}
+
+	RegisterSdmConfig0  = &Register{Bank0, 0x57}
+	RegisterIntStatus2  = &Register{Bank0, 0x37}
+	RegisterAccelConfig = &Register{Bank0, 0x50}
+
+	RegisterAntiAliasFilterDelta    = &Register{Bank2, 0x03} // bits 6:1, ACCEL_AAF_DELT: Code from 1 to 63 that allows programming the bandwidth for accelerometer anti-alias filter
+	RegisterAntiAliasFilterDeltaSqr = &Register{Bank2, 0x04} //bits 7:0 and Bank 2, register 0x05h, bits 3:0, ACCEL_AAF_DELTSQR: Square of the delt value for accelerometer
+	RegisterAntiAliasFilterBitshift = &Register{Bank2, 0x05} //bits 7:4, ACCEL_AAF_BITSHIFT: Bitshift value for accelerometer used in hardware implementation
 )
 
 const (

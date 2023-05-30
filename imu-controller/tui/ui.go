@@ -16,6 +16,8 @@ type MotionModel struct {
 	Acceleration     *iim42652.Acceleration
 	speed            float64
 	averageMagnitude float64
+	xAvg             float64
+	yAvg             float64
 }
 
 type Model struct {
@@ -23,9 +25,11 @@ type Model struct {
 }
 
 type MotionModelMsg struct {
-	Acceleration     *iim42652.Acceleration
-	speed            *float64
-	averageMagnitude *float64
+	Acceleration      *iim42652.Acceleration
+	speed             *float64
+	xAvg              *AverageFloat64
+	yAvg              *AverageFloat64
+	totalMagnitudeAvg *AverageFloat64
 }
 
 func InitialModel() Model {
@@ -50,8 +54,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.speed != nil {
 			m.MotionModel.speed = *msg.speed
 		}
-		if msg.averageMagnitude != nil {
-			m.MotionModel.averageMagnitude = *msg.averageMagnitude
+		if msg.xAvg != nil {
+			m.MotionModel.xAvg = msg.xAvg.Average
+		}
+		if msg.yAvg != nil {
+			m.MotionModel.yAvg = msg.yAvg.Average
+		}
+		if msg.totalMagnitudeAvg != nil {
+			m.MotionModel.averageMagnitude = msg.totalMagnitudeAvg.Average
 		}
 
 	}
@@ -73,6 +83,8 @@ func (m Model) View() string {
 	graph.WriteString(GraphFooter)
 	graph.WriteString(fmt.Sprintf("speed: %.2f\n", m.MotionModel.speed))
 	graph.WriteString(fmt.Sprintf("Average magnitude: %.2f \n", m.MotionModel.averageMagnitude))
+	graph.WriteString(fmt.Sprintf("Average X: %.2f \n", m.MotionModel.xAvg))
+	graph.WriteString(fmt.Sprintf("Average Y: %.2f \n", m.MotionModel.yAvg))
 
 	return graph.String()
 }
