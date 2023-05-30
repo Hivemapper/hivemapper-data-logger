@@ -1,4 +1,4 @@
-module imu-logger
+module github.com/streamingfast/hm-imu-logger
 
 go 1.20
 

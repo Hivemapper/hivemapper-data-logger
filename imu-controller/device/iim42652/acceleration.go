@@ -43,6 +43,18 @@ func (a *Acceleration) String() string {
 	return fmt.Sprintf("Acceleration{camX:%.2f, camY:%.2f, camZ: %.2f}", a.Z, a.X, a.Y)
 }
 
+func (a *Acceleration) CamX() float64 {
+	return a.Z
+}
+
+func (a *Acceleration) CamY() float64 {
+	return a.X
+}
+
+func (a *Acceleration) CamZ() float64 {
+	return a.Y
+}
+
 //Significant Motion Detection configuration parameters
 //	1. WOM_X_TH (Register 0x4Ah in Bank 4)
 //	2. WOM_Y_TH (Register 0x4Bh in Bank 4)

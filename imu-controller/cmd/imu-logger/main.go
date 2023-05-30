@@ -1,12 +1,12 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"imu-logger/device/iim42652"
-	"imu-logger/tui"
-	"time"
+
+	"github.com/streamingfast/hm-imu-logger/tui"
+
+	"github.com/streamingfast/hm-imu-logger/data"
+	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 )
 
 func main() {
@@ -16,17 +16,20 @@ func main() {
 		panic(fmt.Errorf("initializing IMU: %w", err))
 	}
 
-	p, err := imu.ReadRegister(iim42652.RegisterPwrMgmt0)
-	if err != nil {
-		panic("failed to read pwrmgmt0")
-	}
-	fmt.Println("PwrMgmt0:", hex.EncodeToString([]byte{p}))
+	p := data.NewPipeline(imu)
 
-	ac, err := imu.ReadRegister(iim42652.RegisterAccelConfig)
+	go func() {
+		err := p.Run()
+		if err != nil {
+			panic(fmt.Errorf("running pipeline: %w", err))
+		}
+	}()
+
+	app := tui.NewApp(p)
+	err = app.Run()
 	if err != nil {
-		panic("failed to read RegisterAccelConfig")
+		panic(fmt.Errorf("running app: %w", err))
 	}
-	fmt.Println("RegisterAccelConfig:", hex.EncodeToString([]byte{ac}))
 
 	//for {
 	//	intStatus2, err := imu.ReadRegister(iim42652.RegisterIntStatus2)
@@ -62,39 +65,10 @@ func main() {
 	//	time.Sleep(10 * time.Millisecond)
 	//}
 
-	// TODO: this for loop here would need to send messages to the
-	acceleration, err := imu.GetAcceleration()
-	if err != nil {
-		panic(fmt.Errorf("getting acceleration: %w", err))
-	}
-	ui := tea.NewProgram(tui.InitialModel(acceleration))
+	//// TODO: this for loop here would need to send messages to the
+	//acceleration, err := imu.GetAcceleration()
+	//if err != nil {
+	//	panic(fmt.Errorf("getting acceleration: %w", err))
+	//}
 
-	go func() {
-		if _, err := ui.Run(); err != nil {
-			if err != tea.ErrProgramKilled {
-				// tea library handles the error weirdly. It will return  an ErrProgramKilled when
-				// the context has been canceled. This occurs when the program shutdowns, which should not
-				// actually be an error
-				fmt.Printf("Failed bubble tea program: %s\n", err)
-			}
-		}
-	}()
-
-	for {
-		acceleration, err = imu.GetAcceleration()
-		if err != nil {
-			panic(fmt.Errorf("getting acceleration: %w", err))
-		}
-		ui.Send(acceleration)
-
-		//fmt.Print("\033[u\033[K")
-		//imu.Debugln("Acceleration:", acceleration)
-		//j, err := json.Marshal(acceleration)
-		//if err != nil {
-		//	panic(fmt.Errorf("marshaling acceleration: %w", err))
-		//}
-		//fmt.Printf("Acceleration: %s", string(j))
-		//fmt.Println()
-		time.Sleep(500 * time.Microsecond)
-	}
 }

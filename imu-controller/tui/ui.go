@@ -2,10 +2,11 @@ package tui
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"imu-logger/device/iim42652"
 	"math"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/streamingfast/hm-imu-logger/device/iim42652"
 )
 
 const GraphHeader = " |                                                                                                       | \n"
@@ -43,9 +44,9 @@ func (m Model) View() string {
 
 	var graphBody strings.Builder
 
-	graphBody.WriteString(createAxisGString(m.Acceleration.X, "X"))
-	graphBody.WriteString(createAxisGString(m.Acceleration.Y, "Y"))
-	graphBody.WriteString(createAxisGString(m.Acceleration.Z, "Z"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.CamX(), "X"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.CamY(), "Y"))
+	graphBody.WriteString(createAxisGString(m.Acceleration.CamZ()-1, "Z"))
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
@@ -60,19 +61,20 @@ func createAxisGString(gValue float64, axis string) string {
 	sb.WriteString(" | ")
 
 	numberOfDashes := int(math.Abs(val) * 50)
-	str := fmt.Sprintf("%s", strings.Repeat("-", numberOfDashes))
 
-	if val >= 1.0 {
+	if val >= 0.0 {
 		sb.WriteString(strings.Repeat(" ", 50))
 		sb.WriteString("-")
+		str := fmt.Sprintf("%s", strings.Repeat(">", numberOfDashes))
 		sb.WriteString(str)
 		if numberOfDashes < 50 {
 			sb.WriteString(fmt.Sprintf("%s", strings.Repeat(" ", 50-numberOfDashes)))
 		}
-	} else if val < 1.0 {
+	} else if val < 0.0 {
 		if numberOfDashes < 50 {
 			sb.WriteString(fmt.Sprintf("%s", strings.Repeat(" ", 50-numberOfDashes)))
 		}
+		str := fmt.Sprintf("%s", strings.Repeat("<", numberOfDashes))
 		sb.WriteString(str)
 		sb.WriteString("-")
 		sb.WriteString(strings.Repeat(" ", 50))
