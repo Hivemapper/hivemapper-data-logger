@@ -1,8 +1,9 @@
-package tui
+package data
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ComputeAccelerationSpeed(t *testing.T) {
@@ -52,7 +53,7 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expectedSpeed, computeAccelerationSpeed(test.timeInSeconds, test.gForce))
+			require.Equal(t, test.expectedSpeed, computeSpeedVariation(test.timeInSeconds, test.gForce))
 		})
 	}
 }

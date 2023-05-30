@@ -1,4 +1,4 @@
-package tui
+package data
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ func computeSpeed(accelSpeed float64) float64 {
 	return Speed
 }
 
-func computeAccelerationSpeed(timeInSeconds float64, gForce float64) float64 {
+func computeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
 	// Convert g-force to meters per second squared
 	acceleration := gForce * 9.8
 

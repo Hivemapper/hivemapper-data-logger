@@ -13,19 +13,19 @@ type Subscription struct {
 
 type subscriptions map[string]*Subscription
 
-type Pipeline struct {
+type AccelerationPipeline struct {
 	imu           *iim42652.IIM42652
 	subscriptions subscriptions
 }
 
-func NewPipeline(imu *iim42652.IIM42652) *Pipeline {
-	return &Pipeline{
+func NewPipeline(imu *iim42652.IIM42652) *AccelerationPipeline {
+	return &AccelerationPipeline{
 		imu:           imu,
 		subscriptions: make(subscriptions),
 	}
 }
 
-func (p *Pipeline) Run() error {
+func (p *AccelerationPipeline) Run() error {
 	err := p.run()
 	if err != nil {
 		return fmt.Errorf("running pipeline: %w", err)
@@ -33,7 +33,7 @@ func (p *Pipeline) Run() error {
 	return nil
 }
 
-func (p *Pipeline) SubscribeAcceleration(name string) *Subscription {
+func (p *AccelerationPipeline) SubscribeAcceleration(name string) *Subscription {
 	sub := &Subscription{
 		IncomingAcceleration: make(chan *iim42652.Acceleration),
 	}
@@ -41,7 +41,7 @@ func (p *Pipeline) SubscribeAcceleration(name string) *Subscription {
 	return sub
 }
 
-func (p *Pipeline) run() error {
+func (p *AccelerationPipeline) run() error {
 	for {
 		acceleration, err := p.imu.GetAcceleration()
 		if err != nil {
