@@ -1,6 +1,7 @@
 // This program generates messages.go from messages.xml
 // TODO generate string methods for all bitfield types
 
+//go:build ignore
 // +build ignore
 
 package main

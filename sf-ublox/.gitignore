@@ -15,3 +15,7 @@
 # vendor/
 
 .DS_Store
+/.idea/.gitignore
+/.idea/modules.xml
+/.idea/ublox.iml
+/.idea/vcs.xml

@@ -8,6 +8,36 @@ import (
 	"strings"
 )
 
+type CfgData struct {
+	Key   uint32
+	Value []byte
+}
+type CfgValSet struct {
+	Version   byte
+	Layers    CfgValSetLayers
+	Reserved1 [2]byte
+	CfgData   []*CfgData
+}
+
+type CfgValSetLayers byte
+
+const (
+	CfgValSetLayersRam   AidHui1Flags = 0x0
+	CfgValSetLayersBBR   AidHui1Flags = 0x1
+	CfgValSetLayersFlash AidHui1Flags = 0x4
+)
+
+func (CfgValSet) classID() uint16 { return 0x8a06 }
+
+type CfgValGet struct {
+	Version   byte
+	Layers    byte
+	Reserved1 [2]byte
+	CfgData   []*CfgData
+}
+
+func (CfgValGet) classID() uint16 { return 0x8b06 }
+
 // Message ubx-ack-ack
 
 // AckAck (Output) Message acknowledged
@@ -5339,6 +5369,87 @@ func (v MonGnssEnabled) String() string {
 	return strings.Join(b, ",")
 }
 
+// MonHw (Periodic/polled) Hardware status
+// Class/Id 0x0a 0x09 (60 bytes)
+// Status of different aspect of the hardware, such as antenna, PIO/peripheral pins, noise level, automatic gain control (AGC)
+type MonRf struct {
+	Version   byte
+	NBlock    byte `len:"RFBlocks"`
+	Reserved1 [2]byte
+	RFBlocks  []*MonRFBlock
+}
+
+type MonRFBlock struct {
+	BlockId    byte
+	Flags      MonRfFlags
+	AntStatus  MonRfAntStatus
+	AntPower   MonRfAntPower
+	PostStatus uint32
+	Reserved2  [4]byte
+	NoisePerMS uint16
+	AgcCnt     uint16
+	JamInd     byte
+	OfsI       int8
+	MagI       byte
+	OfsQ       int8
+	MagQ       byte
+	Reserved3  [3]byte
+}
+
+func (MonRf) classID() uint16 { return 0x380a }
+
+type MonRfFlags byte
+
+const (
+	MonRfJammingState MonRfFlags = 0x1 // RTC is calibrated
+)
+
+func (v MonRfFlags) String() string {
+	switch v & 0x1 {
+	case 0:
+		return "unknown"
+	case 1:
+		return "ok"
+	case 2:
+		return "warning"
+	case 3:
+		return "critical"
+	}
+	return "???"
+}
+
+type MonRfAntStatus byte
+
+func (v MonRfAntStatus) String() string {
+	switch v {
+	case 0x00:
+		return "init"
+	case 0x01:
+		return "dont_know"
+	case 0x02:
+		return "ok"
+	case 0x03:
+		return "short"
+	case 0x04:
+		return "open"
+	}
+	return "???"
+}
+
+type MonRfAntPower byte
+
+func (v MonRfAntPower) String() string {
+	switch v {
+	case 0x00:
+		return "off"
+	case 0x01:
+		return "on"
+	case 0x02:
+		return "dont_know"
+	}
+	return "???"
+}
+
 // Message ubx-mon-hw
 
 // MonHw (Periodic/polled) Hardware status
@@ -5969,7 +6080,8 @@ func (v NavDgpsFlags) String() string {
 
 // NavDop (Periodic/Polled) Dilution of precision
 // Class/Id 0x01 0x04 (18 bytes)
-//  DOP values are dimensionless.  All DOP values are scaled by a factor of 100. If the unit transmits a value of e.g.  156, the DOP value is 1.56.
+//
+//	DOP values are dimensionless.  All DOP values are scaled by a factor of 100. If the unit transmits a value of e.g.  156, the DOP value is 1.56.
 type NavDop struct {
 	ITOW_ms uint32 // [ms] GPS time of week of the navigation epoch. See the description of iTOW for details.
 	GDOP    uint16 // Geometric DOP
@@ -9176,6 +9288,9 @@ func mkMsg(classId, sz uint16, frame []byte) Message {
 
 	case 0x090a:
 		return new(MonHw)
+
+	case 0x380a:
+		return new(MonRf)
 
 	case 0x0b0a:
 		return new(MonHw2)

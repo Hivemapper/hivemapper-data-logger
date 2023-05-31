@@ -32,6 +32,28 @@ func Encode(payload Message) (buf []byte, err error) {
 	return b.Bytes(), nil
 }
 
+// Encode can serialize a message into a buffer
+func EncodeReq(payload Message) (buf []byte, err error) {
+	var b bytes.Buffer
+	b.Write([]byte{0xb5, 0x62, byte(payload.classID()), byte(payload.classID() >> 8), 0, 0})
+
+	//if err := encode(&b, payload); err != nil {
+	//	return nil, err
+	//}
+
+	sz := b.Len() - 6
+	b.Bytes()[4] = byte(sz)
+	b.Bytes()[5] = byte(sz >> 8)
+
+	var x, y byte
+	for _, v := range b.Bytes()[2:] {
+		x += v
+		y += x
+	}
+	b.Write([]byte{x, y})
+	return b.Bytes(), nil
+}
+
 func encode(w io.Writer, msg interface{}) error {
 	//	log.Printf("Encoding %T %#v", msg, msg)
 	switch v := msg.(type) {
