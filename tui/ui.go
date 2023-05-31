@@ -2,13 +2,14 @@ package tui
 
 import (
 	"fmt"
+	"math"
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
-	"math"
-	"strings"
 )
 
 const GraphHeader = " |                                                                                                       | \n"
@@ -109,7 +110,7 @@ func (m Model) View() string {
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
 
-	graph.WriteString("\nGPS DATA")
+	graph.WriteString("\nGPS DATA\n")
 	graph.WriteString(createGnssDataGString(m.MotionModel.gnssData))
 	graph.WriteString("\n")
 
@@ -170,7 +171,6 @@ func createAxisGString(gValue float64, axis string) string {
 
 func createGnssDataGString(gnssData *neom9n.Data) string {
 	var sb strings.Builder
-	sb.WriteString("\nGPS DATA")
 	sb.WriteString(fmt.Sprintf("\t ttff: %d Heading: %f Speed: %f\n", gnssData.Ttff, gnssData.Heading, gnssData.Speed))
 	sb.WriteString(fmt.Sprintf("\t Latitude: %f Longitude: %f\n", gnssData.Latitude, gnssData.Longitude))
 	sb.WriteString(fmt.Sprintf("\t HDop: %f VDop: %f Eph: %f \n", gnssData.Dop.HDop, gnssData.Dop.VDop, gnssData.Eph))
