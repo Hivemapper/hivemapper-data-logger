@@ -109,13 +109,13 @@ type Satellites struct {
 
 type DataFeed struct {
 	handleData func(data *Data)
-	data       *Data
+	Data       *Data
 }
 
 func NewDataFeed(handleData func(data *Data)) *DataFeed {
 	return &DataFeed{
 		handleData: handleData,
-		data: &Data{
+		Data: &Data{
 			SystemTime: noTime,
 			Timestamp:  noTime,
 			Dop: &Dop{
@@ -134,11 +134,11 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 }
 
 func (d *DataFeed) GetStartTime() time.Time {
-	return d.data.startTime
+	return d.Data.startTime
 }
 
 func (d *DataFeed) SetStartTime(startTime time.Time) {
-	d.data.startTime = startTime
+	d.Data.startTime = startTime
 }
 
 // GNSSfix Type: 0: no fix 1: dead reckoning only 2: 2D-fix 3: 3D-fix 4: GNSS + dead reckoning combined 5: time only fix
@@ -159,7 +159,7 @@ type RF struct {
 }
 
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
-	data := df.data
+	data := df.Data
 	data.SystemTime = time.Now()
 
 	switch m := msg.(type) {
