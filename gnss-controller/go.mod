@@ -1,4 +1,4 @@
-module gnss-logger
+module github.com/streamingfast/gnss-controller
 
 go 1.20
 
