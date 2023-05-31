@@ -2,9 +2,9 @@ module github.com/streamingfast/hivemapper-data-logger
 
 go 1.20
 
-//replace (
-//	github.com/streamingfast/imu-controller => ../imu-controller
-//)
+replace (
+	github.com/streamingfast/imu-controller => ../imu-controller
+)
 
 require (
 	github.com/charmbracelet/bubbletea v0.23.1

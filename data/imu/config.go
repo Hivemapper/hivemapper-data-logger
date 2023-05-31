@@ -8,13 +8,16 @@ import (
 )
 
 type Config struct {
-	ContinuousCountWindow        int     `json:"continuous_count_window"`
-	StopEndContinuousCountWindow int     `json:"stop_end_continuous_count_window"`
-	MinimumMagnitudeThreshold    float64 `json:"minimum_magnitude_threshold"`
-	LeftTurnThreshold            float64 `json:"left_turn_threshold"`
-	RightTurnThreshold           float64 `json:"right_turn_threshold"`
-	GForceAcceleratorThreshold   float64 `json:"g_force_accelerator_threshold"`
-	GForceDeceleratorThreshold   float64 `json:"g_force_decelerator_threshold"`
+	TurnContinuousCountWindow         int `json:"continuous_count_window"`
+	AccelerationContinuousCountWindow int `json:"acceleration_continuous_count_window"`
+	DecelerationContinuousCountWindow int `json:"deceleration_continuous_count_window"`
+	StopEndContinuousCountWindow      int `json:"stop_end_continuous_count_window"`
+
+	TurnMagnitudeThreshold     float64 `json:"turn_magnitude_threshold"`
+	LeftTurnThreshold          float64 `json:"left_turn_threshold"`
+	RightTurnThreshold         float64 `json:"right_turn_threshold"`
+	GForceAcceleratorThreshold float64 `json:"g_force_accelerator_threshold"`
+	GForceDeceleratorThreshold float64 `json:"g_force_decelerator_threshold"`
 }
 
 func (c *Config) String() string {
@@ -46,12 +49,13 @@ func LoadConfig(filename string) *Config {
 
 func DefaultConfig() *Config {
 	return &Config{
-		ContinuousCountWindow:        10,
-		StopEndContinuousCountWindow: 100,
-		MinimumMagnitudeThreshold:    0.2,
-		LeftTurnThreshold:            0.15,
-		RightTurnThreshold:           -0.15,
-		GForceAcceleratorThreshold:   0.25,
-		GForceDeceleratorThreshold:   -0.25,
+		TurnContinuousCountWindow:         20,
+		AccelerationContinuousCountWindow: 20,
+		StopEndContinuousCountWindow:      100,
+		TurnMagnitudeThreshold:            0.2,
+		LeftTurnThreshold:                 0.12,
+		RightTurnThreshold:                -0.12,
+		GForceAcceleratorThreshold:        0.18,
+		GForceDeceleratorThreshold:        -0.18,
 	}
 }

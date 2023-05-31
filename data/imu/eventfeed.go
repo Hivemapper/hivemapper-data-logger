@@ -103,11 +103,15 @@ func (p *EventFeed) run() error {
 			AvgMagnitude: magnitudeAvg,
 		})
 
-		leftTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
-		rightTurnTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
-		accelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
-		decelerationTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
-		stopTracker.track(lastUpdate, acceleration, xAvg, yAvg, magnitudeAvg)
+		x := xAvg.Average
+		y := yAvg.Average
+		z := zAvg.Average
+
+		leftTurnTracker.trackAcceleration(lastUpdate, x, y, z)
+		rightTurnTracker.trackAcceleration(lastUpdate, x, y, z)
+		accelerationTracker.trackAcceleration(lastUpdate, x, y, z)
+		decelerationTracker.trackAcceleration(lastUpdate, x, y, z)
+		stopTracker.trackAcceleration(lastUpdate, acceleration.CamX(), acceleration.CamY(), acceleration.CamZ())
 
 		lastUpdate = time.Now()
 
