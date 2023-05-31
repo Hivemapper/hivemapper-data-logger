@@ -114,13 +114,12 @@ func (m Model) View() string {
 	graph.WriteString(fmt.Sprintf("Average Y: %.2f \n", m.MotionModel.yAvg))
 
 	var eventsSb strings.Builder
-
 	for _, event := range m.MotionModel.events {
 		eventsSb.WriteString(fmt.Sprintf("\t%s \n", event))
 	}
 
 	graph.WriteString("Events:\n")
-	graph.WriteString("\t" + eventsSb.String())
+	graph.WriteString(eventsSb.String())
 
 	return graph.String()
 }

@@ -126,7 +126,7 @@ type StopTracker struct {
 }
 
 func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z float64) {
-	if x == 0.0 && y == 0.0 && z == 1.0 {
+	if x < 0.012 && y < 0.012 && z < 1.012 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {
