@@ -73,7 +73,6 @@ func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, out
 }
 
 func (l *MgaAnoLoader) HandleUbxMessage(message interface{}) error {
-	fmt.Println("MgaAnoLoader - handle ubx message", message)
 	ack := message.(*ubx.MgaAckData0)
 	l.ackChannel <- ack
 	return nil
