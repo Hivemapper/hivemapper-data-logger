@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/daedaleanai/ublox/ubx"
-
 	"github.com/tarm/serial"
 )
 
@@ -39,11 +38,6 @@ func main() {
 	sqliteLogger := logger.NewSqlite(*databasePath)
 	err := sqliteLogger.Init(*logTTl)
 	handleError("initializing sqliteLogger", err)
-
-	lastPosition, err := sqliteLogger.GetLastPosition()
-	if err != nil {
-		handleError("getting last position from sqliteLogger", err)
-	}
 
 	jsonLogger := logger.NewJsonFile(*jsonDestinationFolder, *jsonDestinationFolderMaxSize, *jsonSaveInterval)
 	err = jsonLogger.Init()
@@ -86,6 +80,11 @@ func main() {
 
 	fmt.Println("sending cfg val set")
 	output <- &cfg
+
+	lastPosition, err := sqliteLogger.GetLastPosition()
+	if err != nil {
+		handleError("getting last position from sqliteLogger", err)
+	}
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
@@ -137,6 +136,9 @@ func main() {
 	}
 
 	fmt.Println("Registering logger ubx message handlers")
+
+	//todo: move all the handlers to the event feed
+
 	handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, loggerData)
 	handlersRegistry.RegisterHandler(message.UbxMsgNavDop, loggerData)
 	handlersRegistry.RegisterHandler(message.UbxMsgNavSat, loggerData)
