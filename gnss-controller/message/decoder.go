@@ -42,8 +42,9 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 				fmt.Println("NACK:", nack)
 			}
 
-			//fmt.Printf("Decoded: %T\n", msg)
+			fmt.Printf("Decoded: %T\n", msg)
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
+				fmt.Printf("msg value: %v handler: %v\n", reflect.TypeOf(msg), handler)
 				err := handler.HandleUbxMessage(msg)
 				if err != nil {
 					done <- err
