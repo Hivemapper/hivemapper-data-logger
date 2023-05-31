@@ -74,6 +74,10 @@ func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
+		if t.continuousCount == t.config.StopEndContinuousCountWindow {
+			t.emitFunc(&AccelerationDetectedEvent{})
+		}
+
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
 			t.emitFunc(&AccelerationEvent{
@@ -129,7 +133,7 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
-			t.emitFunc(&StopDetectEvent{})
+			t.emitFunc(&StopDetectedEvent{})
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {

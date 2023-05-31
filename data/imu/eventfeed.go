@@ -111,7 +111,7 @@ func (p *EventFeed) run() error {
 		rightTurnTracker.trackAcceleration(lastUpdate, x, y, z)
 		accelerationTracker.trackAcceleration(lastUpdate, x, y, z)
 		decelerationTracker.trackAcceleration(lastUpdate, x, y, z)
-		stopTracker.trackAcceleration(lastUpdate, acceleration.CamX(), acceleration.CamY(), acceleration.CamZ())
+		stopTracker.trackAcceleration(lastUpdate, x, y, y)
 
 		lastUpdate = time.Now()
 

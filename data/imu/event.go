@@ -38,6 +38,14 @@ func (e *TurnEvent) String() string {
 	return fmt.Sprintf("%s turn for %s", e.Direction, e.Duration)
 }
 
+type AccelerationDetectedEvent struct {
+	data.BaseEvent
+}
+
+func (e *AccelerationDetectedEvent) String() string {
+	return "Acceleration Detected"
+}
+
 type AccelerationEvent struct {
 	data.BaseEvent
 	Speed    float64
@@ -67,12 +75,12 @@ func (e *HeadingChangeEvent) String() string {
 	return fmt.Sprintf("Heading Change %f", e.Heading)
 }
 
-type StopDetectEvent struct {
+type StopDetectedEvent struct {
 	data.BaseEvent
 }
 
-func (e *StopDetectEvent) String() string {
-	return "Stop Detect"
+func (e *StopDetectedEvent) String() string {
+	return "Stop Detected"
 }
 
 type StopEndEvent struct {

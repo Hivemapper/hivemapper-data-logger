@@ -77,7 +77,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.MotionModel.speed = msg.speed
 		if msg.event != "" {
 			m.MotionModel.events = append([]string{msg.event}, m.MotionModel.events...)
-			if len(m.MotionModel.events) > 5 {
+			if len(m.MotionModel.events) > 10 {
 				m.MotionModel.events = m.MotionModel.events[:len(m.MotionModel.events)-1]
 			}
 		}
@@ -119,9 +119,8 @@ func (m Model) View() string {
 		eventsSb.WriteString(fmt.Sprintf("\t%s \n", event))
 	}
 
-	graph.WriteString("Events: [\n")
-	graph.WriteString(eventsSb.String())
-	graph.WriteString("]\n")
+	graph.WriteString("Events:\n")
+	graph.WriteString("\t" + eventsSb.String())
 
 	return graph.String()
 }

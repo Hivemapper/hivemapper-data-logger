@@ -50,12 +50,12 @@ func LoadConfig(filename string) *Config {
 func DefaultConfig() *Config {
 	return &Config{
 		TurnContinuousCountWindow:         20,
-		AccelerationContinuousCountWindow: 20,
-		StopEndContinuousCountWindow:      100,
-		TurnMagnitudeThreshold:            0.2,
-		LeftTurnThreshold:                 0.12,
-		RightTurnThreshold:                -0.12,
-		GForceAcceleratorThreshold:        0.18,
-		GForceDeceleratorThreshold:        -0.18,
+		AccelerationContinuousCountWindow: 18,
+		StopEndContinuousCountWindow:      50,
+		TurnMagnitudeThreshold:            0.12,
+		LeftTurnThreshold:                 0.15,
+		RightTurnThreshold:                -0.15,
+		GForceAcceleratorThreshold:        0.10,
+		GForceDeceleratorThreshold:        -0.10,
 	}
 }

@@ -32,7 +32,7 @@ func (a *App) HandleEvent(event data.Event) {
 		msg.magnitudeAvg = event.AvgMagnitude
 	case *imu.StopEndEvent:
 		msg.event = event.String()
-	case *imu.StopDetectEvent:
+	case *imu.StopDetectedEvent:
 		msg.event = event.String()
 	case *imu.TurnEvent:
 		msg.event = event.String()
