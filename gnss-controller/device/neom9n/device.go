@@ -72,8 +72,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 			panic(err)
 		}
 	}()
-
-	cfg := ubx.CfgValSet{
+	
+	n.output <- &ubx.CfgValSet{
 		Version: 0x00,
 		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
 		CfgData: []*ubx.CfgData{
@@ -84,8 +84,16 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 		},
 	}
 
-	fmt.Println("sending cfg val set")
-	n.output <- &cfg
+	n.output <- &ubx.CfgValSet{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		CfgData: []*ubx.CfgData{
+			{
+				Key:   269549605, //CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
+				Value: []byte{0x01},
+			},
+		},
+	}
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
