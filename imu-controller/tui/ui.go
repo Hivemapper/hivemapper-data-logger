@@ -7,8 +7,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/streamingfast/hm-imu-logger/data"
-	"github.com/streamingfast/hm-imu-logger/device/iim42652"
+	"github.com/streamingfast/imu-controller/data"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 const GraphHeader = " |                                                                                                       | \n"

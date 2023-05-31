@@ -5,11 +5,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/streamingfast/hm-imu-logger/config"
-
-	"github.com/streamingfast/hm-imu-logger/data"
-	"github.com/streamingfast/hm-imu-logger/device/iim42652"
-	"github.com/streamingfast/hm-imu-logger/tui"
+	"github.com/streamingfast/imu-controller/config"
+	"github.com/streamingfast/imu-controller/data"
+	"github.com/streamingfast/imu-controller/device/iim42652"
+	"github.com/streamingfast/imu-controller/tui"
 )
 
 func main() {

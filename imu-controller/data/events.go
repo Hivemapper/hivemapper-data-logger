@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/streamingfast/hm-imu-logger/config"
+	"github.com/streamingfast/imu-controller/config"
 
-	"github.com/streamingfast/hm-imu-logger/device/iim42652"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type Event interface {

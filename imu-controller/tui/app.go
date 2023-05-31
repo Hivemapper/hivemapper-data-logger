@@ -2,7 +2,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/streamingfast/hm-imu-logger/data"
+	"github.com/streamingfast/imu-controller/data"
 )
 
 type App struct {
