@@ -6,32 +6,33 @@ import (
 	"time"
 
 	"github.com/streamingfast/gnss-controller/device/neom9n"
-
+	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSqlite_Purge(t *testing.T) {
 
-	dbPath := "/tmp/test.db"
+	dbPath := "/tmp/test.sqliteLogger"
 	_ = os.Remove(dbPath)
 
-	db := NewSqlite(dbPath)
-	err := db.Init(0)
+	sqliteLogger := NewSqlite(dbPath)
+	err := sqliteLogger.Init(0, &data.Subscription{})
 	require.NoError(t, err)
+
+	sqliteLogger.StartStoring()
 
 	df := neom9n.NewDataFeed(nil)
-	data := df.GetData()
-	data.Timestamp = time.Now()
+	df.Data.Timestamp = time.Now()
 
-	err = db.log(data)
+	err = sqliteLogger.log(df.Data)
 	require.NoError(t, err)
 
-	data.Timestamp = time.Now().Add(-time.Hour * 1)
+	df.Data.Timestamp = time.Now().Add(-time.Hour * 1)
 
-	err = db.log(data)
+	err = sqliteLogger.log(df.Data)
 	require.NoError(t, err)
 
-	res, err := db.db.Query(`SELECT count(*) as c FROM gnss`)
+	res, err := sqliteLogger.db.Query(`SELECT count(*) as c FROM gnss`)
 	require.NoError(t, err)
 	count := 0
 	n := res.Next()
@@ -41,13 +42,13 @@ func TestSqlite_Purge(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, count)
 
-	err = db.Purge(30 * time.Minute)
+	err = sqliteLogger.Purge(30 * time.Minute)
 	require.NoError(t, err)
 
-	res, err = db.db.Query("SELECT * FROM gnss")
+	res, err = sqliteLogger.db.Query("SELECT * FROM gnss")
 	require.NoError(t, err)
 
-	res, err = db.db.Query(`SELECT count(*) as c FROM gnss`)
+	res, err = sqliteLogger.db.Query(`SELECT count(*) as c FROM gnss`)
 	require.NoError(t, err)
 	count = 0
 	n = res.Next()
