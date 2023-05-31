@@ -56,11 +56,24 @@ func logRun(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	//todo: in gnss controller create a device/NEOM9N package and create a struct NEOM9N
+	//todo: move code from main to device/NEOM9N
+	//todo: create an event feed for gnss device
+
+	//todo: move logger from gnss to this project  under logger package/gnss
+
+	//todo: create a gnss package under data
+	//todo: change gnss code to adopt event feed
+
+	//todo: init file logger for imu
+	//todo: init file logger for gnss
+
+	//todo: init db logger for imu
+	//todo: init db logger for gnss
+
+	//todo: ui is optional and turn off by default
+
 	tuiImuEventSubscription := imuEventFeed.Subscribe("tui-imu")
-
-	//dbLogger := data.NewLogger(conf, sub)
-	//fileLogger := data.NewFileLogger(conf, sub2)
-
 	app := tui.NewApp(tuiImuEventSubscription)
 	err = app.Run()
 	if err != nil {
