@@ -3,20 +3,24 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"os"
 )
 
 type App struct {
-	ui                   *tea.Program
-	imuEventSubscription *data.Subscription
+	ui                    *tea.Program
+	imuEventSubscription  *data.Subscription
+	gnssEventSubscription *data.Subscription
 }
 
-func NewApp(imuEventSubscription *data.Subscription) *App {
-	model := InitialModel()
-	ui := tea.NewProgram(model)
+func NewApp(imuEventSubscription *data.Subscription, gnssEventSubscription *data.Subscription) *App {
+	model := NewModel()
+	ui := tea.NewProgram(model, tea.WithOutput(os.Stderr))
 	app := &App{
-		ui:                   ui,
-		imuEventSubscription: imuEventSubscription,
+		ui:                    ui,
+		imuEventSubscription:  imuEventSubscription,
+		gnssEventSubscription: gnssEventSubscription,
 	}
 
 	return app
@@ -40,6 +44,8 @@ func (a *App) HandleEvent(event data.Event) {
 		msg.event = event.String()
 	case *imu.DecelerationEvent:
 		msg.event = event.String()
+	case *gnss.GnssEvent:
+		msg.gnssData = event.Data
 	}
 	a.ui.Send(msg)
 }
@@ -49,6 +55,8 @@ func (a *App) Run() (err error) {
 		for {
 			select {
 			case event := <-a.imuEventSubscription.IncomingEvents:
+				a.HandleEvent(event)
+			case event := <-a.gnssEventSubscription.IncomingEvents:
 				a.HandleEvent(event)
 			}
 		}

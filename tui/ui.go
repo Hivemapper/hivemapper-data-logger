@@ -2,13 +2,13 @@ package tui
 
 import (
 	"fmt"
-	"math"
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
+	"math"
+	"strings"
 )
 
 const GraphHeader = " |                                                                                                       | \n"
@@ -22,6 +22,7 @@ type MotionModel struct {
 	xAvg             float64
 	yAvg             float64
 	events           []string
+	gnssData         *neom9n.Data
 }
 
 type Model struct {
@@ -36,14 +37,19 @@ type MotionModelMsg struct {
 	yAvg           *data.AverageFloat64
 	magnitudeAvg   *data.AverageFloat64
 	event          string
+	gnssData       *neom9n.Data
 }
 
-func InitialModel() Model {
-	return Model{
+func NewModel() *Model {
+	return &Model{
 		MotionModel: &MotionModel{
 			Acceleration:     &iim42652.Acceleration{},
 			speed:            0.0,
 			averageMagnitude: 0.0,
+			gnssData: &neom9n.Data{
+				Dop: &neom9n.Dop{},
+				RF:  &neom9n.RF{},
+			},
 		},
 	}
 }
@@ -81,6 +87,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.MotionModel.events = m.MotionModel.events[:len(m.MotionModel.events)-1]
 			}
 		}
+
+		if msg.gnssData != nil {
+			m.MotionModel.gnssData = msg.gnssData
+		}
 	}
 
 	return m, nil
@@ -98,6 +108,10 @@ func (m Model) View() string {
 
 	graph.WriteString(graphBody.String())
 	graph.WriteString(GraphFooter)
+
+	graph.WriteString("\nGPS DATA")
+	graph.WriteString(createGnssDataGString(m.MotionModel.gnssData))
+	graph.WriteString("\n")
 
 	graph.WriteString("\n")
 	if m.MotionModel.speed > 0.0 {
@@ -151,6 +165,16 @@ func createAxisGString(gValue float64, axis string) string {
 	}
 
 	sb.WriteString(fmt.Sprintf(" | %s => %.2f \n", axis, val))
+	return sb.String()
+}
+
+func createGnssDataGString(gnssData *neom9n.Data) string {
+	var sb strings.Builder
+	sb.WriteString("\nGPS DATA")
+	sb.WriteString(fmt.Sprintf("\t ttff: %d Heading: %f Speed: %f\n", gnssData.Ttff, gnssData.Heading, gnssData.Speed))
+	sb.WriteString(fmt.Sprintf("\t Latitude: %f Longitude: %f\n", gnssData.Latitude, gnssData.Longitude))
+	sb.WriteString(fmt.Sprintf("\t HDop: %f VDop: %f Eph: %f \n", gnssData.Dop.HDop, gnssData.Dop.VDop, gnssData.Eph))
+	sb.WriteString("\n")
 	return sb.String()
 }
 

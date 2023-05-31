@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
@@ -16,6 +20,19 @@ var LogCmd = &cobra.Command{
 }
 
 func init() {
+	// Imu
+	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
+
+	// GNSS
+	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
+	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
+	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
+	LogCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
+	LogCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
+	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
+	LogCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
+	LogCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
+
 	RootCmd.AddCommand(LogCmd)
 }
 
@@ -26,7 +43,29 @@ func logRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing IMU: %w", err)
 	}
 
-	err = imuDevice.UpdateRegister(iim42652.RegisterAccelConfigStatic2, func(currentValue byte) byte {
+	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
+	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
+	dbPath := mustGetString(cmd, "gnss-db-path")
+	logTTl := mustGetDuration(cmd, "gnss-db-log-ttl")
+	jsonDestinationFolder := mustGetString(cmd, "gnss-json-destination-folder")
+	jsonSaveInterval := mustGetDuration(cmd, "gnss-json-save-interval")
+	jsonDestinationFolderMaxSize := mustGetInt64(cmd, "gnss-json-destination-folder-max-size")
+
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+	sqliteLogger := logger.NewSqlite(dbPath)
+	err = sqliteLogger.Init(logTTl)
+	if err != nil {
+		return fmt.Errorf("initializing sqlite database: %w", err)
+	}
+
+	jsonLogger := logger.NewJsonFile(jsonDestinationFolder, jsonDestinationFolderMaxSize, jsonSaveInterval)
+	err = jsonLogger.Init()
+	if err != nil {
+		return fmt.Errorf("initializing json logger database: %w", err)
+	}
+
+	// not sure about `RegisterAccelConfig` -> before it was `RegisterAccelConfigStatic2`
+	err = imuDevice.UpdateRegister(iim42652.RegisterAccelConfig, func(currentValue byte) byte {
 		return currentValue | 0x01
 	})
 
@@ -34,7 +73,8 @@ func logRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to update register: %w", err)
 	}
 
-	accelAAFstatus, err := imuDevice.ReadRegister(iim42652.RegisterAccelConfigStatic2)
+	// not sure about `RegisterAccelConfig` -> before it was `RegisterAccelConfigStatic2`
+	accelAAFstatus, err := imuDevice.ReadRegister(iim42652.RegisterAccelConfig)
 	if err != nil {
 		return fmt.Errorf("failed to read accelAAFstatus: %w", err)
 	}
@@ -58,16 +98,38 @@ func logRun(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("affBitshift: %b\n", affBitshift)
 
-	//todo: fix config
-	conf := imu.DefaultConfig()
-	//conf := data.config.LoadConfig(mustGetString(cmd, "config-file"))
-	//fmt.Println("Config: ", conf.String())
+	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
+	fmt.Println("Config: ", conf.String())
 
 	imuEventFeed := imu.NewEventFeed(imuDevice, conf)
 	go func() {
 		err := imuEventFeed.Run()
 		if err != nil {
 			panic(fmt.Errorf("running pipeline: %w", err))
+		}
+	}()
+
+	gnssEventFeed := gnss.NewEventFeed()
+	gnssSubscription := gnssEventFeed.Subscribe("tui")
+
+	lastPosition, err := sqliteLogger.GetLastPosition()
+	if err != nil {
+		return fmt.Errorf("getting last posotion: %w", err)
+	}
+	err = gnssDevice.Init(lastPosition)
+	if err != nil {
+		return fmt.Errorf("initializing neom9n: %w", err)
+	}
+
+	dataFeed := neom9n.NewDataFeed(gnssEventFeed.HandleData)
+	go func() {
+		err = gnssDevice.Run(dataFeed, func(now time.Time) {
+			dataFeed.SetStartTime(now)
+			jsonLogger.StartStoring()
+			sqliteLogger.StartStoring()
+		})
+		if err != nil {
+			panic(fmt.Errorf("running gnss: %w", err))
 		}
 	}()
 
@@ -88,12 +150,36 @@ func logRun(cmd *cobra.Command, args []string) error {
 
 	//todo: ui is optional and turn off by default
 
-	tuiImuEventSubscription := imuEventFeed.Subscribe("tui-imu")
-	app := tui.NewApp(tuiImuEventSubscription)
+	tuiImuEventSubscription := imuEventFeed.Subscribe("tui")
+	app := tui.NewApp(tuiImuEventSubscription, gnssSubscription)
 	err = app.Run()
 	if err != nil {
 		return fmt.Errorf("running app: %w", err)
 	}
 
 	return nil
+}
+
+func mustGetString(cmd *cobra.Command, flagName string) string {
+	val, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
+	}
+	return val
+}
+
+func mustGetDuration(cmd *cobra.Command, flagName string) time.Duration {
+	val, err := cmd.Flags().GetDuration(flagName)
+	if err != nil {
+		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
+	}
+	return val
+}
+
+func mustGetInt64(cmd *cobra.Command, flagName string) int64 {
+	val, err := cmd.Flags().GetInt64(flagName)
+	if err != nil {
+		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
+	}
+	return val
 }
