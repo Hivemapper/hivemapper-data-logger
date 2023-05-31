@@ -3,12 +3,16 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"log"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
 type FileInfo struct {
@@ -38,7 +42,7 @@ func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Durat
 	}
 }
 
-func (j *JsonFile) Init() error {
+func (j *JsonFile) Init(gnssEventSubscription *data.Subscription) error {
 	fmt.Println("initializing json file logger")
 	latestLog := path.Join(j.destFolder, "latest.log")
 	if fileExists(latestLog) {
@@ -90,6 +94,19 @@ func (j *JsonFile) Init() error {
 		return fmt.Errorf("freeing up space: %w", err)
 	}
 
+	go func() {
+		for {
+			select {
+			case event := <-gnssEventSubscription.IncomingEvents:
+				e := event.(*gnss.GnssEvent)
+				err := j.log(e.Data)
+				if err != nil {
+					panic(fmt.Errorf("writing to file: %w", err))
+				}
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -114,7 +131,7 @@ func (j *JsonFile) addFile(f *FileInfo) {
 	j.currentSize += f.size
 
 }
-func (j *JsonFile) Log(data *neom9n.Data) error {
+func (j *JsonFile) log(data *neom9n.Data) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
 	j.datas = append(j.datas, data)

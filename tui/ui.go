@@ -130,7 +130,7 @@ func (m Model) View() string {
 
 	var eventsSb strings.Builder
 	for _, event := range m.MotionModel.events {
-		eventsSb.WriteString(fmt.Sprintf("\t%s \n", event))
+		eventsSb.WriteString(fmt.Sprintf("  %s \n", event))
 	}
 
 	graph.WriteString("Events:\n")
@@ -171,9 +171,9 @@ func createAxisGString(gValue float64, axis string) string {
 
 func createGnssDataGString(gnssData *neom9n.Data) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("\t ttff: %d Heading: %f Speed: %f\n", gnssData.Ttff, gnssData.Heading, gnssData.Speed))
-	sb.WriteString(fmt.Sprintf("\t Latitude: %f Longitude: %f\n", gnssData.Latitude, gnssData.Longitude))
-	sb.WriteString(fmt.Sprintf("\t HDop: %f VDop: %f Eph: %f \n", gnssData.Dop.HDop, gnssData.Dop.VDop, gnssData.Eph))
+	sb.WriteString(fmt.Sprintf("  ttff: %d Heading: %f Speed: %f\n", gnssData.Ttff, gnssData.Heading, gnssData.Speed))
+	sb.WriteString(fmt.Sprintf("  Latitude: %f Longitude: %f\n", gnssData.Latitude, gnssData.Longitude))
+	sb.WriteString(fmt.Sprintf("  Fix: %s HDop: %f VDop: %f Eph: %f \n", gnssData.Fix, gnssData.Dop.HDop, gnssData.Dop.VDop, gnssData.Eph))
 	sb.WriteString("\n")
 	return sb.String()
 }

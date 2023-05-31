@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
@@ -53,16 +54,7 @@ func logRun(cmd *cobra.Command, args []string) error {
 
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
 	sqliteLogger := logger.NewSqlite(dbPath)
-	err = sqliteLogger.Init(logTTl)
-	if err != nil {
-		return fmt.Errorf("initializing sqlite database: %w", err)
-	}
-
 	jsonLogger := logger.NewJsonFile(jsonDestinationFolder, jsonDestinationFolderMaxSize, jsonSaveInterval)
-	err = jsonLogger.Init()
-	if err != nil {
-		return fmt.Errorf("initializing json logger database: %w", err)
-	}
 
 	// not sure about `RegisterAccelConfig` -> before it was `RegisterAccelConfigStatic2`
 	err = imuDevice.UpdateRegister(iim42652.RegisterAccelConfig, func(currentValue byte) byte {
@@ -111,6 +103,19 @@ func logRun(cmd *cobra.Command, args []string) error {
 
 	gnssEventFeed := gnss.NewEventFeed()
 	gnssSubscription := gnssEventFeed.Subscribe("tui")
+
+	gnssSqlLoggerSubscription := gnssEventFeed.Subscribe("gnss-sql-logger")
+
+	err = sqliteLogger.Init(logTTl, gnssSqlLoggerSubscription)
+	if err != nil {
+		return fmt.Errorf("initializing sqlite database: %w", err)
+	}
+
+	gnssFileLoggerSubscription := gnssEventFeed.Subscribe("gnss-file-logger")
+	err = jsonLogger.Init(gnssFileLoggerSubscription)
+	if err != nil {
+		return fmt.Errorf("initializing json logger database: %w", err)
+	}
 
 	lastPosition, err := sqliteLogger.GetLastPosition()
 	if err != nil {

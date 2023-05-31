@@ -1,10 +1,11 @@
 package logger
 
 import (
-	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,12 +23,12 @@ func TestSqlite_Purge(t *testing.T) {
 	data := df.GetData()
 	data.Timestamp = time.Now()
 
-	err = db.Log(data)
+	err = db.log(data)
 	require.NoError(t, err)
 
 	data.Timestamp = time.Now().Add(-time.Hour * 1)
 
-	err = db.Log(data)
+	err = db.log(data)
 	require.NoError(t, err)
 
 	res, err := db.db.Query(`SELECT count(*) as c FROM gnss`)

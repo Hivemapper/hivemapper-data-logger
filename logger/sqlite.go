@@ -3,9 +3,12 @@ package logger
 import (
 	"database/sql"
 	"fmt"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"sync"
 	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 
 	_ "modernc.org/sqlite"
 )
@@ -74,7 +77,7 @@ func NewSqlite(file string) *Sqlite {
 	}
 }
 
-func (s *Sqlite) Init(logTTL time.Duration) error {
+func (s *Sqlite) Init(logTTL time.Duration, gnssEventSubscription *data.Subscription) error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 	if err != nil {
@@ -100,6 +103,20 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	}
 
 	s.db = db
+
+	go func() {
+		for {
+			select {
+			case event := <-gnssEventSubscription.IncomingEvents:
+				e := event.(*gnss.GnssEvent)
+				err := s.log(e.Data)
+				if err != nil {
+					panic(fmt.Errorf("writing to file: %w", err))
+				}
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -125,7 +142,7 @@ func (s *Sqlite) StartStoring() {
 	s.doInsert = true
 }
 
-func (s *Sqlite) Log(data *neom9n.Data) error {
+func (s *Sqlite) log(data *neom9n.Data) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
