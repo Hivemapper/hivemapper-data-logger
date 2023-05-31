@@ -5,13 +5,14 @@ go 1.20
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230531132611-c1a91eeb44cf
 
 replace github.com/streamingfast/imu-controller => ../imu-controller
+
 replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
 require (
 	github.com/charmbracelet/bubbletea v0.23.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/spf13/cobra v1.7.0
-	github.com/streamingfast/gnss-controller v0.1.20-0.20230531203955-7c61e487208d
+	github.com/streamingfast/gnss-controller v0.1.20-0.20230531213918-8008ed1d7e97
 	github.com/streamingfast/imu-controller v0.0.0-20230531144200-f741eb6d9f3d
 	github.com/stretchr/testify v1.8.4
 	modernc.org/sqlite v1.22.1
