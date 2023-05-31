@@ -201,6 +201,10 @@ func (d *Data) HandleUbxMessage(msg interface{}) error {
 	return nil
 }
 
+func (d *Data) GetStartTime() time.Time {
+	return d.startTime
+}
+
 func (d *Data) SetStartTime(startTime time.Time) {
 	d.startTime = startTime
 }
