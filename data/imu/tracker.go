@@ -1,6 +1,7 @@
 package imu
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
@@ -25,10 +26,11 @@ func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, _
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(&AccelerationDetectedEvent{
+			t.emitFunc(&TurnEventDetected{
 				BaseEvent: &data.BaseEvent{
 					Name: "LEFT_TURN_DETECTED_EVENT",
 				},
+				Direction: Left,
 			})
 		}
 	} else {
@@ -60,10 +62,11 @@ func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, 
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(&AccelerationDetectedEvent{
+			t.emitFunc(&TurnEventDetected{
 				BaseEvent: &data.BaseEvent{
 					Name: "RIGHT_TURN_DETECTED_EVENT",
 				},
+				Direction: Right,
 			})
 		}
 
@@ -97,7 +100,7 @@ func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		if t.continuousCount == t.config.StopEndContinuousCountWindow {
+		if t.continuousCount == t.config.AccelerationDetectedContinuousCountWindow {
 			t.emitFunc(&AccelerationDetectedEvent{
 				BaseEvent: &data.BaseEvent{
 					Name: "ACCELERATION_DETECTED_EVENT",
@@ -136,8 +139,10 @@ func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(&AccelerationDetectedEvent{
+		fmt.Println("deceleration detected continuous count", t.config.DecelerationDetectedContinuousCountWindow)
+		fmt.Println("continuousCount", t.continuousCount)
+		if t.continuousCount == t.config.DecelerationDetectedContinuousCountWindow {
+			t.emitFunc(&DecelerationDetectedEvent{
 				BaseEvent: &data.BaseEvent{
 					Name: "DECELERATION_DETECTED_EVENT",
 				},
@@ -173,7 +178,7 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		if t.continuousCount == t.config.StopEndContinuousCountWindow {
+		if t.continuousCount == t.config.StopDetectedContinuousCountWindow {
 			t.emitFunc(&StopDetectedEvent{
 				BaseEvent: &data.BaseEvent{
 					Name: "STOP_DETECTED_EVENT",

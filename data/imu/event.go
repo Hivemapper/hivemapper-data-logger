@@ -28,6 +28,15 @@ const (
 	Right Direction = "right"
 )
 
+type TurnEventDetected struct {
+	*data.BaseEvent
+	Direction Direction `json:"direction"`
+}
+
+func (d *TurnEventDetected) String() string {
+	return fmt.Sprintf("%s turn Detected", d.Direction)
+}
+
 type TurnEvent struct {
 	*data.BaseEvent
 	Direction Direction     `json:"direction"`
@@ -54,6 +63,14 @@ type AccelerationEvent struct {
 
 func (e *AccelerationEvent) String() string {
 	return fmt.Sprintf("AccelerationEvent of %f km/h for %s", e.Speed, e.Duration)
+}
+
+type DecelerationDetectedEvent struct {
+	*data.BaseEvent
+}
+
+func (d *DecelerationDetectedEvent) String() string {
+	return "Deceleration Detected"
 }
 
 type DecelerationEvent struct {

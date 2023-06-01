@@ -8,10 +8,13 @@ import (
 )
 
 type Config struct {
-	TurnContinuousCountWindow         int `json:"continuous_count_window"`
-	AccelerationContinuousCountWindow int `json:"acceleration_continuous_count_window"`
-	DecelerationContinuousCountWindow int `json:"deceleration_continuous_count_window"`
-	StopEndContinuousCountWindow      int `json:"stop_end_continuous_count_window"`
+	TurnContinuousCountWindow                 int `json:"continuous_count_window"`
+	AccelerationContinuousCountWindow         int `json:"acceleration_continuous_count_window"`
+	AccelerationDetectedContinuousCountWindow int `json:"acceleration_detected_continuous_count_window"`
+	DecelerationContinuousCountWindow         int `json:"deceleration_continuous_count_window"`
+	DecelerationDetectedContinuousCountWindow int `json:"deceleration_detected_continuous_count_window"`
+	StopEndContinuousCountWindow              int `json:"stop_end_continuous_count_window"`
+	StopDetectedContinuousCountWindow         int `json:"stop_detected_continuous_count_window"`
 
 	TurnMagnitudeThreshold     float64 `json:"turn_magnitude_threshold"`
 	LeftTurnThreshold          float64 `json:"left_turn_threshold"`
@@ -49,13 +52,17 @@ func LoadConfig(filename string) *Config {
 
 func DefaultConfig() *Config {
 	return &Config{
-		TurnContinuousCountWindow:         20,
-		AccelerationContinuousCountWindow: 18,
-		StopEndContinuousCountWindow:      50,
-		TurnMagnitudeThreshold:            0.12,
-		LeftTurnThreshold:                 0.15,
-		RightTurnThreshold:                -0.15,
-		GForceAcceleratorThreshold:        0.10,
-		GForceDeceleratorThreshold:        -0.10,
+		TurnContinuousCountWindow:                 20,
+		AccelerationContinuousCountWindow:         18,
+		AccelerationDetectedContinuousCountWindow: 5,
+		DecelerationContinuousCountWindow:         18,
+		DecelerationDetectedContinuousCountWindow: 5,
+		StopEndContinuousCountWindow:              50,
+		StopDetectedContinuousCountWindow:         5,
+		TurnMagnitudeThreshold:                    0.12,
+		LeftTurnThreshold:                         0.15,
+		RightTurnThreshold:                        -0.15,
+		GForceAcceleratorThreshold:                0.10,
+		GForceDeceleratorThreshold:                -0.10,
 	}
 }
