@@ -25,6 +25,18 @@ const (
 	EventServiceName = "sf.events.v1.EventService"
 )
 
+// These constants are the fully-qualified names of the RPCs defined in this package. They're
+// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+//
+// Note that these are different from the fully-qualified method names used by
+// google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
+// reflection-formatted method names, remove the leading slash and convert the remaining slash to a
+// period.
+const (
+	// EventServiceEventsProcedure is the fully-qualified name of the EventService's Events RPC.
+	EventServiceEventsProcedure = "/sf.events.v1.EventService/Events"
+)
+
 // EventServiceClient is a client for the sf.events.v1.EventService service.
 type EventServiceClient interface {
 	Events(context.Context, *connect_go.Request[v1.EventsRequest]) (*connect_go.ServerStreamForClient[v1.EventsResponse], error)
@@ -42,7 +54,7 @@ func NewEventServiceClient(httpClient connect_go.HTTPClient, baseURL string, opt
 	return &eventServiceClient{
 		events: connect_go.NewClient[v1.EventsRequest, v1.EventsResponse](
 			httpClient,
-			baseURL+"/sf.events.v1.EventService/Events",
+			baseURL+EventServiceEventsProcedure,
 			opts...,
 		),
 	}
@@ -70,8 +82,8 @@ type EventServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewEventServiceHandler(svc EventServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
 	mux := http.NewServeMux()
-	mux.Handle("/sf.events.v1.EventService/Events", connect_go.NewServerStreamHandler(
-		"/sf.events.v1.EventService/Events",
+	mux.Handle(EventServiceEventsProcedure, connect_go.NewServerStreamHandler(
+		EventServiceEventsProcedure,
 		svc.Events,
 		opts...,
 	))

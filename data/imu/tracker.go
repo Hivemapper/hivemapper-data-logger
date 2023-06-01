@@ -1,8 +1,9 @@
 package imu
 
 import (
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"time"
+
+	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
 type Tracker interface {
@@ -22,6 +23,13 @@ func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, _
 		t.continuousCount++
 		if t.continuousCount == 1 {
 			t.start = time.Now()
+		}
+		if t.continuousCount == t.config.TurnContinuousCountWindow {
+			t.emitFunc(&AccelerationDetectedEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "LEFT_TURN_DETECTED_EVENT",
+				},
+			})
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
@@ -51,6 +59,14 @@ func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, 
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
+		if t.continuousCount == t.config.TurnContinuousCountWindow {
+			t.emitFunc(&AccelerationDetectedEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "RIGHT_TURN_DETECTED_EVENT",
+				},
+			})
+		}
+
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
 			t.emitFunc(&TurnEvent{
@@ -120,6 +136,14 @@ func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
+		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
+			t.emitFunc(&AccelerationDetectedEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "DECELERATION_DETECTED_EVENT",
+				},
+			})
+		}
+
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
 			t.emitFunc(&DecelerationEvent{
