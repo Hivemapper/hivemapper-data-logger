@@ -18,3 +18,14 @@ Once you have installed `protoc-gen-go` and `protoc-gen-connect-go`, generate th
 ```bash
 make generate
 ```
+
+## Build datalogger
+This project is used for the dashcams, so you need to build for a specific architecture
+```bash 
+GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
+```
+
+## Run on the camera
+```bash
+./datalogger log
+```
