@@ -9,9 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
-
-	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
@@ -22,7 +19,7 @@ type FileInfo struct {
 }
 
 type JsonFile struct {
-	datas         []*neom9n.Data
+	datas         []data.Event
 	lock          sync.Mutex
 	destFolder    string
 	maxFolderSize int64
@@ -42,7 +39,7 @@ func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Durat
 	}
 }
 
-func (j *JsonFile) Init(gnssEventSubscription *data.Subscription) error {
+func (j *JsonFile) Init(subscription *data.Subscription) error {
 	fmt.Println("initializing json file logger")
 	latestLog := path.Join(j.destFolder, "latest.log")
 	if fileExists(latestLog) {
@@ -97,9 +94,8 @@ func (j *JsonFile) Init(gnssEventSubscription *data.Subscription) error {
 	go func() {
 		for {
 			select {
-			case event := <-gnssEventSubscription.IncomingEvents:
-				e := event.(*gnss.GnssEvent)
-				err := j.log(e.Data)
+			case event := <-subscription.IncomingEvents:
+				err := j.Log(event)
 				if err != nil {
 					panic(fmt.Errorf("writing to file: %w", err))
 				}
@@ -131,7 +127,7 @@ func (j *JsonFile) addFile(f *FileInfo) {
 	j.currentSize += f.size
 
 }
-func (j *JsonFile) log(data *neom9n.Data) error {
+func (j *JsonFile) Log(data data.Event) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
 	j.datas = append(j.datas, data)
@@ -149,7 +145,7 @@ func (j *JsonFile) toFile() error {
 		return nil
 	}
 
-	fileName := fmt.Sprintf("%s.json", j.datas[0].Timestamp.Format("2006-01-02T15:04:05.000Z"))
+	fileName := fmt.Sprintf("%s.json", j.datas[0].GetTime().Format("2006-01-02T15:04:05.000Z"))
 	filePath := path.Join(j.destFolder, fileName)
 
 	err := writeAllToFile(filePath, j.datas)
@@ -173,7 +169,7 @@ func (j *JsonFile) toFile() error {
 	return nil
 }
 
-func writeAllToFile(filePath string, data []*neom9n.Data) error {
+func writeAllToFile(filePath string, data []data.Event) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("marshaling data: %w", err)
@@ -185,7 +181,7 @@ func writeAllToFile(filePath string, data []*neom9n.Data) error {
 
 	return nil
 }
-func writeToFile(filePath string, data *neom9n.Data) error {
+func writeToFile(filePath string, data any) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("marshaling data: %w", err)

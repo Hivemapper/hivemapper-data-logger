@@ -2,13 +2,12 @@ package gnss
 
 import (
 	"fmt"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"strings"
 	"time"
-)
 
-type emit func(event data.Event)
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
+)
 
 type subscriptions map[string]*data.Subscription
 

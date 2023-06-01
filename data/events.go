@@ -6,11 +6,12 @@ import (
 
 type Event interface {
 	SetTime(time.Time)
+	GetTime() time.Time
 	String() string
 }
 
 type BaseEvent struct {
-	time time.Time
+	Time time.Time
 }
 
 func (e *BaseEvent) String() string {
@@ -18,5 +19,9 @@ func (e *BaseEvent) String() string {
 }
 
 func (e *BaseEvent) SetTime(t time.Time) {
-	e.time = t
+	e.Time = t
+}
+
+func (e *BaseEvent) GetTime() time.Time {
+	return e.Time
 }

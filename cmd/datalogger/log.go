@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
-	"github.com/streamingfast/hivemapper-data-logger/logger"
-
-	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/hivemapper-data-logger/logger"
 	"github.com/streamingfast/hivemapper-data-logger/tui"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -53,10 +52,9 @@ func logRun(cmd *cobra.Command, args []string) error {
 	jsonDestinationFolderMaxSize := mustGetInt64(cmd, "gnss-json-destination-folder-max-size")
 
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
-	sqliteLogger := logger.NewSqlite(dbPath)
+	sqliteLogger := logger.NewSqlite(dbPath, gnss.CreateTableQuery, gnss.PurgeQuery)
 	jsonLogger := logger.NewJsonFile(jsonDestinationFolder, jsonDestinationFolderMaxSize, jsonSaveInterval)
 
-	// not sure about `RegisterAccelConfig` -> before it was `RegisterAccelConfigStatic2`
 	err = imuDevice.UpdateRegister(iim42652.RegisterAccelConfig, func(currentValue byte) byte {
 		return currentValue | 0x01
 	})
@@ -64,31 +62,6 @@ func logRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to update register: %w", err)
 	}
-
-	// not sure about `RegisterAccelConfig` -> before it was `RegisterAccelConfigStatic2`
-	accelAAFstatus, err := imuDevice.ReadRegister(iim42652.RegisterAccelConfig)
-	if err != nil {
-		return fmt.Errorf("failed to read accelAAFstatus: %w", err)
-	}
-	fmt.Printf("accelAAFstatus: %b\n", accelAAFstatus)
-
-	aafDelta, err := imuDevice.ReadRegister(iim42652.RegisterAntiAliasFilterDelta)
-	if err != nil {
-		return fmt.Errorf("failed to read aafDelta: %w", err)
-	}
-	fmt.Printf("aafDelt: %b\n", aafDelta)
-
-	affDeltaSqr, err := imuDevice.ReadRegister(iim42652.RegisterAntiAliasFilterDeltaSqr)
-	if err != nil {
-		return fmt.Errorf("failed to read addDeltaSqr: %w", err)
-	}
-	fmt.Printf("addDeltaSqr: %b\n", affDeltaSqr)
-
-	affBitshift, err := imuDevice.ReadRegister(iim42652.RegisterAntiAliasFilterBitshift)
-	if err != nil {
-		return fmt.Errorf("failed to read affBitshift: %w", err)
-	}
-	fmt.Printf("affBitshift: %b\n", affBitshift)
 
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
@@ -101,31 +74,27 @@ func logRun(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	gnssEventFeed := gnss.NewEventFeed()
-	gnssSubscription := gnssEventFeed.Subscribe("tui")
-
-	gnssSqlLoggerSubscription := gnssEventFeed.Subscribe("gnss-sql-logger")
-
-	err = sqliteLogger.Init(logTTl, gnssSqlLoggerSubscription)
+	err = sqliteLogger.Init(logTTl)
 	if err != nil {
 		return fmt.Errorf("initializing sqlite database: %w", err)
 	}
+	lastPosition, err := gnss.GetLastPosition(sqliteLogger)
+	if err != nil {
+		return fmt.Errorf("getting last posotion: %w", err)
+	}
 
+	gnssEventFeed := gnss.NewEventFeed()
+	gnssSubscription := gnssEventFeed.Subscribe("tui")
 	gnssFileLoggerSubscription := gnssEventFeed.Subscribe("gnss-file-logger")
 	err = jsonLogger.Init(gnssFileLoggerSubscription)
 	if err != nil {
 		return fmt.Errorf("initializing json logger database: %w", err)
 	}
 
-	lastPosition, err := sqliteLogger.GetLastPosition()
-	if err != nil {
-		return fmt.Errorf("getting last posotion: %w", err)
-	}
 	err = gnssDevice.Init(lastPosition)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
-
 	dataFeed := neom9n.NewDataFeed(gnssEventFeed.HandleData)
 	go func() {
 		err = gnssDevice.Run(dataFeed, func(now time.Time) {
@@ -137,23 +106,27 @@ func logRun(cmd *cobra.Command, args []string) error {
 			panic(fmt.Errorf("running gnss: %w", err))
 		}
 	}()
-
-	//todo: in gnss controller create a device/NEOM9N package and create a struct NEOM9N
-	//todo: move code from main to device/NEOM9N
-	//todo: create an event feed for gnss device
-
-	//todo: move logger from gnss to this project  under logger package/gnss
-
-	//todo: create a gnss package under data
-	//todo: change gnss code to adopt event feed
+	go func() {
+		sub := gnssEventFeed.Subscribe("gnss-sql-logger")
+		for {
+			select {
+			case event := <-sub.IncomingEvents:
+				e := event.(*gnss.GnssEvent)
+				err = sqliteLogger.Log(gnss.NewSqlWrapper(e.Data))
+				if err != nil {
+					panic(fmt.Errorf("writing to file: %w", err))
+				}
+			}
+		}
+	}()
 
 	//todo: init file logger for imu
-	//todo: init file logger for gnss
 
 	//todo: init db logger for imu
-	//todo: init db logger for gnss
 
 	//todo: ui is optional and turn off by default
+
+	//todo: grpc stream service that output all the events(subscribe gnss and imu events)
 
 	tuiImuEventSubscription := imuEventFeed.Subscribe("tui")
 	app := tui.NewApp(tuiImuEventSubscription, gnssSubscription)
