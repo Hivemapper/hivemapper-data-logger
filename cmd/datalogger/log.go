@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rs/cors"
 	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/streamingfast/hivemapper-data-logger/webconnect"
 	"golang.org/x/net/http2"
@@ -141,8 +142,17 @@ func logRun(cmd *cobra.Command, args []string) error {
 	eventServer := webconnect.NewEventServer(grpcImuSubscription, grpcGnssSubscription)
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
+
+	opts := cors.Options{
+		AllowedHeaders: []string{"*"},
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+	}
+	handler = cors.New(opts).Handler(handler)
+
 	mux.Handle(path, handler)
 	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
+
 	if err != nil {
 		return fmt.Errorf("running server: %w", err)
 	}
