@@ -3,11 +3,12 @@ package neom9n
 import (
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/streamingfast/gnss-controller/message"
 	"github.com/streamingfast/gnss-controller/message/handlers"
-	"os"
-	"time"
 
 	"github.com/tarm/serial"
 )
@@ -94,6 +95,20 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 			},
 		},
 	}
+
+	cfg2 := ubx.CfgValSet{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		CfgData: []*ubx.CfgData{
+			{
+				Key:   269549605, //CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
+				Value: []byte{0x01},
+			},
+		},
+	}
+
+	fmt.Println("sending cfg val set")
+	n.output <- &cfg2
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
