@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
+	"github.com/streamingfast/hivemapper-data-logger/webconnect"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"net/http"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -9,7 +14,6 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
-	"github.com/streamingfast/hivemapper-data-logger/tui"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
@@ -32,6 +36,9 @@ func init() {
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
 	LogCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
+
+	// Connect-go
+	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -84,7 +91,6 @@ func logRun(cmd *cobra.Command, args []string) error {
 	}
 
 	gnssEventFeed := gnss.NewEventFeed()
-	gnssSubscription := gnssEventFeed.Subscribe("tui")
 	gnssFileLoggerSubscription := gnssEventFeed.Subscribe("gnss-file-logger")
 	err = jsonLogger.Init(gnssFileLoggerSubscription)
 	if err != nil {
@@ -128,36 +134,18 @@ func logRun(cmd *cobra.Command, args []string) error {
 
 	//todo: grpc stream service that output all the events(subscribe gnss and imu events)
 
-	tuiImuEventSubscription := imuEventFeed.Subscribe("tui")
-	app := tui.NewApp(tuiImuEventSubscription, gnssSubscription)
-	err = app.Run()
+	grpcImuSubscription := imuEventFeed.Subscribe("grpc")
+	grpcGnssSubscription := gnssEventFeed.Subscribe("grpc")
+
+	listenAddr := mustGetString(cmd, "listen-addr")
+	eventServer := webconnect.NewEventServer(grpcImuSubscription, grpcGnssSubscription)
+	mux := http.NewServeMux()
+	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
+	mux.Handle(path, handler)
+	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
 	if err != nil {
-		return fmt.Errorf("running app: %w", err)
+		return fmt.Errorf("running server: %w", err)
 	}
 
 	return nil
-}
-
-func mustGetString(cmd *cobra.Command, flagName string) string {
-	val, err := cmd.Flags().GetString(flagName)
-	if err != nil {
-		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
-	}
-	return val
-}
-
-func mustGetDuration(cmd *cobra.Command, flagName string) time.Duration {
-	val, err := cmd.Flags().GetDuration(flagName)
-	if err != nil {
-		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
-	}
-	return val
-}
-
-func mustGetInt64(cmd *cobra.Command, flagName string) int64 {
-	val, err := cmd.Flags().GetInt64(flagName)
-	if err != nil {
-		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
-	}
-	return val
 }

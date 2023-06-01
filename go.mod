@@ -4,17 +4,17 @@ go 1.20
 
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230531132611-c1a91eeb44cf
 
-replace github.com/streamingfast/imu-controller => ../imu-controller
-
-replace github.com/streamingfast/gnss-controller => ../gnss-controller
-
 require (
+	github.com/bufbuild/connect-go v1.8.0
 	github.com/charmbracelet/bubbletea v0.23.1
 	github.com/charmbracelet/lipgloss v0.7.1
+	github.com/google/uuid v1.3.0
 	github.com/spf13/cobra v1.7.0
-	github.com/streamingfast/gnss-controller v0.1.20-0.20230531213918-8008ed1d7e97
+	github.com/streamingfast/gnss-controller v0.1.20-0.20230601115847-de75ed063a55
 	github.com/streamingfast/imu-controller v0.0.0-20230531144200-f741eb6d9f3d
 	github.com/stretchr/testify v1.8.4
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	google.golang.org/protobuf v1.30.0
 	modernc.org/sqlite v1.22.1
 )
 
@@ -24,7 +24,6 @@ require (
 	github.com/daedaleanai/ublox v0.0.0-00010101000000-000000000000 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

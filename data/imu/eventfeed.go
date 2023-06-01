@@ -10,11 +10,9 @@ import (
 
 type emit func(event data.Event)
 
-type subscriptions map[string]*data.Subscription
-
 type EventFeed struct {
 	imu           *iim42652.IIM42652
-	subscriptions subscriptions
+	subscriptions data.Subscriptions
 	config        *Config
 }
 
@@ -22,7 +20,7 @@ func NewEventFeed(imu *iim42652.IIM42652, config *Config) *EventFeed {
 	return &EventFeed{
 		config:        config,
 		imu:           imu,
-		subscriptions: make(subscriptions),
+		subscriptions: make(data.Subscriptions),
 	}
 }
 
@@ -96,6 +94,7 @@ func (p *EventFeed) run() error {
 		zAvg.Add(acceleration.CamX())
 
 		p.emit(&ImuAccelerationEvent{
+			BaseEvent:    &data.BaseEvent{Name: "Imu"},
 			Acceleration: acceleration,
 			AvgX:         xAvg,
 			AvgY:         yAvg,

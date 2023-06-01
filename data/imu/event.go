@@ -9,12 +9,12 @@ import (
 )
 
 type ImuAccelerationEvent struct {
-	data.BaseEvent
-	Acceleration *iim42652.Acceleration
-	AvgX         *data.AverageFloat64
-	AvgY         *data.AverageFloat64
-	AvgZ         *data.AverageFloat64
-	AvgMagnitude *data.AverageFloat64
+	*data.BaseEvent
+	Acceleration *iim42652.Acceleration `json:"acceleration"`
+	AvgX         *data.AverageFloat64   `json:"avg_x"`
+	AvgY         *data.AverageFloat64   `json:"avg_y"`
+	AvgZ         *data.AverageFloat64   `json:"avg_z"`
+	AvgMagnitude *data.AverageFloat64   `json:"avg_magnitude"`
 }
 
 func (e *ImuAccelerationEvent) String() string {
@@ -29,9 +29,9 @@ const (
 )
 
 type TurnEvent struct {
-	data.BaseEvent
-	Direction Direction
-	Duration  time.Duration
+	*data.BaseEvent
+	Direction Direction     `json:"direction"`
+	Duration  time.Duration `json:"duration"`
 }
 
 func (e *TurnEvent) String() string {
@@ -39,7 +39,7 @@ func (e *TurnEvent) String() string {
 }
 
 type AccelerationDetectedEvent struct {
-	data.BaseEvent
+	*data.BaseEvent
 }
 
 func (e *AccelerationDetectedEvent) String() string {
@@ -47,9 +47,9 @@ func (e *AccelerationDetectedEvent) String() string {
 }
 
 type AccelerationEvent struct {
-	data.BaseEvent
-	Speed    float64
-	Duration time.Duration
+	*data.BaseEvent
+	Speed    float64       `json:"speed"`
+	Duration time.Duration `json:"duration"`
 }
 
 func (e *AccelerationEvent) String() string {
@@ -57,9 +57,9 @@ func (e *AccelerationEvent) String() string {
 }
 
 type DecelerationEvent struct {
-	data.BaseEvent
-	Speed    float64
-	Duration time.Duration
+	*data.BaseEvent
+	Speed    float64       `json:"speed"`
+	Duration time.Duration `json:"duration"`
 }
 
 func (e *DecelerationEvent) String() string {
@@ -67,8 +67,8 @@ func (e *DecelerationEvent) String() string {
 }
 
 type HeadingChangeEvent struct {
-	data.BaseEvent
-	Heading float64
+	*data.BaseEvent
+	Heading float64 `json:"heading"`
 }
 
 func (e *HeadingChangeEvent) String() string {
@@ -76,7 +76,7 @@ func (e *HeadingChangeEvent) String() string {
 }
 
 type StopDetectedEvent struct {
-	data.BaseEvent
+	*data.BaseEvent
 }
 
 func (e *StopDetectedEvent) String() string {
@@ -84,8 +84,8 @@ func (e *StopDetectedEvent) String() string {
 }
 
 type StopEndEvent struct {
-	data.BaseEvent
-	Duration time.Duration
+	*data.BaseEvent
+	Duration time.Duration `json:"duration"`
 }
 
 func (e *StopEndEvent) String() string {

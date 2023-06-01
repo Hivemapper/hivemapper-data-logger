@@ -1,6 +1,7 @@
 package imu
 
 import (
+	"github.com/streamingfast/hivemapper-data-logger/data"
 	"time"
 )
 
@@ -25,6 +26,9 @@ func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, _
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
 			t.emitFunc(&TurnEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "LEFT_TURN_EVENT",
+				},
 				Direction: Left,
 				Duration:  time.Since(t.start),
 			})
@@ -50,6 +54,9 @@ func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
 			t.emitFunc(&TurnEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "RIGHT_TURN_EVENT",
+				},
 				Direction: Right,
 				Duration:  time.Since(t.start),
 			})
@@ -75,12 +82,19 @@ func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
-			t.emitFunc(&AccelerationDetectedEvent{})
+			t.emitFunc(&AccelerationDetectedEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "ACCELERATION_DETECTED_EVENT",
+				},
+			})
 		}
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
 			t.emitFunc(&AccelerationEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "ACCELERATION_EVENT",
+				},
 				Speed:    t.speed,
 				Duration: time.Since(t.start),
 			})
@@ -109,6 +123,9 @@ func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
 			t.emitFunc(&DecelerationEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "DECELERATION_EVENT",
+				},
 				Speed:    t.speed,
 				Duration: time.Since(t.start),
 			})
@@ -133,11 +150,18 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
-			t.emitFunc(&StopDetectedEvent{})
+			t.emitFunc(&StopDetectedEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "STOP_DETECTED_EVENT",
+				},
+			})
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
 			t.emitFunc(&StopEndEvent{
+				BaseEvent: &data.BaseEvent{
+					Name: "STOP_END_EVENT",
+				},
 				Duration: time.Since(t.start),
 			})
 		}

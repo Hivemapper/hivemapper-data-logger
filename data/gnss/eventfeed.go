@@ -29,9 +29,12 @@ func (e *EventFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (e *EventFeed) HandleData(data *neom9n.Data) {
+func (e *EventFeed) HandleData(d *neom9n.Data) {
 	e.emit(&GnssEvent{
-		Data: data,
+		BaseEvent: &data.BaseEvent{
+			Name: "GNSS_EVENT",
+		},
+		Data: d,
 	})
 }
 
@@ -43,8 +46,8 @@ func (e *EventFeed) emit(event data.Event) {
 }
 
 type GnssEvent struct {
-	data.BaseEvent
-	Data *neom9n.Data
+	*data.BaseEvent
+	Data *neom9n.Data `json:"data"`
 }
 
 func (g *GnssEvent) String() string {

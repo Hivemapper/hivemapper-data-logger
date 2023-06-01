@@ -8,10 +8,12 @@ type Event interface {
 	SetTime(time.Time)
 	GetTime() time.Time
 	String() string
+	GetName() string
 }
 
 type BaseEvent struct {
-	Time time.Time
+	Time time.Time `json:"time"`
+	Name string    `json:"name"`
 }
 
 func (e *BaseEvent) String() string {
@@ -24,4 +26,8 @@ func (e *BaseEvent) SetTime(t time.Time) {
 
 func (e *BaseEvent) GetTime() time.Time {
 	return e.Time
+}
+
+func (e *BaseEvent) GetName() string {
+	return e.Name
 }
