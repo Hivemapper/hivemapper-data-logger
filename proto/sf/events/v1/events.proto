@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package sf.events.v1;
+
+option go_package = "github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1;eventsv1";
+
+message EventsRequest { }
+
+message EventsResponse {
+  string name = 1;
+  bytes payload = 2;
+}
+
+service EventService {
+  rpc Events(EventsRequest) returns (stream EventsResponse) {}
+}
