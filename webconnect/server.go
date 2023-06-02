@@ -21,8 +21,15 @@ type subscription struct {
 }
 
 type GRPCEvent struct {
-	data.BaseEvent
+	*data.BaseEvent
 	Response *eventsv1.EventsResponse
+}
+
+func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
+	return &GRPCEvent{
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT"),
+		Response:  resp,
+	}
 }
 
 func (g *GRPCEvent) String() string {
@@ -67,13 +74,10 @@ func (es *EventsServer) SendEvent(event data.Event) error {
 	if err != nil {
 		return fmt.Errorf("marshalling %s %w", event.GetName(), err)
 	}
-
-	grpcEvent := &GRPCEvent{
-		Response: &eventsv1.EventsResponse{
-			Name:    event.GetName(),
-			Payload: bytes,
-		},
-	}
+	grpcEvent := NewGRPCEvent(&eventsv1.EventsResponse{
+		Name:    event.GetName(),
+		Payload: bytes,
+	})
 
 	for _, sub := range es.subscriptions {
 		send := true

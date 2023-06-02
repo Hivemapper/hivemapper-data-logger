@@ -21,36 +21,84 @@ func (e *ImuAccelerationEvent) String() string {
 	return "ImuAccelerationEvent"
 }
 
-type Direction string
+func NewImuAccelerationEvent(acc *iim42652.Acceleration, xAvg *data.AverageFloat64, yAvg *data.AverageFloat64, zAvg *data.AverageFloat64, avgMag *data.AverageFloat64) *ImuAccelerationEvent {
+	return &ImuAccelerationEvent{
+		BaseEvent:    data.NewBaseEvent("IMU_ACCELERATION_EVENT"),
+		Acceleration: acc,
+		AvgX:         xAvg,
+		AvgY:         yAvg,
+		AvgZ:         zAvg,
+		AvgMagnitude: avgMag,
+	}
+}
 
-const (
-	Left  Direction = "left"
-	Right Direction = "right"
-)
-
-type TurnEventDetected struct {
+type RightTurnEventDetected struct {
 	*data.BaseEvent
-	Direction Direction `json:"direction"`
 }
 
-func (d *TurnEventDetected) String() string {
-	return fmt.Sprintf("%s turn Detected", d.Direction)
+func NewRightTurnEventDetected() *RightTurnEventDetected {
+	return &RightTurnEventDetected{
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT"),
+	}
 }
 
-type TurnEvent struct {
+func (e *RightTurnEventDetected) String() string {
+	return "Right Turn Event Detected"
+}
+
+type RightTurnEvent struct {
 	*data.BaseEvent
-	Direction Direction     `json:"direction"`
-	Duration  time.Duration `json:"duration"`
+	Duration time.Duration `json:"duration"`
 }
 
-func (e *TurnEvent) String() string {
-	return fmt.Sprintf("%s turn for %s", e.Direction, e.Duration)
+func NewRightTurnEvent(duration time.Duration) *RightTurnEvent {
+	return &RightTurnEvent{
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT"),
+		Duration:  duration,
+	}
+}
+func (e *RightTurnEvent) String() string {
+	return fmt.Sprintf("Right Turn Event for %s", e.Duration)
+}
+
+type LeftTurnEventDetected struct {
+	*data.BaseEvent
+}
+
+func NewLeftTurnEventDetected() *LeftTurnEventDetected {
+	return &LeftTurnEventDetected{
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT"),
+	}
+}
+
+func (e *LeftTurnEventDetected) String() string {
+	return "Left Turn Event Detected"
+}
+
+type LeftTurnEvent struct {
+	*data.BaseEvent
+	Duration time.Duration `json:"duration"`
+}
+
+func NewLeftTurnEvent(duration time.Duration) *LeftTurnEvent {
+	return &LeftTurnEvent{
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT"),
+		Duration:  duration,
+	}
+}
+func (e *LeftTurnEvent) String() string {
+	return fmt.Sprintf("Left Turn Event for %s", e.Duration)
 }
 
 type AccelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
+func NewAccelerationDetectedEvent() *AccelerationDetectedEvent {
+	return &AccelerationDetectedEvent{
+		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT"),
+	}
+}
 func (e *AccelerationDetectedEvent) String() string {
 	return "Acceleration Detected"
 }
@@ -61,6 +109,14 @@ type AccelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
+func NewAccelerationEvent(speed float64, duration time.Duration) *AccelerationEvent {
+	return &AccelerationEvent{
+		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT"),
+		Speed:     speed,
+		Duration:  duration,
+	}
+}
+
 func (e *AccelerationEvent) String() string {
 	return fmt.Sprintf("AccelerationEvent of %f km/h for %s", e.Speed, e.Duration)
 }
@@ -69,7 +125,13 @@ type DecelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func (d *DecelerationDetectedEvent) String() string {
+func NewDecelerationDetectedEvent() *DecelerationDetectedEvent {
+	return &DecelerationDetectedEvent{
+		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT"),
+	}
+}
+
+func (e *DecelerationDetectedEvent) String() string {
 	return "Deceleration Detected"
 }
 
@@ -77,6 +139,14 @@ type DecelerationEvent struct {
 	*data.BaseEvent
 	Speed    float64       `json:"speed"`
 	Duration time.Duration `json:"duration"`
+}
+
+func NewDecelerationEvent(speed float64, duration time.Duration) *DecelerationEvent {
+	return &DecelerationEvent{
+		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT"),
+		Speed:     speed,
+		Duration:  duration,
+	}
 }
 
 func (e *DecelerationEvent) String() string {
@@ -88,12 +158,24 @@ type HeadingChangeEvent struct {
 	Heading float64 `json:"heading"`
 }
 
+func NewHeadingChangeEvent() *HeadingChangeEvent {
+	return &HeadingChangeEvent{
+		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT"),
+	}
+}
+
 func (e *HeadingChangeEvent) String() string {
 	return fmt.Sprintf("Heading Change %f", e.Heading)
 }
 
 type StopDetectedEvent struct {
 	*data.BaseEvent
+}
+
+func NewStopDetectedEvent() *StopDetectedEvent {
+	return &StopDetectedEvent{
+		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT"),
+	}
 }
 
 func (e *StopDetectedEvent) String() string {
@@ -103,6 +185,13 @@ func (e *StopDetectedEvent) String() string {
 type StopEndEvent struct {
 	*data.BaseEvent
 	Duration time.Duration `json:"duration"`
+}
+
+func NewStopEndEvent(duration time.Duration) *StopEndEvent {
+	return &StopEndEvent{
+		BaseEvent: data.NewBaseEvent("STOP_END_EVENT"),
+		Duration:  duration,
+	}
 }
 
 func (e *StopEndEvent) String() string {

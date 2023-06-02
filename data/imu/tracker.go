@@ -1,10 +1,7 @@
 package imu
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
 type Tracker interface {
@@ -26,22 +23,11 @@ func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, _
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(&TurnEventDetected{
-				BaseEvent: &data.BaseEvent{
-					Name: "LEFT_TURN_DETECTED_EVENT",
-				},
-				Direction: Left,
-			})
+			t.emitFunc(NewLeftTurnEventDetected())
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(&TurnEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "LEFT_TURN_EVENT",
-				},
-				Direction: Left,
-				Duration:  time.Since(t.start),
-			})
+			t.emitFunc(NewLeftTurnEvent(time.Since(t.start)))
 		}
 		t.continuousCount = 0
 	}
@@ -62,23 +48,12 @@ func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, 
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(&TurnEventDetected{
-				BaseEvent: &data.BaseEvent{
-					Name: "RIGHT_TURN_DETECTED_EVENT",
-				},
-				Direction: Right,
-			})
+			t.emitFunc(NewRightTurnEventDetected())
 		}
 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(&TurnEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "RIGHT_TURN_EVENT",
-				},
-				Direction: Right,
-				Duration:  time.Since(t.start),
-			})
+			t.emitFunc(NewRightTurnEvent(time.Since(t.start)))
 		}
 		t.continuousCount = 0
 	}
@@ -100,23 +75,13 @@ func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		if t.continuousCount == t.config.AccelerationDetectedContinuousCountWindow {
-			t.emitFunc(&AccelerationDetectedEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "ACCELERATION_DETECTED_EVENT",
-				},
-			})
+		if t.continuousCount == t.config.AccelerationContinuousCountWindow {
+			t.emitFunc(NewAccelerationDetectedEvent())
 		}
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
-			t.emitFunc(&AccelerationEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "ACCELERATION_EVENT",
-				},
-				Speed:    t.speed,
-				Duration: time.Since(t.start),
-			})
+			t.emitFunc(NewAccelerationEvent(t.speed, time.Since(t.start)))
 		}
 		t.speed = 0
 		t.continuousCount = 0
@@ -139,25 +104,13 @@ func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		fmt.Println("deceleration detected continuous count", t.config.DecelerationDetectedContinuousCountWindow)
-		fmt.Println("continuousCount", t.continuousCount)
-		if t.continuousCount == t.config.DecelerationDetectedContinuousCountWindow {
-			t.emitFunc(&DecelerationDetectedEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "DECELERATION_DETECTED_EVENT",
-				},
-			})
+		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
+			t.emitFunc(NewDecelerationDetectedEvent())
 		}
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(&DecelerationEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "DECELERATION_EVENT",
-				},
-				Speed:    t.speed,
-				Duration: time.Since(t.start),
-			})
+			t.emitFunc(NewDecelerationEvent(t.speed, time.Since(t.start)))
 		}
 		t.speed = 0
 		t.continuousCount = 0
@@ -172,27 +125,18 @@ type StopTracker struct {
 }
 
 func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z float64) {
-	if x < 0.012 && y < 0.012 && z < 1.012 {
+	if x < 0.012 && x > -0.012 && y < 0.012 && y > -0.012 && z < 1.012 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.StopDetectedContinuousCountWindow {
-			t.emitFunc(&StopDetectedEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "STOP_DETECTED_EVENT",
-				},
-			})
+			t.emitFunc(NewStopDetectedEvent())
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
-			t.emitFunc(&StopEndEvent{
-				BaseEvent: &data.BaseEvent{
-					Name: "STOP_END_EVENT",
-				},
-				Duration: time.Since(t.start),
-			})
+			t.emitFunc(NewStopEndEvent(time.Since(t.start)))
 		}
 
 		t.continuousCount = 0

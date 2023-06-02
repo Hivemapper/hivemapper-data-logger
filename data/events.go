@@ -11,6 +11,13 @@ type Event interface {
 	GetName() string
 }
 
+func NewBaseEvent(name string) *BaseEvent {
+	return &BaseEvent{
+		Name: name,
+		Time: time.Now(),
+	}
+}
+
 type BaseEvent struct {
 	Time time.Time `json:"time"`
 	Name string    `json:"name"`

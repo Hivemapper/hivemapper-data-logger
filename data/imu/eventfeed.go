@@ -93,14 +93,7 @@ func (p *EventFeed) run() error {
 		yAvg.Add(acceleration.CamY())
 		zAvg.Add(acceleration.CamX())
 
-		p.emit(&ImuAccelerationEvent{
-			BaseEvent:    &data.BaseEvent{Name: "Imu"},
-			Acceleration: acceleration,
-			AvgX:         xAvg,
-			AvgY:         yAvg,
-			AvgZ:         zAvg,
-			AvgMagnitude: magnitudeAvg,
-		})
+		p.emit(NewImuAccelerationEvent(acceleration, xAvg, yAvg, zAvg, magnitudeAvg))
 
 		x := xAvg.Average
 		y := yAvg.Average
