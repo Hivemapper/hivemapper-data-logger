@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/data"
 	"net/http"
 	"time"
 
@@ -104,6 +105,7 @@ func logRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 	dataFeed := neom9n.NewDataFeed(gnssEventFeed.HandleData)
+
 	go func() {
 		err = gnssDevice.Run(dataFeed, func(now time.Time) {
 			dataFeed.SetStartTime(now)
@@ -138,11 +140,12 @@ func logRun(cmd *cobra.Command, args []string) error {
 	//todo: feed merger should offer a way to subscribe to a feed that is a merge of multiple feeds
 	//todo: Move events filter to feed merger
 
-	// basically do the ...subscription solution but with the merger feed
+	//todo: should like this .. eventServer := webconnect.NewEventServer(mergedEventFeed)
+
+	merger := data.NewEventFeedMerger(grpcImuSubscription, grpcGnssSubscription)
 
 	listenAddr := mustGetString(cmd, "listen-addr")
-	//todo: should like this .. eventServer := webconnect.NewEventServer(mergedEventFeed)
-	eventServer := webconnect.NewEventServer(grpcImuSubscription, grpcGnssSubscription)
+	eventServer := webconnect.NewEventServer(merger)
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
 

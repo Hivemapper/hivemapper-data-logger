@@ -41,22 +41,19 @@ type EventsServer struct {
 	sync.Mutex
 }
 
-func NewEventServer(imuEventSubscription *data.Subscription, gnssEventSubscription *data.Subscription) *EventsServer {
+func NewEventServer(merger *data.EventFeedMerger) *EventsServer {
 	es := &EventsServer{
 		subscriptions: make(subscriptions),
 	}
 
 	fmt.Println("starting event server")
+	merger.MergeEvents()
+
 	go func() {
 		for {
 			select {
-			case imu := <-imuEventSubscription.IncomingEvents:
-				err := es.SendEvent(imu)
-				if err != nil {
-					panic("failed to send event")
-				}
-			case gnss := <-gnssEventSubscription.IncomingEvents:
-				err := es.SendEvent(gnss)
+			case event := <-merger.Events:
+				err := es.SendEvent(event)
 				if err != nil {
 					panic("failed to send event")
 				}
