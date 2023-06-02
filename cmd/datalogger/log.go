@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/rs/cors"
 	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/streamingfast/hivemapper-data-logger/webconnect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"net/http"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
@@ -128,17 +129,17 @@ func logRun(cmd *cobra.Command, args []string) error {
 	}()
 
 	//todo: init file logger for imu
-
 	//todo: init db logger for imu
-
-	//todo: ui is optional and turn off by default
-
-	//todo: grpc stream service that output all the events(subscribe gnss and imu events)
 
 	grpcImuSubscription := imuEventFeed.Subscribe("grpc")
 	grpcGnssSubscription := gnssEventFeed.Subscribe("grpc")
 
+	//todo: feed merger that merge events from multiple feeds into one
+	//todo: feed merger should offer a way to subscribe to a feed that is a merge of multiple feeds
+	//todo: Move events filter to feed merger
+
 	listenAddr := mustGetString(cmd, "listen-addr")
+	//todo: should like this .. eventServer := webconnect.NewEventServer(mergedEventFeed)
 	eventServer := webconnect.NewEventServer(grpcImuSubscription, grpcGnssSubscription)
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
