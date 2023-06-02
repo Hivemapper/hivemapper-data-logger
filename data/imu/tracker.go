@@ -16,7 +16,7 @@ type LeftTurnTracker struct {
 }
 
 func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, _ float64) {
-	magnitude := computeTotalMagnitude(x, x)
+	magnitude := computeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.LeftTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
@@ -131,7 +131,7 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 		if t.continuousCount == 1 {
 			t.start = time.Now()
 		}
-		if t.continuousCount == t.config.StopDetectedContinuousCountWindow {
+		if t.continuousCount == t.config.StopEndContinuousCountWindow {
 			t.emitFunc(NewStopDetectedEvent())
 		}
 	} else {

@@ -12,7 +12,6 @@ type Config struct {
 	AccelerationContinuousCountWindow int `json:"acceleration_continuous_count_window"`
 	DecelerationContinuousCountWindow int `json:"deceleration_continuous_count_window"`
 	StopEndContinuousCountWindow      int `json:"stop_end_continuous_count_window"`
-	StopDetectedContinuousCountWindow int `json:"stop_detected_continuous_count_window"`
 
 	TurnMagnitudeThreshold     float64 `json:"turn_magnitude_threshold"`
 	LeftTurnThreshold          float64 `json:"left_turn_threshold"`
@@ -54,7 +53,6 @@ func DefaultConfig() *Config {
 		AccelerationContinuousCountWindow: 18,
 		DecelerationContinuousCountWindow: 18,
 		StopEndContinuousCountWindow:      50,
-		StopDetectedContinuousCountWindow: 5,
 		TurnMagnitudeThreshold:            0.12,
 		LeftTurnThreshold:                 0.15,
 		RightTurnThreshold:                -0.15,
