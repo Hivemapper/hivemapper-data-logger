@@ -12,9 +12,9 @@ import (
 	eventsv1 "github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1"
 )
 
-type subscriptions map[string]*subscription
+type subscriptions map[string]*Subscription
 
-type subscription struct {
+type Subscription struct {
 	IncomingEvents chan data.Event
 	includes       []string
 	excludes       []string
@@ -27,7 +27,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT"),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", nil),
 		Response:  resp,
 	}
 }
@@ -105,11 +105,11 @@ func (es *EventsServer) SendEvent(event data.Event) error {
 	return nil
 }
 
-func (es *EventsServer) Subscribe(name string, includes []string, excludes []string) *subscription {
+func (es *EventsServer) Subscribe(name string, includes []string, excludes []string) *Subscription {
 	es.Lock()
 	defer es.Unlock()
 
-	sub := &subscription{
+	sub := &Subscription{
 		IncomingEvents: make(chan data.Event),
 		includes:       includes,
 		excludes:       excludes,

@@ -138,6 +138,8 @@ func logRun(cmd *cobra.Command, args []string) error {
 	//todo: feed merger should offer a way to subscribe to a feed that is a merge of multiple feeds
 	//todo: Move events filter to feed merger
 
+	// basically do the ...subscription solution but with the merger feed
+
 	listenAddr := mustGetString(cmd, "listen-addr")
 	//todo: should like this .. eventServer := webconnect.NewEventServer(mergedEventFeed)
 	eventServer := webconnect.NewEventServer(grpcImuSubscription, grpcGnssSubscription)
