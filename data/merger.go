@@ -1,6 +1,7 @@
 package data
 
 type EventFeedMerger struct {
+	subscriptions       Subscriptions
 	mergedSubscriptions []*Subscription
 	Events              chan Event
 }
@@ -10,6 +11,14 @@ func NewEventFeedMerger(subscriptions ...*Subscription) *EventFeedMerger {
 		mergedSubscriptions: subscriptions,
 		Events:              make(chan Event),
 	}
+}
+
+func (m *EventFeedMerger) Subscribe(name string) *Subscription {
+	sub := &Subscription{
+		IncomingEvents: make(chan Event),
+	}
+	m.subscriptions[name] = sub
+	return sub
 }
 
 func (m *EventFeedMerger) MergeEvents() {
