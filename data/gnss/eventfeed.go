@@ -9,15 +9,13 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
-type subscriptions map[string]*data.Subscription
-
 type EventFeed struct {
-	subscriptions subscriptions
+	subscriptions data.Subscriptions
 }
 
 func NewEventFeed() *EventFeed {
 	return &EventFeed{
-		subscriptions: make(subscriptions),
+		subscriptions: make(data.Subscriptions),
 	}
 }
 
