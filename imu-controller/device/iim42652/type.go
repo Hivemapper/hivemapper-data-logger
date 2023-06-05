@@ -64,6 +64,9 @@ var (
 	RegisterAntiAliasFilterDelta    = &Register{Bank2, 0x03} // bits 6:1, ACCEL_AAF_DELT: Code from 1 to 63 that allows programming the bandwidth for accelerometer anti-alias filter
 	RegisterAntiAliasFilterDeltaSqr = &Register{Bank2, 0x04} //bits 7:0 and Bank 2, register 0x05h, bits 3:0, ACCEL_AAF_DELTSQR: Square of the delt value for accelerometer
 	RegisterAntiAliasFilterBitshift = &Register{Bank2, 0x05} //bits 7:4, ACCEL_AAF_BITSHIFT: Bitshift value for accelerometer used in hardware implementation
+
+	// RegisterGyroscopeDataX1 GYRO_DATA_X1 (0x25), GYRO_DATA_X0 (0x26), GYRO_DATA_Y1 (0x27), GYRO_DATA_Y0 (0x28), GYRO_DATA_Z1 (0x29), GYRO_DATA_Z0 (0x2A)
+	RegisterGyroscopeDataX1 = &Register{Bank0, 0x25}
 )
 
 const (

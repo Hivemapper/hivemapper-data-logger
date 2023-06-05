@@ -20,18 +20,19 @@ type IIM42652 struct {
 	registerLock            sync.Mutex
 	debug                   bool
 	accelerationSensitivity AccelerationSensitivity
+	gyroScale               GyroScale
 }
 
-func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, debug bool) *IIM42652 {
+func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, gyroScale GyroScale, debug bool) *IIM42652 {
 	return &IIM42652{
 		debug:                   debug,
 		deviceName:              device,
 		accelerationSensitivity: accelerationSensitivity,
+		gyroScale:               gyroScale,
 	}
 }
 
 func (i *IIM42652) Init() error {
-
 	if state, err := host.Init(); err != nil {
 		return fmt.Errorf("failed to initialize driver: %w", err)
 	} else {

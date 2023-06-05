@@ -26,7 +26,7 @@ type Acceleration struct {
 
 func NewAcceleration(x, y, z int16, sensitivity AccelerationSensitivity) *Acceleration {
 	r := func(v float64) float64 {
-		return math.Round(v*10) / 10
+		return math.Round(v*100) / 100
 	}
 
 	return &Acceleration{
@@ -164,16 +164,16 @@ func (i *IIM42652) GetAcceleration() (*Acceleration, error) {
 	i.registerLock.Lock()
 	defer i.registerLock.Unlock()
 
-	err := i.setBank(Bank0)
+	err := i.setBank(RegisterAccelDataX1.Bank)
 	if err != nil {
-		return nil, fmt.Errorf("setting Bank0: %w", err)
+		return nil, fmt.Errorf("setting bank %s: %w", RegisterAccelDataX1.Bank.String(), err)
 	}
 
 	msg := make([]byte, 7)
 	result := make([]byte, 7)
 	msg[0] = ReadMask | byte(RegisterAccelDataX1.Address)
 	if err := i.connection.Tx(msg, result); err != nil {
-		return nil, fmt.Errorf("writing to SPI port: %w", err)
+		return nil, fmt.Errorf("reading to SPI port: %w", err)
 	}
 
 	x := int16(result[1])<<8 | int16(result[2])
