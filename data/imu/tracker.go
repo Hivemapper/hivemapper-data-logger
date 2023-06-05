@@ -1,6 +1,7 @@
 package imu
 
 import (
+	"fmt"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"time"
 )
@@ -142,4 +143,49 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 
 		t.continuousCount = 0
 	}
+}
+
+type CorrectDataTracker struct {
+	continuousCount int
+	start           time.Time
+	config          *Config
+	emitFunc        emit
+}
+
+func (c *CorrectDataTracker) trackAcceleration(_ time.Time, x, y, z float64) {
+	//c.continuousCount++
+	//
+	//if c.continuousCount == 1 {
+	//	c.start = time.Now()
+	//}
+
+	// every 10 counts, we send a CorrectedEvent
+	//if c.continuousCount > 10 && z != 1.00 {
+	correctedX := computeCorrectedGForce(z, x)
+	correctedY := computeCorrectedGForce(z, y)
+	tiltAngleXDegrees := computeTiltAngle(z, x)
+	tiltAngleYDegrees := computeTiltAngle(z, y)
+
+	correctedZ := z // todo: not sure about this value
+	tiltAngleZDegrees := 90 - tiltAngleXDegrees
+
+	//fmt.Println("correctedX", correctedX)
+	//fmt.Println("tilt angle X", tiltAngleXDegrees)
+	//
+	//fmt.Println("correctedY", correctedY)
+	//fmt.Println("tilt angle Y", tiltAngleYDegrees)
+	//
+	//fmt.Println("correctedZ", correctedZ)
+	//fmt.Println("tilt angle Z", tiltAngleZDegrees)
+
+	angles := data.NewAngles(tiltAngleXDegrees, tiltAngleYDegrees, tiltAngleZDegrees)
+	correctedGForceValues := data.NewGForcePosition(correctedX, correctedY, correctedZ)
+	originalGForceValues := data.NewGForcePosition(x, y, z)
+
+	correctedEvent := NewCorrectedEvent(time.Since(c.start), originalGForceValues, correctedGForceValues, angles)
+	fmt.Println(correctedEvent.String())
+
+	c.emitFunc(correctedEvent)
+	c.continuousCount = 0
+	//}
 }

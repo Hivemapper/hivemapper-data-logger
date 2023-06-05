@@ -58,6 +58,45 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 	}
 }
 
+func Test_ComputeCorrectedGForce(t *testing.T) {
+	tests := []struct {
+		name              string
+		zAxis             float64
+		complimentaryAxis float64
+		expectedValue     float64
+	}{
+		{
+			name:              "flat on table",
+			zAxis:             1.0,
+			complimentaryAxis: 0.0,
+			expectedValue:     0.0,
+		},
+		{
+			name:              "modelled data",
+			zAxis:             0.9999999952985156,
+			complimentaryAxis: 0.0028501808113100013,
+			expectedValue:     0.0,
+		},
+		{
+			name:              "data",
+			zAxis:             1.01,
+			complimentaryAxis: 0.01,
+			expectedValue:     0.0,
+		}, {
+			name:              "2", //0.42205761869463915 -0.005083033799155377 0.9014656664890688
+			zAxis:             0.9014656664890688,
+			complimentaryAxis: 0.42205761869463915,
+			expectedValue:     0.0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.expectedValue, computeCorrectedGForce(test.zAxis, test.complimentaryAxis))
+		})
+	}
+}
+
 //func Test_ComputeSpeed(t *testing.T) {
 //	tests := []struct {
 //		name               string

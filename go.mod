@@ -6,6 +6,8 @@ replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230531132611-c1a91eeb44cf
 
+replace github.com/streamingfast/imu-controller => ../imu-controller
+
 require (
 	github.com/bufbuild/connect-go v1.8.0
 	github.com/charmbracelet/bubbletea v0.23.1

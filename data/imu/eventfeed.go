@@ -2,7 +2,6 @@ package imu
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/rosshemsley/kalman"
@@ -99,6 +98,11 @@ func (p *EventFeed) run() error {
 		emitFunc: p.emit,
 	}
 
+	correctedGForceTracker := &CorrectDataTracker{
+		config:   p.config,
+		emitFunc: p.emit,
+	}
+
 	lastUpdate := time.Time{}
 
 	for {
@@ -130,14 +134,13 @@ func (p *EventFeed) run() error {
 		magnitude := computeTotalMagnitude(acceleration.CamX(), acceleration.CamY())
 		p.emit(NewImuAccelerationEvent(acceleration, x, y, z, magnitude))
 
+		// todo move corrected values here
 		leftTurnTracker.trackAcceleration(lastUpdate, x, y, z)
 		rightTurnTracker.trackAcceleration(lastUpdate, x, y, z)
 		accelerationTracker.trackAcceleration(lastUpdate, x, y, z)
 		decelerationTracker.trackAcceleration(lastUpdate, x, y, z)
 		stopTracker.trackAcceleration(lastUpdate, x, y, z)
-
-		//fmt.Println(acceleration.CamX(), ",", xAvg.Average, ",", xModel.Value(xFilter.State()))
-		fmt.Fprintf(os.Stderr, "%f,%f,%f\n", x, y, z)
+		correctedGForceTracker.trackAcceleration(lastUpdate, x, y, z)
 
 		lastUpdate = time.Now()
 

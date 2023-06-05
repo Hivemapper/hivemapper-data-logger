@@ -1,8 +1,14 @@
 package data
 
 import (
+	"fmt"
+	"math"
 	"time"
 )
+
+func round(v float64) float64 {
+	return math.Round(v*100) / 100
+}
 
 type GForcePosition struct {
 	XAvg float64 `json:"x_avg"`
@@ -16,6 +22,10 @@ func NewGForcePosition(x, y, z float64) *GForcePosition {
 		YAvg: y,
 		ZAvg: z,
 	}
+}
+
+func (g *GForcePosition) String() string {
+	return fmt.Sprintf("xAvg: %.10f yAvg: %.10f zAvg: %.10f", round(g.XAvg), round(g.YAvg), round(g.ZAvg))
 }
 
 type Event interface {
@@ -57,4 +67,22 @@ func (e *BaseEvent) GetName() string {
 
 func (e *BaseEvent) GetGForcePosition() *GForcePosition {
 	return e.GForcePosition
+}
+
+type Angles struct {
+	xAngle float64
+	yAngle float64
+	zAngle float64
+}
+
+func NewAngles(x, y, z float64) *Angles {
+	return &Angles{
+		xAngle: x,
+		yAngle: y,
+		zAngle: z,
+	}
+}
+
+func (a *Angles) String() string {
+	return fmt.Sprintf("xAngle: %.10f yAngle: %.10f zAngle: %.10f", round(a.xAngle), round(a.yAngle), round(a.zAngle))
 }

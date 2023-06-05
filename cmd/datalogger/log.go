@@ -47,7 +47,7 @@ func init() {
 }
 
 func logRun(cmd *cobra.Command, args []string) error {
-	imuDevice := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, true)
+	imuDevice := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
 	err := imuDevice.Init()
 	if err != nil {
 		return fmt.Errorf("initializing IMU: %w", err)

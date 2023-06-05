@@ -23,7 +23,7 @@ func (e *ImuAccelerationEvent) String() string {
 
 func NewImuAccelerationEvent(acc *iim42652.Acceleration, x float64, y float64, z float64, magnitude float64) *ImuAccelerationEvent {
 	return &ImuAccelerationEvent{
-		BaseEvent:    data.NewBaseEvent("IMU_ACCELERATION_EVENT", data.NewGForcePosition(xAvg.Average, yAvg.Average, zAvg.Average)),
+		BaseEvent:    data.NewBaseEvent("IMU_ACCELERATION_EVENT", data.NewGForcePosition(x, y, z)),
 		Acceleration: acc,
 		X:            x,
 		Y:            y,
@@ -196,4 +196,22 @@ func NewStopEndEvent(duration time.Duration, gForcePosition *data.GForcePosition
 
 func (e *StopEndEvent) String() string {
 	return fmt.Sprintf("Stop End for %s", e.Duration)
+}
+
+type CorrectedEvent struct {
+	*data.BaseEvent
+	correctedData *data.GForcePosition
+	angles        *data.Angles
+}
+
+func NewCorrectedEvent(duration time.Duration, gForcePosition *data.GForcePosition, correctedGForcePosition *data.GForcePosition, angles *data.Angles) *CorrectedEvent {
+	return &CorrectedEvent{
+		BaseEvent:     data.NewBaseEvent("CORRECTED_EVENT", gForcePosition),
+		correctedData: correctedGForcePosition,
+		angles:        angles,
+	}
+}
+
+func (e *CorrectedEvent) String() string {
+	return fmt.Sprintf("[Original GForce position] %s [Corrected GForce position] %s [Angles] %s", e.BaseEvent.GForcePosition.String(), e.correctedData.String(), e.angles.String())
 }
