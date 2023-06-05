@@ -2,8 +2,11 @@ package imu
 
 import (
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/rosshemsley/kalman"
+	"github.com/rosshemsley/kalman/models"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -49,10 +52,27 @@ func (p *EventFeed) emit(event data.Event) {
 }
 
 func (p *EventFeed) run() error {
-	xAvg := data.NewAverageFloat64("X average")
-	yAvg := data.NewAverageFloat64("Y average")
-	zAvg := data.NewAverageFloat64("Y average")
-	magnitudeAvg := data.NewAverageFloat64("Total magnitude average")
+	now := time.Now()
+	xModel := models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	xFilter := kalman.NewKalmanFilter(xModel)
+
+	yModel := models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	yFilter := kalman.NewKalmanFilter(yModel)
+
+	zModel := models.NewSimpleModel(now, 1.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	zFilter := kalman.NewKalmanFilter(zModel)
 
 	leftTurnTracker := &LeftTurnTracker{
 		config:   p.config,
@@ -87,23 +107,37 @@ func (p *EventFeed) run() error {
 			panic(fmt.Errorf("getting acceleration: %w", err))
 		}
 
-		magnitudeAvg.Add(computeTotalMagnitude(acceleration.CamX(), acceleration.CamY()))
+		now := time.Now()
+		err = xFilter.Update(now, xModel.NewMeasurement(acceleration.CamX()))
+		if err != nil {
+			return fmt.Errorf("updating kalman x filter: %w", err)
+		}
 
-		xAvg.Add(acceleration.CamX())
-		yAvg.Add(acceleration.CamY())
-		zAvg.Add(acceleration.CamX())
+		err = yFilter.Update(now, yModel.NewMeasurement(acceleration.CamY()))
+		if err != nil {
+			return fmt.Errorf("updating kalman y filter: %w", err)
+		}
 
-		p.emit(NewImuAccelerationEvent(acceleration, xAvg, yAvg, zAvg, magnitudeAvg))
+		err = zFilter.Update(now, zModel.NewMeasurement(acceleration.CamZ()))
+		if err != nil {
+			return fmt.Errorf("updating kalman z filter: %w", err)
+		}
 
-		x := xAvg.Average
-		y := yAvg.Average
-		z := zAvg.Average
+		x := xModel.Value(xFilter.State())
+		y := yModel.Value(yFilter.State())
+		z := zModel.Value(zFilter.State())
+
+		magnitude := computeTotalMagnitude(acceleration.CamX(), acceleration.CamY())
+		p.emit(NewImuAccelerationEvent(acceleration, x, y, z, magnitude))
 
 		leftTurnTracker.trackAcceleration(lastUpdate, x, y, z)
 		rightTurnTracker.trackAcceleration(lastUpdate, x, y, z)
 		accelerationTracker.trackAcceleration(lastUpdate, x, y, z)
 		decelerationTracker.trackAcceleration(lastUpdate, x, y, z)
-		stopTracker.trackAcceleration(lastUpdate, x, y, y)
+		stopTracker.trackAcceleration(lastUpdate, x, y, z)
+
+		//fmt.Println(acceleration.CamX(), ",", xAvg.Average, ",", xModel.Value(xFilter.State()))
+		fmt.Fprintf(os.Stderr, "%f,%f,%f\n", x, y, z)
 
 		lastUpdate = time.Now()
 

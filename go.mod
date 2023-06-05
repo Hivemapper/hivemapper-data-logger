@@ -2,6 +2,8 @@ module github.com/streamingfast/hivemapper-data-logger
 
 go 1.20
 
+replace github.com/streamingfast/gnss-controller => ../gnss-controller
+
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230531132611-c1a91eeb44cf
 
 require (
@@ -9,6 +11,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.23.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/google/uuid v1.3.0
+	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/streamingfast/gnss-controller v0.1.20-0.20230601115847-de75ed063a55
@@ -46,6 +49,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	gonum.org/v1/gonum v0.0.0-20190606121551-14af50e936aa // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect

@@ -11,24 +11,24 @@ import (
 type ImuAccelerationEvent struct {
 	*data.BaseEvent
 	Acceleration *iim42652.Acceleration `json:"acceleration"`
-	AvgX         *data.AverageFloat64   `json:"avg_x"`
-	AvgY         *data.AverageFloat64   `json:"avg_y"`
-	AvgZ         *data.AverageFloat64   `json:"avg_z"`
-	AvgMagnitude *data.AverageFloat64   `json:"avg_magnitude"`
+	X            float64                `json:"x"`
+	Y            float64                `json:"y"`
+	Z            float64                `json:"z"`
+	AvgMagnitude float64                `json:"magnitude"`
 }
 
 func (e *ImuAccelerationEvent) String() string {
 	return "ImuAccelerationEvent"
 }
 
-func NewImuAccelerationEvent(acc *iim42652.Acceleration, xAvg *data.AverageFloat64, yAvg *data.AverageFloat64, zAvg *data.AverageFloat64, avgMag *data.AverageFloat64) *ImuAccelerationEvent {
+func NewImuAccelerationEvent(acc *iim42652.Acceleration, x float64, y float64, z float64, magnitude float64) *ImuAccelerationEvent {
 	return &ImuAccelerationEvent{
 		BaseEvent:    data.NewBaseEvent("IMU_ACCELERATION_EVENT", data.NewGForcePosition(xAvg.Average, yAvg.Average, zAvg.Average)),
 		Acceleration: acc,
-		AvgX:         xAvg,
-		AvgY:         yAvg,
-		AvgZ:         zAvg,
-		AvgMagnitude: avgMag,
+		X:            x,
+		Y:            y,
+		Z:            z,
+		AvgMagnitude: magnitude,
 	}
 }
 
