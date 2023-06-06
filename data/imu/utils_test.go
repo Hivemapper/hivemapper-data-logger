@@ -111,7 +111,7 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 //	}
 //
 //	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
+//		t.Start(test.name, func(t *testing.T) {
 //			for _, accelSpeed := range test.accelerationSpeeds {
 //				addAccelerationSpeeds(accelSpeed)
 //			}

@@ -5,6 +5,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/streamingfast/hivemapper-data-logger/logger"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+
 	"github.com/streamingfast/hivemapper-data-logger/data"
 
 	"github.com/spf13/cobra"
@@ -32,8 +37,6 @@ func init() {
 	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
 	WipCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
-	// Connect-go
-	WipCmd.Flags().String("listen-addr", ":9000", "address to listen on")
 	RootCmd.AddCommand(WipCmd)
 }
 
@@ -53,40 +56,37 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	fmt.Println("Config: ", conf.String())
 
 	rawImuEventFeed := imu.NewRawFeed(imuDevice)
-	go func() {
-		err := rawImuEventFeed.Run()
-		if err != nil {
-			panic(fmt.Errorf("running raw imu event feed: %w", err))
-		}
-	}()
+	rawImuEventFeed.Start()
 
 	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	go func() {
-		err := correctedImuEventFeed.Run(rawImuEventFeed)
-		if err != nil {
-			panic(fmt.Errorf("running corrected imu event feed: %w", err))
-		}
-	}()
+	correctedImuEventFeed.Start(rawImuEventFeed)
 
-	//serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
-	//mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	//gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
+	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+	err = gnssDevice.Init(nil)
+	if err != nil {
+		return fmt.Errorf("initializing neom9n: %w", err)
+	}
 	//
-	//gnssEventFeed := gnss.NewEventFeed()
-	//go func() {
-	//	err := gnssEventFeed.Run(gnssDevice)
-	//	if err != nil {
-	//		panic(fmt.Errorf("running gnss event feed: %w", err))
-	//	}
-	//}()
-	//gnssEventSub := gnssEventFeed.Subscribe("merger")
+	gnssEventFeed := gnss.NewEventFeed()
+	gnssEventFeed.Start(gnssDevice)
 
+	jsonDestinationFolder := mustGetString(cmd, "gnss-json-destination-folder")
+	jsonSaveInterval := mustGetDuration(cmd, "gnss-json-save-interval")
+	jsonDestinationFolderMaxSize := mustGetInt64(cmd, "gnss-json-destination-folder-max-size")
+
+	jsonLogger := logger.NewJsonFile(jsonDestinationFolder, jsonDestinationFolderMaxSize, jsonSaveInterval)
+	gnssFileLoggerSubscription := gnssEventFeed.Subscribe("gnssFileLoggerSubscription")
+	err = jsonLogger.Init(gnssFileLoggerSubscription)
+	if err != nil {
+		return fmt.Errorf("initializing json logger database: %w", err)
+	}
+
+	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
-	mergedEventFeed := data.NewEventFeedMerger(correctedImuEventSub)
-	//mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, correctedImuEventSub)
-	go func() {
-		mergedEventFeed.Run()
-	}()
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, correctedImuEventSub)
+	mergedEventFeed.Start()
 
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
 

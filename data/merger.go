@@ -2,7 +2,6 @@ package data
 
 import (
 	"fmt"
-	"sync"
 )
 
 type EventFeedMerger struct {
@@ -26,11 +25,9 @@ func (m *EventFeedMerger) Subscribe(name string) *Subscription {
 	return sub
 }
 
-func (m *EventFeedMerger) Run() {
+func (m *EventFeedMerger) Start() {
 	fmt.Println("Running event feed merger")
-	wg := sync.WaitGroup{}
 	for _, sub := range m.subscriptionToMerge {
-		wg.Add(1)
 		go func(sub *Subscription) {
 			for {
 				select {
@@ -43,8 +40,6 @@ func (m *EventFeedMerger) Run() {
 					}
 				}
 			}
-			wg.Done()
 		}(sub)
 	}
-	wg.Wait()
 }

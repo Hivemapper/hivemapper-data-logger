@@ -47,7 +47,7 @@ func NewEventServer(merger *data.EventFeedMerger) *EventsServer {
 	}
 
 	fmt.Println("starting event server")
-	merger.Run()
+	merger.Start()
 
 	go func() {
 		for {

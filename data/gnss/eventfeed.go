@@ -66,18 +66,19 @@ func (f *EventFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (f *EventFeed) Run(gnssDevice *neom9n.Neom9n) error {
-	fmt.Println("Running gnss feed")
-	//todo: datafeed is ugly
-	dataFeed := neom9n.NewDataFeed(f.HandleData)
-	err := gnssDevice.Run(dataFeed, func(now time.Time) {
-		dataFeed.SetStartTime(now)
-		f.emit(NewGnssTimeSetEvent(now))
-	})
-	if err != nil {
-		return fmt.Errorf("running gnss device: %w", err)
-	}
-	return nil
+func (f *EventFeed) Start(gnssDevice *neom9n.Neom9n) {
+	go func() {
+		fmt.Println("Running gnss feed")
+		//todo: datafeed is ugly
+		dataFeed := neom9n.NewDataFeed(f.HandleData)
+		err := gnssDevice.Run(dataFeed, func(now time.Time) {
+			dataFeed.SetStartTime(now)
+			f.emit(NewGnssTimeSetEvent(now))
+		})
+		if err != nil {
+			panic(fmt.Errorf("running gnss device: %w", err))
+		}
+	}()
 }
 
 func (f *EventFeed) HandleData(d *neom9n.Data) {
