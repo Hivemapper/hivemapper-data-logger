@@ -62,6 +62,7 @@ func (f *CorrectedAccelerationFeed) Run(raw *RawFeed) error {
 			y := a.CamY()
 			z := a.CamZ()
 
+			//todo: need to compute the corrected values from the x,y,z values at once
 			correctedX := computeCorrectedGForce(z, x)
 			correctedY := computeCorrectedGForce(z, y)
 			correctedZ := z
