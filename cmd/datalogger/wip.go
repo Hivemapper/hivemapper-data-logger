@@ -22,22 +22,22 @@ var WipCmd = &cobra.Command{
 
 func init() {
 	// Imu
-	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
+	WipCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 
 	// GNSS
-	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
-	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
-	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
-	LogCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
-	LogCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
-	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
-	LogCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
-	LogCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
+	WipCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
+	WipCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
+	WipCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
+	WipCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
+	WipCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
+	WipCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
+	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
+	WipCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
 	// Connect-go
-	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
+	WipCmd.Flags().String("listen-addr", ":9000", "address to listen on")
 
-	RootCmd.AddCommand(LogCmd)
+	RootCmd.AddCommand(WipCmd)
 }
 
 func wipRun(cmd *cobra.Command, args []string) error {
