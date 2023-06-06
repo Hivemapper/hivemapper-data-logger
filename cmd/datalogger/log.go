@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"net/http"
 	"time"
+
+	"github.com/streamingfast/hivemapper-data-logger/data"
 
 	"github.com/rs/cors"
 	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
@@ -76,9 +77,25 @@ func logRun(cmd *cobra.Command, args []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	imuEventFeed := imu.NewEventFeed(imuDevice, conf)
+	rawImuEventFeed := imu.NewRawFeed(imuDevice)
 	go func() {
-		err := imuEventFeed.Run()
+		err := rawImuEventFeed.Run()
+		if err != nil {
+			panic(fmt.Errorf("running raw imu event feed: %w", err))
+		}
+	}()
+
+	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
+	go func() {
+		err := correctedImuEventFeed.Run(rawImuEventFeed)
+		if err != nil {
+			panic(fmt.Errorf("running corrected imu event feed: %w", err))
+		}
+	}()
+
+	imuDirectionEventFeed := imu.NewDirectionEventFeed(conf)
+	go func() {
+		err := imuDirectionEventFeed.Run(correctedImuEventFeed)
 		if err != nil {
 			panic(fmt.Errorf("running pipeline: %w", err))
 		}
@@ -133,7 +150,7 @@ func logRun(cmd *cobra.Command, args []string) error {
 	//todo: init file logger for imu
 	//todo: init db logger for imu
 
-	grpcImuSubscription := imuEventFeed.Subscribe("grpc")
+	grpcImuSubscription := imuDirectionEventFeed.Subscribe("grpc")
 	grpcGnssSubscription := gnssEventFeed.Subscribe("grpc")
 
 	//todo: feed merger that merge events from multiple feeds into one

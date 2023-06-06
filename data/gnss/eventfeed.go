@@ -45,7 +45,7 @@ type GnssEvent struct {
 
 func NewGnssEvent(d *neom9n.Data) *GnssEvent {
 	return &GnssEvent{
-		BaseEvent: data.NewBaseEvent("GNSS_EVENT", nil), // no x, y, z GForces for gnss data
+		BaseEvent: data.NewBaseEvent("GNSS_EVENT"), // no x, y, z GForces for gnss data
 		Data:      d,
 	}
 }

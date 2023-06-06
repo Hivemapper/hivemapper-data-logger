@@ -12,138 +12,141 @@ import (
 
 type emit func(event data.Event)
 
-type EventFeed struct {
-	imu           *iim42652.IIM42652
-	subscriptions data.Subscriptions
-	config        *Config
+type DirectionEventFeed struct {
+	imu                 *iim42652.IIM42652
+	subscriptions       data.Subscriptions
+	config              *Config
+	xModel              *models.SimpleModel
+	xFilter             *kalman.KalmanFilter
+	yModel              *models.SimpleModel
+	yFilter             *kalman.KalmanFilter
+	zModel              *models.SimpleModel
+	zFilter             *kalman.KalmanFilter
+	leftTurnTracker     *LeftTurnTracker
+	rightTurnTracker    *RightTurnTracker
+	accelerationTracker *AccelerationTracker
+	decelerationTracker *DecelerationTracker
+	stopTracker         *StopTracker
+	lastUpdate          time.Time
 }
 
-func NewEventFeed(imu *iim42652.IIM42652, config *Config) *EventFeed {
-	return &EventFeed{
+func NewDirectionEventFeed(config *Config) *DirectionEventFeed {
+
+	feed := &DirectionEventFeed{
 		config:        config,
-		imu:           imu,
 		subscriptions: make(data.Subscriptions),
 	}
-}
+	emit := feed.emit
 
-func (p *EventFeed) Run() error {
-	fmt.Println("Running pipeline")
-	err := p.run()
-	if err != nil {
-		return fmt.Errorf("running pipeline: %w", err)
+	feed.leftTurnTracker = &LeftTurnTracker{
+		config:   config,
+		emitFunc: emit,
 	}
-	return nil
+
+	feed.rightTurnTracker = &RightTurnTracker{
+		config:   config,
+		emitFunc: emit,
+	}
+
+	feed.accelerationTracker = &AccelerationTracker{
+		config:   config,
+		emitFunc: emit,
+	}
+
+	feed.decelerationTracker = &DecelerationTracker{
+		config:   config,
+		emitFunc: emit,
+	}
+
+	feed.stopTracker = &StopTracker{
+		config:   config,
+		emitFunc: emit,
+	}
+
+	return feed
 }
 
-func (p *EventFeed) Subscribe(name string) *data.Subscription {
+func (f *DirectionEventFeed) Subscribe(name string) *data.Subscription {
 	sub := &data.Subscription{
 		IncomingEvents: make(chan data.Event),
 	}
-	p.subscriptions[name] = sub
+	f.subscriptions[name] = sub
 	return sub
 }
 
-func (p *EventFeed) emit(event data.Event) {
+func (f *DirectionEventFeed) Run(feed *CorrectedAccelerationFeed) error {
+	sub := feed.Subscribe("corrected")
+	now := time.Now()
+	f.lastUpdate = now
+	f.xModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	f.xFilter = kalman.NewKalmanFilter(f.xModel)
+
+	f.yModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	f.yFilter = kalman.NewKalmanFilter(f.yModel)
+
+	f.zModel = models.NewSimpleModel(now, 1.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	f.zFilter = kalman.NewKalmanFilter(f.zModel)
+
+	for {
+		select {
+		case event := <-sub.IncomingEvents:
+			if len(f.subscriptions) == 0 {
+				continue
+			}
+			e := event.(*CorrectedAccelerationEvent)
+			err := f.handleEvent(e)
+			f.lastUpdate = time.Now()
+
+			return fmt.Errorf("handling event: %w", err)
+		}
+	}
+}
+
+func (f *DirectionEventFeed) emit(event data.Event) {
 	event.SetTime(time.Now())
-	for _, subscription := range p.subscriptions {
+	for _, subscription := range f.subscriptions {
 		subscription.IncomingEvents <- event
 	}
 }
 
-func (p *EventFeed) run() error {
+func (f *DirectionEventFeed) handleEvent(e *CorrectedAccelerationEvent) error {
+
+	x := e.X
+	y := e.Y
+	z := e.Z
+
 	now := time.Now()
-	xModel := models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
-		ProcessVariance:     2.0,
-		ObservationVariance: 2.0,
-	})
-	xFilter := kalman.NewKalmanFilter(xModel)
-
-	yModel := models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
-		ProcessVariance:     2.0,
-		ObservationVariance: 2.0,
-	})
-	yFilter := kalman.NewKalmanFilter(yModel)
-
-	zModel := models.NewSimpleModel(now, 1.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
-		ProcessVariance:     2.0,
-		ObservationVariance: 2.0,
-	})
-	zFilter := kalman.NewKalmanFilter(zModel)
-
-	leftTurnTracker := &LeftTurnTracker{
-		config:   p.config,
-		emitFunc: p.emit,
+	err := f.xFilter.Update(now, f.xModel.NewMeasurement(x))
+	if err != nil {
+		return fmt.Errorf("updating kalman x filter: %w", err)
 	}
 
-	rightTurnTracker := &RightTurnTracker{
-		config:   p.config,
-		emitFunc: p.emit,
+	err = f.yFilter.Update(now, f.yModel.NewMeasurement(y))
+	if err != nil {
+		return fmt.Errorf("updating kalman y filter: %w", err)
 	}
 
-	accelerationTracker := &AccelerationTracker{
-		config:   p.config,
-		emitFunc: p.emit,
+	err = f.zFilter.Update(now, f.zModel.NewMeasurement(z))
+	if err != nil {
+		return fmt.Errorf("updating kalman z filter: %w", err)
 	}
 
-	decelerationTracker := &DecelerationTracker{
-		config:   p.config,
-		emitFunc: p.emit,
-	}
-
-	stopTracker := &StopTracker{
-		config:   p.config,
-		emitFunc: p.emit,
-	}
-
-	correctedGForceTracker := &CorrectDataTracker{
-		config:   p.config,
-		emitFunc: p.emit,
-	}
-
-	lastUpdate := time.Time{}
-
-	for {
-		acceleration, err := p.imu.GetAcceleration()
-		if err != nil {
-			panic(fmt.Errorf("getting acceleration: %w", err))
-		}
-
-		now := time.Now()
-		err = xFilter.Update(now, xModel.NewMeasurement(acceleration.CamX()))
-		if err != nil {
-			return fmt.Errorf("updating kalman x filter: %w", err)
-		}
-
-		err = yFilter.Update(now, yModel.NewMeasurement(acceleration.CamY()))
-		if err != nil {
-			return fmt.Errorf("updating kalman y filter: %w", err)
-		}
-
-		err = zFilter.Update(now, zModel.NewMeasurement(acceleration.CamZ()))
-		if err != nil {
-			return fmt.Errorf("updating kalman z filter: %w", err)
-		}
-
-		x := xModel.Value(xFilter.State())
-		y := yModel.Value(yFilter.State())
-		z := zModel.Value(zFilter.State())
-
-		magnitude := computeTotalMagnitude(acceleration.CamX(), acceleration.CamY())
-		p.emit(NewImuAccelerationEvent(acceleration, x, y, z, magnitude))
-
-		// todo move corrected values here
-		leftTurnTracker.trackAcceleration(lastUpdate, x, y, z)
-		rightTurnTracker.trackAcceleration(lastUpdate, x, y, z)
-		accelerationTracker.trackAcceleration(lastUpdate, x, y, z)
-		decelerationTracker.trackAcceleration(lastUpdate, x, y, z)
-		stopTracker.trackAcceleration(lastUpdate, x, y, z)
-		correctedGForceTracker.trackAcceleration(lastUpdate, x, y, z)
-
-		lastUpdate = time.Now()
-
-		time.Sleep(10 * time.Millisecond)
-	}
+	f.leftTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	f.rightTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	f.accelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	f.decelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	f.stopTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	return nil
 }

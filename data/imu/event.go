@@ -5,40 +5,15 @@ import (
 	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 )
-
-type ImuAccelerationEvent struct {
-	*data.BaseEvent
-	Acceleration *iim42652.Acceleration `json:"acceleration"`
-	X            float64                `json:"x"`
-	Y            float64                `json:"y"`
-	Z            float64                `json:"z"`
-	AvgMagnitude float64                `json:"magnitude"`
-}
-
-func (e *ImuAccelerationEvent) String() string {
-	return "ImuAccelerationEvent"
-}
-
-func NewImuAccelerationEvent(acc *iim42652.Acceleration, x float64, y float64, z float64, magnitude float64) *ImuAccelerationEvent {
-	return &ImuAccelerationEvent{
-		BaseEvent:    data.NewBaseEvent("IMU_ACCELERATION_EVENT", data.NewGForcePosition(x, y, z)),
-		Acceleration: acc,
-		X:            x,
-		Y:            y,
-		Z:            z,
-		AvgMagnitude: magnitude,
-	}
-}
 
 type RightTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewRightTurnEventDetected(gForcePosition *data.GForcePosition) *RightTurnEventDetected {
+func NewRightTurnEventDetected() *RightTurnEventDetected {
 	return &RightTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT"),
 	}
 }
 
@@ -51,9 +26,9 @@ type RightTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewRightTurnEvent(duration time.Duration, gForcePosition *data.GForcePosition) *RightTurnEvent {
+func NewRightTurnEvent(duration time.Duration) *RightTurnEvent {
 	return &RightTurnEvent{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT"),
 		Duration:  duration,
 	}
 }
@@ -65,9 +40,9 @@ type LeftTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewLeftTurnEventDetected(gForcePosition *data.GForcePosition) *LeftTurnEventDetected {
+func NewLeftTurnEventDetected() *LeftTurnEventDetected {
 	return &LeftTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT"),
 	}
 }
 
@@ -80,9 +55,9 @@ type LeftTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewLeftTurnEvent(duration time.Duration, gForcePosition *data.GForcePosition) *LeftTurnEvent {
+func NewLeftTurnEvent(duration time.Duration) *LeftTurnEvent {
 	return &LeftTurnEvent{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT"),
 		Duration:  duration,
 	}
 }
@@ -94,9 +69,9 @@ type AccelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewAccelerationDetectedEvent(gForcePosition *data.GForcePosition) *AccelerationDetectedEvent {
+func NewAccelerationDetectedEvent() *AccelerationDetectedEvent {
 	return &AccelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT"),
 	}
 }
 func (e *AccelerationDetectedEvent) String() string {
@@ -109,9 +84,9 @@ type AccelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewAccelerationEvent(speed float64, duration time.Duration, gForcePosition *data.GForcePosition) *AccelerationEvent {
+func NewAccelerationEvent(speed float64, duration time.Duration) *AccelerationEvent {
 	return &AccelerationEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT"),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -125,9 +100,9 @@ type DecelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewDecelerationDetectedEvent(gForcePosition *data.GForcePosition) *DecelerationDetectedEvent {
+func NewDecelerationDetectedEvent() *DecelerationDetectedEvent {
 	return &DecelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT"),
 	}
 }
 
@@ -141,9 +116,9 @@ type DecelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewDecelerationEvent(speed float64, duration time.Duration, gForcePosition *data.GForcePosition) *DecelerationEvent {
+func NewDecelerationEvent(speed float64, duration time.Duration) *DecelerationEvent {
 	return &DecelerationEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT"),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -158,9 +133,9 @@ type HeadingChangeEvent struct {
 	Heading float64 `json:"heading"`
 }
 
-func NewHeadingChangeEvent(gForcePosition *data.GForcePosition) *HeadingChangeEvent {
+func NewHeadingChangeEvent() *HeadingChangeEvent {
 	return &HeadingChangeEvent{
-		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT"),
 	}
 }
 
@@ -172,9 +147,9 @@ type StopDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewStopDetectedEvent(gForcePosition *data.GForcePosition) *StopDetectedEvent {
+func NewStopDetectedEvent() *StopDetectedEvent {
 	return &StopDetectedEvent{
-		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT"),
 	}
 }
 
@@ -187,31 +162,13 @@ type StopEndEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewStopEndEvent(duration time.Duration, gForcePosition *data.GForcePosition) *StopEndEvent {
+func NewStopEndEvent(duration time.Duration) *StopEndEvent {
 	return &StopEndEvent{
-		BaseEvent: data.NewBaseEvent("STOP_END_EVENT", gForcePosition),
+		BaseEvent: data.NewBaseEvent("STOP_END_EVENT"),
 		Duration:  duration,
 	}
 }
 
 func (e *StopEndEvent) String() string {
 	return fmt.Sprintf("Stop End for %s", e.Duration)
-}
-
-type CorrectedEvent struct {
-	*data.BaseEvent
-	correctedData *data.GForcePosition
-	angles        *data.Angles
-}
-
-func NewCorrectedEvent(duration time.Duration, gForcePosition *data.GForcePosition, correctedGForcePosition *data.GForcePosition, angles *data.Angles) *CorrectedEvent {
-	return &CorrectedEvent{
-		BaseEvent:     data.NewBaseEvent("CORRECTED_EVENT", gForcePosition),
-		correctedData: correctedGForcePosition,
-		angles:        angles,
-	}
-}
-
-func (e *CorrectedEvent) String() string {
-	return fmt.Sprintf("[Original GForce position] %s [Corrected GForce position] %s [Angles] %s", e.BaseEvent.GForcePosition.String(), e.correctedData.String(), e.angles.String())
 }

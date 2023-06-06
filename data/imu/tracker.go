@@ -1,8 +1,6 @@
 package imu
 
 import (
-	"fmt"
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"time"
 )
 
@@ -25,11 +23,11 @@ func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, z
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewLeftTurnEventDetected(data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewLeftTurnEventDetected())
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewLeftTurnEvent(time.Since(t.start), data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewLeftTurnEvent(time.Since(t.start)))
 		}
 		t.continuousCount = 0
 	}
@@ -50,12 +48,12 @@ func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, 
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewRightTurnEventDetected(data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewRightTurnEventDetected())
 		}
 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewRightTurnEvent(time.Since(t.start), data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewRightTurnEvent(time.Since(t.start)))
 		}
 		t.continuousCount = 0
 	}
@@ -78,12 +76,12 @@ func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.AccelerationContinuousCountWindow {
-			t.emitFunc(NewAccelerationDetectedEvent(data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewAccelerationDetectedEvent())
 		}
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
-			t.emitFunc(NewAccelerationEvent(t.speed, time.Since(t.start), data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewAccelerationEvent(t.speed, time.Since(t.start)))
 		}
 		t.speed = 0
 		t.continuousCount = 0
@@ -107,12 +105,12 @@ func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64,
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(NewDecelerationDetectedEvent(data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewDecelerationDetectedEvent())
 		}
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(NewDecelerationEvent(t.speed, time.Since(t.start), data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewDecelerationEvent(t.speed, time.Since(t.start)))
 		}
 		t.speed = 0
 		t.continuousCount = 0
@@ -134,58 +132,13 @@ func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z flo
 			t.start = time.Now()
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
-			t.emitFunc(NewStopDetectedEvent(data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewStopDetectedEvent())
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
-			t.emitFunc(NewStopEndEvent(time.Since(t.start), data.NewGForcePosition(x, y, z)))
+			t.emitFunc(NewStopEndEvent(time.Since(t.start)))
 		}
 
 		t.continuousCount = 0
 	}
-}
-
-type CorrectDataTracker struct {
-	continuousCount int
-	start           time.Time
-	config          *Config
-	emitFunc        emit
-}
-
-func (c *CorrectDataTracker) trackAcceleration(_ time.Time, x, y, z float64) {
-	//c.continuousCount++
-	//
-	//if c.continuousCount == 1 {
-	//	c.start = time.Now()
-	//}
-
-	// every 10 counts, we send a CorrectedEvent
-	//if c.continuousCount > 10 && z != 1.00 {
-	correctedX := computeCorrectedGForce(z, x)
-	correctedY := computeCorrectedGForce(z, y)
-	tiltAngleXDegrees := computeTiltAngle(z, x)
-	tiltAngleYDegrees := computeTiltAngle(z, y)
-
-	correctedZ := z // todo: not sure about this value
-	tiltAngleZDegrees := 90 - tiltAngleXDegrees
-
-	//fmt.Println("correctedX", correctedX)
-	//fmt.Println("tilt angle X", tiltAngleXDegrees)
-	//
-	//fmt.Println("correctedY", correctedY)
-	//fmt.Println("tilt angle Y", tiltAngleYDegrees)
-	//
-	//fmt.Println("correctedZ", correctedZ)
-	//fmt.Println("tilt angle Z", tiltAngleZDegrees)
-
-	angles := data.NewAngles(tiltAngleXDegrees, tiltAngleYDegrees, tiltAngleZDegrees)
-	correctedGForceValues := data.NewGForcePosition(correctedX, correctedY, correctedZ)
-	originalGForceValues := data.NewGForcePosition(x, y, z)
-
-	correctedEvent := NewCorrectedEvent(time.Since(c.start), originalGForceValues, correctedGForceValues, angles)
-	fmt.Println(correctedEvent.String())
-
-	c.emitFunc(correctedEvent)
-	c.continuousCount = 0
-	//}
 }
