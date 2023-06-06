@@ -87,10 +87,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 
 	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, correctedImuEventSub)
 	go func() {
-		err := mergedEventFeed.Run()
-		if err != nil {
-			panic(fmt.Errorf("running merged event feed: %w", err))
-		}
+		mergedEventFeed.Run()
 	}()
 
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
@@ -101,6 +98,4 @@ func wipRun(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%T Event: %s", e, e)
 		}
 	}
-
-	return nil
 }

@@ -1,5 +1,7 @@
 package data
 
+import "sync"
+
 type EventFeedMerger struct {
 	subscriptions       Subscriptions
 	mergedSubscriptions []*Subscription
@@ -22,7 +24,9 @@ func (m *EventFeedMerger) Subscribe(name string) *Subscription {
 }
 
 func (m *EventFeedMerger) Run() {
+	wg := sync.WaitGroup{}
 	for _, sub := range m.mergedSubscriptions {
+		wg.Add(1)
 		go func(sub *Subscription) {
 			for {
 				select {
@@ -30,6 +34,8 @@ func (m *EventFeedMerger) Run() {
 					m.Events <- event
 				}
 			}
+			wg.Done()
 		}(sub)
 	}
+	wg.Wait()
 }
