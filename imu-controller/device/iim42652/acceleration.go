@@ -16,31 +16,32 @@ const (
 )
 
 type Acceleration struct {
-	RawX int16
-	RawY int16
-	RawZ int16
-	X    float64
-	Y    float64
-	Z    float64
+	RawX           int16
+	RawY           int16
+	RawZ           int16
+	X              float64
+	Y              float64
+	Z              float64
+	TotalMagnitude float64
 }
 
 func NewAcceleration(x, y, z int16, sensitivity AccelerationSensitivity) *Acceleration {
-	r := func(v float64) float64 {
-		return math.Round(v*100) / 100
-	}
-
-	return &Acceleration{
+	accel := &Acceleration{
 		RawX: x,
 		RawY: y,
 		RawZ: z,
-		X:    r(float64(x) * float64(sensitivity)),
-		Y:    r(float64(y) * float64(sensitivity)),
-		Z:    r(float64(z) * float64(sensitivity)),
+		X:    float64(x) * float64(sensitivity),
+		Y:    float64(y) * float64(sensitivity),
+		Z:    float64(z) * float64(sensitivity),
 	}
+
+	accel.TotalMagnitude = math.Sqrt(accel.X*accel.X + accel.Y*accel.Y + accel.Z*accel.Z)
+
+	return accel
 }
 
 func (a *Acceleration) String() string {
-	return fmt.Sprintf("Acceleration{camX:%.2f, camY:%.2f, camZ: %.2f}", a.Z, a.X, a.Y)
+	return fmt.Sprintf("Acceleration{camX:%.5f, camY:%.5f, camZ: %.5f, totalMagn: %.5f}", a.Z, a.X, a.Y, a.TotalMagnitude)
 }
 
 func (a *Acceleration) CamX() float64 {
