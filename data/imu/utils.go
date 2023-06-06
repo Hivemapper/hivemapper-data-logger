@@ -30,17 +30,47 @@ func computeTiltAngle(zAxis, complementaryAxis float64) float64 {
 	return tiltAngleXDegrees
 }
 
-func computeCorrectedGForce(zAxis, complementaryAxis float64) float64 {
+func computeCorrectedTiltAngles(gForceX, gForceY, gForceZ float64) (float64, float64, float64) { // returns x, y, z angles
+	// http://www.starlino.com/imu_guide.html
+	//We can deduct from Eq.1 that R = SQRT( Rx^2 + Ry^2 + Rz^2).
+	//
+	//	We can find now our angles by using arccos() function (the inverse cos() function ):
+	// Axr = arccos(Rx/R)
+	//Ayr = arccos(Ry/R)
+	//Azr = arccos(Rz/R)
+
+	// https://engineering.stackexchange.com/questions/3348/calculating-pitch-yaw-and-roll-from-mag-acc-and-gyro-data
+	accelerationX := gForceX * 3.9
+	accelerationY := gForceY * 3.9
+	accelerationZ := gForceZ * 3.9
+	pitchX := (180 * math.Atan(accelerationX/math.Sqrt(accelerationY*accelerationY+accelerationZ*accelerationZ))) / math.Pi
+	rollY := (180 * math.Atan(accelerationY/math.Sqrt(accelerationX*accelerationX+accelerationZ*accelerationZ))) / math.Pi
+
+	fmt.Println("stackoverflow pitch", pitchX)
+	fmt.Println("stackoverflow roll", rollY)
+	fmt.Println("stackoverflow yaw", 90-pitchX)
+
+	return pitchX, rollY, 90 - pitchX
+}
+
+func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
 	tiltAngleXRad := math.Atan2(zAxis, complementaryAxis)
-	tiltAngleXDegrees := tiltAngleXRad * math.Pi
-	fmt.Println("angle before", tiltAngleXDegrees)
-	tiltAngleXDegrees = 90 - tiltAngleXDegrees
-
-	tiltAngleXRad = tiltAngleXDegrees * math.Pi / 180.0
-
-	fmt.Println("angle", tiltAngleXDegrees)
-
 	correctedValue := complementaryAxis * math.Cos(tiltAngleXRad)
 
 	return correctedValue
+}
+
+func computeCorrectedGForce(xAcceleration, yAcceleration, z, xAngle, yAngle, zAngle float64) (float64, float64, float64) {
+	// Compute x force with no acceleration. The x value is the computation at the exact angle.
+	noAccelerationX := math.Sqrt(xAngle / 90)
+	correctedX := xAcceleration - noAccelerationX
+
+	// Compute x force with no acceleration. The x value is the computation at the exact angle.
+	noAccelerationY := math.Sqrt(yAngle / 90)
+	correctedY := yAcceleration - noAccelerationY
+
+	// We want this value to be 1.0 for the moment
+	correctedZ := 1.0
+
+	return correctedX, correctedY, correctedZ
 }

@@ -60,62 +60,124 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 
 func Test_ComputeCorrectedGForce(t *testing.T) {
 	tests := []struct {
-		name              string
-		zAxis             float64
-		complimentaryAxis float64
-		expectedValue     float64
+		name           string
+		xAngles        float64
+		yAngles        float64
+		zAngles        float64
+		xAcceleration  float64
+		yAcceleration  float64
+		zAcceleration  float64
+		expectedXValue float64
+		expectedYValue float64
+		expectedZValue float64
 	}{
+		//*imu.RawImuAccelerationEvent Event: RawImuAccelerationEvent Acceleration{camX:0.57570, camY:0.00293, camZ: 0.80764, totalMagn: 0.99183}
+		//*imu.CorrectedAccelerationEvent Event: CorrectedAccelerationEvent: -0.052186, -0.040435, 1.000000 Angles x 35.481755, y 0.169247, z 54.518245
 		{
-			name:              "flat on table",
-			zAxis:             1.0,
-			complimentaryAxis: 0.0,
-			expectedValue:     0.0,
-		},
-		{
-			name:              "modelled data",
-			zAxis:             0.9999999952985156,
-			complimentaryAxis: 0.0028501808113100013,
-			expectedValue:     0.0,
-		},
-		{
-			name:              "data",
-			zAxis:             1.01,
-			complimentaryAxis: 0.01,
-			expectedValue:     0.0,
-		}, {
-			name:              "2", //0.42205761869463915 -0.005083033799155377 0.9014656664890688
-			zAxis:             0.9014656664890688,
-			complimentaryAxis: 0.42205761869463915,
-			expectedValue:     0.0,
+			name:           "45 degree tilt",
+			xAngles:        45.0,
+			yAngles:        0.0,
+			zAngles:        45.0,
+			xAcceleration:  0.71,
+			yAcceleration:  0.00,
+			zAcceleration:  0.71,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expectedValue, computeCorrectedGForce(test.zAxis, test.complimentaryAxis))
+			correctedX, correctedY, correctedZ := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration, test.xAngles, test.yAngles, test.zAngles)
+			require.Equal(t, test.expectedXValue, correctedX)
+			require.Equal(t, test.expectedYValue, correctedY)
+			require.Equal(t, test.expectedZValue, correctedZ)
 		})
 	}
 }
 
-//func Test_ComputeSpeed(t *testing.T) {
-//	tests := []struct {
-//		name               string
-//		accelerationSpeeds []float64
-//		expectedSpeed      float64
-//	}{
-//		{
-//			name:               "stopped car",
-//			accelerationSpeeds: []float64{100.0, -50.0, 10.0},
-//			expectedSpeed:      60.0,
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Start(test.name, func(t *testing.T) {
-//			for _, accelSpeed := range test.accelerationSpeeds {
-//				addAccelerationSpeeds(accelSpeed)
-//			}
-//			require.Equal(t, test.expectedSpeed, computeSpeed())
-//		})
-//	}
-//}
+func Test_ComputeCorrectedTiltAngles(t *testing.T) {
+	tests := []struct {
+		name                string
+		xAxis               float64
+		yAxis               float64
+		zAxis               float64
+		expectedXAngleValue float64
+		expectedYAngleValue float64
+		expectedZAngleValue float64
+	}{
+		{
+			name:                "no acceleration, driving on a 100% plain field",
+			xAxis:               0.0,
+			yAxis:               0.0,
+			zAxis:               1.0,
+			expectedXAngleValue: 0.0,
+			expectedYAngleValue: 0.0,
+			expectedZAngleValue: 90.0,
+		},
+		{
+			name:                "acceleration, no turn",
+			xAxis:               0.1,
+			yAxis:               0.0,
+			zAxis:               1.0,
+			expectedXAngleValue: 5.710593137499643,
+			expectedYAngleValue: 0.0,
+			expectedZAngleValue: 95.710593137499643,
+		},
+		{
+			name:                "deceleration, no turn",
+			xAxis:               -0.1,
+			yAxis:               0.0,
+			zAxis:               1.0,
+			expectedXAngleValue: -5.710593137499643,
+			expectedYAngleValue: 0.0,
+			expectedZAngleValue: 84.28940686250036,
+		},
+		{
+			name:                "acceleration, right turn",
+			xAxis:               0.1,
+			yAxis:               0.1,
+			zAxis:               1.0,
+			expectedXAngleValue: 5.6824384835168384,
+			expectedYAngleValue: 5.6824384835168384,
+			expectedZAngleValue: 95.68243848351683,
+		},
+		{
+			name:                "deceleration, right turn",
+			xAxis:               -0.1,
+			yAxis:               0.1,
+			zAxis:               1.0,
+			expectedXAngleValue: -5.6824384835168384,
+			expectedYAngleValue: 5.6824384835168384,
+			expectedZAngleValue: 84.31756151648317,
+		},
+		{
+			name:                "acceleration, left turn",
+			xAxis:               0.1,
+			yAxis:               -0.1,
+			zAxis:               1.0,
+			expectedXAngleValue: 5.6824384835168384,
+			expectedYAngleValue: -5.6824384835168384,
+			expectedZAngleValue: 95.68243848351683,
+		},
+		{
+			name:                "deceleration, left turn",
+			xAxis:               -0.1,
+			yAxis:               -0.1,
+			zAxis:               1.0,
+			expectedXAngleValue: -5.6824384835168384,
+			expectedYAngleValue: -5.6824384835168384,
+			expectedZAngleValue: 84.31756151648317,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			correctedX, correctedY, correctedZ := computeCorrectedTiltAngles(test.xAxis, test.yAxis, test.zAxis)
+			require.Equal(t, test.expectedXAngleValue, correctedX)
+			require.Equal(t, test.expectedYAngleValue, correctedY)
+			require.Equal(t, test.expectedZAngleValue, correctedZ)
+		})
+	}
+}

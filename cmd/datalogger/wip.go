@@ -68,7 +68,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
-	//
+
 	gnssEventFeed := gnss.NewEventFeed()
 	gnssEventFeed.Start(gnssDevice)
 
@@ -84,8 +84,9 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	}
 
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
+	rawEventSub := rawImuEventFeed.Subscribe("merger")
 	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
-	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, correctedImuEventSub)
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, correctedImuEventSub)
 	mergedEventFeed.Start()
 
 	mergedEventSub := mergedEventFeed.Subscribe("wip")

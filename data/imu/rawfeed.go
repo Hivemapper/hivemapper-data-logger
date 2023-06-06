@@ -14,7 +14,7 @@ type RawImuAccelerationEvent struct {
 }
 
 func (e *RawImuAccelerationEvent) String() string {
-	return "RawImuAccelerationEvent"
+	return fmt.Sprintf("RawImuAccelerationEvent %s", e.Acceleration.String())
 }
 
 func NewRawImuAccelerationEvent(acc *iim42652.Acceleration) *RawImuAccelerationEvent {
