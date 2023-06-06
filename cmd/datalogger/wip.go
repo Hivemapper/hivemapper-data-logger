@@ -80,41 +80,5 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	//imuDirectionEventFeed := imu.NewDirectionEventFeed(conf)
-	//go func() {
-	//	err := imuDirectionEventFeed.Run(correctedImuEventFeed)
-	//	if err != nil {
-	//		panic(fmt.Errorf("running pipeline: %w", err))
-	//	}
-	//}()
-
-	//gnssEventFeed := gnss.NewEventFeed()
-	//
-	//err = gnssDevice.Init(nil)
-	//if err != nil {
-	//	return fmt.Errorf("initializing neom9n: %w", err)
-	//}
-	//dataFeed := neom9n.NewDataFeed(gnssEventFeed.HandleData)
-	//
-	//go func() {
-	//	err = gnssDevice.Run(dataFeed, func(now time.Time) {
-	//		dataFeed.SetStartTime(now)
-	//	})
-	//	if err != nil {
-	//		panic(fmt.Errorf("running gnss: %w", err))
-	//	}
-	//}()
-
-	//todo: init file logger for imu
-	//todo: init db logger for imu
-
-	//todo: feed merger that merge events from multiple feeds into one
-	//todo: feed merger should offer a way to subscribe to a feed that is a merge of multiple feeds
-	//todo: Move events filter to feed merger
-
-	//todo: should like this .. eventServer := webconnect.NewEventServer(mergedEventFeed)
-
-	//merger := data.NewEventFeedMerger(grpcImuSubscription, grpcGnssSubscription)
-
 	return nil
 }
