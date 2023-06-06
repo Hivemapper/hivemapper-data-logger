@@ -45,7 +45,7 @@ func (f *RawFeed) Subscribe(name string) *data.Subscription {
 }
 
 func (f *RawFeed) Run() error {
-	fmt.Println("Running pipeline")
+	fmt.Println("Running imu raw feed")
 	err := f.run()
 	if err != nil {
 		return fmt.Errorf("running pipeline: %w", err)

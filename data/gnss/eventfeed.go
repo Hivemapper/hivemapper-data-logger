@@ -67,6 +67,7 @@ func (f *EventFeed) Subscribe(name string) *data.Subscription {
 }
 
 func (f *EventFeed) Run(gnssDevice *neom9n.Neom9n) error {
+	fmt.Println("Running gnss feed")
 	//todo: datafeed is ugly
 	dataFeed := neom9n.NewDataFeed(f.HandleData)
 	err := gnssDevice.Run(dataFeed, func(now time.Time) {

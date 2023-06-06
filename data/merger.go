@@ -1,17 +1,20 @@
 package data
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type EventFeedMerger struct {
 	subscriptions       Subscriptions
-	mergedSubscriptions []*Subscription
+	subscriptionToMerge []*Subscription
 	Events              chan Event
 }
 
 func NewEventFeedMerger(subscriptions ...*Subscription) *EventFeedMerger {
 	return &EventFeedMerger{
-		mergedSubscriptions: subscriptions,
-		Events:              make(chan Event),
+		subscriptions:       make(Subscriptions),
+		subscriptionToMerge: subscriptions,
 	}
 }
 
@@ -24,14 +27,20 @@ func (m *EventFeedMerger) Subscribe(name string) *Subscription {
 }
 
 func (m *EventFeedMerger) Run() {
+	fmt.Println("Running event feed merger")
 	wg := sync.WaitGroup{}
-	for _, sub := range m.mergedSubscriptions {
+	for _, sub := range m.subscriptionToMerge {
 		wg.Add(1)
 		go func(sub *Subscription) {
 			for {
 				select {
 				case event := <-sub.IncomingEvents:
-					m.Events <- event
+					if len(m.subscriptions) == 0 {
+						continue
+					}
+					for _, sub := range m.subscriptions {
+						sub.IncomingEvents <- event
+					}
 				}
 			}
 			wg.Done()

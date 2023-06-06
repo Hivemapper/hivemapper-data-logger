@@ -47,8 +47,8 @@ func (f *CorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
 }
 
 func (f *CorrectedAccelerationFeed) Run(raw *RawFeed) error {
+	fmt.Println("Running imu corrected feed")
 	sub := raw.Subscribe("corrected")
-
 	for {
 		select {
 		case event := <-sub.IncomingEvents:
