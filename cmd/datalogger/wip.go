@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -51,9 +50,9 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
-	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+	//serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
+	//mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
+	//gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
 
 	rawImuEventFeed := imu.NewRawFeed(imuDevice)
 	go func() {
