@@ -21,7 +21,7 @@ func (m *EventFeedMerger) Subscribe(name string) *Subscription {
 	return sub
 }
 
-func (m *EventFeedMerger) MergeEvents() {
+func (m *EventFeedMerger) Run() {
 	for _, sub := range m.mergedSubscriptions {
 		go func(sub *Subscription) {
 			for {

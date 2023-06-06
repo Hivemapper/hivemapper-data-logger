@@ -9,35 +9,6 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
-type EventFeed struct {
-	subscriptions data.Subscriptions
-}
-
-func NewEventFeed() *EventFeed {
-	return &EventFeed{
-		subscriptions: make(data.Subscriptions),
-	}
-}
-
-func (e *EventFeed) Subscribe(name string) *data.Subscription {
-	sub := &data.Subscription{
-		IncomingEvents: make(chan data.Event),
-	}
-	e.subscriptions[name] = sub
-	return sub
-}
-
-func (e *EventFeed) HandleData(d *neom9n.Data) {
-	e.emit(NewGnssEvent(d))
-}
-
-func (e *EventFeed) emit(event data.Event) {
-	event.SetTime(time.Now())
-	for _, subscription := range e.subscriptions {
-		subscription.IncomingEvents <- event
-	}
-}
-
 type GnssEvent struct {
 	*data.BaseEvent
 	Data *neom9n.Data `json:"data"`
@@ -59,4 +30,61 @@ func (g *GnssEvent) String() string {
 	sb.WriteString(fmt.Sprintf("\tHeading: %.2f\n", g.Data.Heading))
 	sb.WriteString(fmt.Sprintf("\tSpeed: %.2f\n", g.Data.Speed))
 	return sb.String()
+}
+
+type GnssTimeSetEvent struct {
+	*data.BaseEvent
+	Time time.Time `json:"time"`
+}
+
+func NewGnssTimeSetEvent(t time.Time) *GnssTimeSetEvent {
+	return &GnssTimeSetEvent{
+		BaseEvent: data.NewBaseEvent("GNSS_TIME_SET_EVENT"),
+		Time:      t,
+	}
+}
+
+func (g *GnssTimeSetEvent) String() string {
+	return fmt.Sprintf("GNSS_TIME_SET_EVENT: %s", g.Time)
+}
+
+type EventFeed struct {
+	subscriptions data.Subscriptions
+}
+
+func NewEventFeed() *EventFeed {
+	return &EventFeed{
+		subscriptions: make(data.Subscriptions),
+	}
+}
+
+func (f *EventFeed) Subscribe(name string) *data.Subscription {
+	sub := &data.Subscription{
+		IncomingEvents: make(chan data.Event),
+	}
+	f.subscriptions[name] = sub
+	return sub
+}
+
+func (f *EventFeed) Run(gnssDevice *neom9n.Neom9n) error {
+	//todo: datafeed is ugly
+	dataFeed := neom9n.NewDataFeed(f.HandleData)
+	err := gnssDevice.Run(dataFeed, func(now time.Time) {
+		dataFeed.SetStartTime(now)
+		f.emit(NewGnssTimeSetEvent(now))
+	})
+	if err != nil {
+		return fmt.Errorf("running gnss device: %w", err)
+	}
+	return nil
+}
+
+func (f *EventFeed) HandleData(d *neom9n.Data) {
+	f.emit(NewGnssEvent(d))
+}
+
+func (f *EventFeed) emit(event data.Event) {
+	for _, subscription := range f.subscriptions {
+		subscription.IncomingEvents <- event
+	}
 }

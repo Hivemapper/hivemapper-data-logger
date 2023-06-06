@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/streamingfast/hivemapper-data-logger/data"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -50,10 +55,6 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	//serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
-	//mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	//gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
-
 	rawImuEventFeed := imu.NewRawFeed(imuDevice)
 	go func() {
 		err := rawImuEventFeed.Run()
@@ -70,12 +71,34 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	correctedImuEventSub := correctedImuEventFeed.Subscribe("wip")
+	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
+	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+
+	gnssEventFeed := gnss.NewEventFeed()
+	go func() {
+		err := gnssEventFeed.Run(gnssDevice)
+		if err != nil {
+			panic(fmt.Errorf("running gnss event feed: %w", err))
+		}
+	}()
+	gnssEventSub := gnssEventFeed.Subscribe("merger")
+	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
+
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, correctedImuEventSub)
+	go func() {
+		err := mergedEventFeed.Run()
+		if err != nil {
+			panic(fmt.Errorf("running merged event feed: %w", err))
+		}
+	}()
+
+	mergedEventSub := mergedEventFeed.Subscribe("wip")
+
 	for {
 		select {
-		case correctedImuEvent := <-correctedImuEventSub.IncomingEvents:
-			e := correctedImuEvent.(*imu.CorrectedAccelerationEvent)
-			fmt.Println("Corrected IMU Event: ", e)
+		case e := <-mergedEventSub.IncomingEvents:
+			fmt.Printf("%T Event: %s", e, e)
 		}
 	}
 

@@ -133,6 +133,7 @@ func logRun(cmd *cobra.Command, args []string) error {
 			panic(fmt.Errorf("running gnss: %w", err))
 		}
 	}()
+
 	go func() {
 		sub := gnssEventFeed.Subscribe("gnss-sql-logger")
 		for {
