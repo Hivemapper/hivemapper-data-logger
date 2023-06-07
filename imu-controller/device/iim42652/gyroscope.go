@@ -18,7 +18,7 @@ const (
 	GyroScalesG15_62 GyroScale = 15.62 / ShortMax
 )
 
-type Gyroscope struct {
+type AngularRate struct {
 	RawX int16
 	RawY int16
 	RawZ int16
@@ -27,12 +27,15 @@ type Gyroscope struct {
 	Z    float64
 }
 
-func NewGyroscope(x, y, z int16, gyroScale GyroScale) *Gyroscope {
+func (r *AngularRate) String() string {
+	return fmt.Sprintf("AngularRate: camX:%.5f, camY:%.5f, camZ: %.5f", r.CamX(), r.CamY(), r.CamZ())
+}
+func NewGyroscope(x, y, z int16, gyroScale GyroScale) *AngularRate {
 	r := func(v float64) float64 {
 		return math.Round(v*10) / 10
 	}
 
-	return &Gyroscope{
+	return &AngularRate{
 		RawX: x,
 		RawY: y,
 		RawZ: z,
@@ -42,9 +45,21 @@ func NewGyroscope(x, y, z int16, gyroScale GyroScale) *Gyroscope {
 	}
 }
 
+func (a *AngularRate) CamX() float64 {
+	return a.Z
+}
+
+func (a *AngularRate) CamY() float64 {
+	return a.X
+}
+
+func (a *AngularRate) CamZ() float64 {
+	return a.Y
+}
+
 /*
-- Gyroscope Start-Up Time -> Time from gyro enable to gyro drive ready: 30 (seconds? ms?)
-- 4.6 Three-Axis Mems Gyroscope with 16-Bit ADCS and signal ConditioningWhen the gyroscope is rotated about any of the sense axes, the Coriolis Effect causes a
+- AngularRate Start-Up Time -> Time from gyro enable to gyro drive ready: 30 (seconds? ms?)
+- 4.6 Three-Axis Mems AngularRate with 16-Bit ADCS and signal ConditioningWhen the gyroscope is rotated about any of the sense axes, the Coriolis Effect causes a
   vibration that is detected by a capacitive pickoff
 
 - GYRO_DATA_X1 -> Upper byte of Gyro X-axis data (15:8) Addr: 37
@@ -55,7 +70,7 @@ func NewGyroscope(x, y, z int16, gyroScale GyroScale) *Gyroscope {
 - GYRO_DATA_Z0 -> Lower byte of Gyro Z-axis data (7:0) Addr: 42
 */
 
-func (i *IIM42652) GetGyroscopeData() (*Gyroscope, error) {
+func (i *IIM42652) GetGyroscopeData() (*AngularRate, error) {
 	i.registerLock.Lock()
 	defer i.registerLock.Unlock()
 
