@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/rs/cors"
 	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/streamingfast/hivemapper-data-logger/webconnect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"net/http"
-	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data/merged"
 
@@ -96,7 +97,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing json logger database: %w", err)
 	}
 
-	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "gnss-db-path"), merged.CreateTableQuery, merged.PurgeQuery)
+	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "gnss-db-path"), []logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery}, []logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
 	err = sqliteLogger.Init(mustGetDuration(cmd, "gnss-db-log-ttl"))
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -128,18 +129,16 @@ func wipRun(cmd *cobra.Command, args []string) error {
 				case *gnss.GnssEvent:
 					gnssEvent = e
 				}
-			}
-			if imuRawEvent != nil && correctedImuEvent != nil {
-				ge := gnssEvent
-				if ge == nil {
-					ge = &gnss.GnssEvent{
-						Data: &neom9n.Data{
-							Dop:        &neom9n.Dop{},
-							RF:         &neom9n.RF{},
-							Satellites: &neom9n.Satellites{},
-						},
+				if e.GetCategory() == "DIRECTION_CHANGE" {
+
+					err := sqliteLogger.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))
+					if err != nil {
+						panic(fmt.Errorf("logging to sqlite: %w", err))
 					}
 				}
+			}
+			if imuRawEvent != nil && correctedImuEvent != nil {
+				ge := mustGnssEvent(gnssEvent)
 				w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
 				err = sqliteLogger.Log(w)
 				if err != nil {
@@ -171,4 +170,17 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func mustGnssEvent(e *gnss.GnssEvent) *gnss.GnssEvent {
+	if e == nil {
+		return &gnss.GnssEvent{
+			Data: &neom9n.Data{
+				Dop:        &neom9n.Dop{},
+				RF:         &neom9n.RF{},
+				Satellites: &neom9n.Satellites{},
+			},
+		}
+	}
+	return e
 }

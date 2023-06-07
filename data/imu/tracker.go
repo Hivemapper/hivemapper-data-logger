@@ -5,7 +5,7 @@ import (
 )
 
 type Tracker interface {
-	trackAcceleration(lastUpdate time.Time, xAvg float64, yAvg float64)
+	track(lastUpdate time.Time, xAvg float64, yAvg float64)
 }
 
 type LeftTurnTracker struct {
@@ -15,7 +15,7 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64) {
+func (t *LeftTurnTracker) track(_ time.Time, x float64, y float64) {
 	magnitude := computeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.LeftTurnThreshold {
 		t.continuousCount++
@@ -40,7 +40,7 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64) {
+func (t *RightTurnTracker) track(_ time.Time, x float64, y float64) {
 	magnitude := computeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.RightTurnThreshold {
 		t.continuousCount++
@@ -67,7 +67,7 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64) {
+func (t *AccelerationTracker) track(lastUpdate time.Time, x float64, y float64) {
 	if x > t.config.GForceAcceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -96,7 +96,7 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64) {
+func (t *DecelerationTracker) track(lastUpdate time.Time, x float64, y float64) {
 	if x < t.config.GForceDeceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -124,7 +124,7 @@ type StopTracker struct {
 	emitFunc        emit
 }
 
-func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64) {
+func (t *StopTracker) track(_ time.Time, x float64, y float64) {
 	if x < 0.012 && x > -0.012 && y < 0.012 && y > -0.012 {
 		t.continuousCount++
 

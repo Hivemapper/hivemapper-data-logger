@@ -27,7 +27,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT"),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC"),
 		Response:  resp,
 	}
 }

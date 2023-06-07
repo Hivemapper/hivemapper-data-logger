@@ -103,11 +103,11 @@ func (f *DirectionEventFeed) handleEvent(e *CorrectedAccelerationEvent) error {
 	x := e.X
 	y := e.Y
 
-	f.leftTurnTracker.trackAcceleration(f.lastUpdate, x, y)
-	f.rightTurnTracker.trackAcceleration(f.lastUpdate, x, y)
-	f.accelerationTracker.trackAcceleration(f.lastUpdate, x, y)
-	f.decelerationTracker.trackAcceleration(f.lastUpdate, x, y)
-	f.stopTracker.trackAcceleration(f.lastUpdate, x, y)
+	f.leftTurnTracker.track(f.lastUpdate, x, y)
+	f.rightTurnTracker.track(f.lastUpdate, x, y)
+	f.accelerationTracker.track(f.lastUpdate, x, y)
+	f.decelerationTracker.track(f.lastUpdate, x, y)
+	f.stopTracker.track(f.lastUpdate, x, y)
 
 	return nil
 }

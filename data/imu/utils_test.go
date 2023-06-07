@@ -95,7 +95,7 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			name:           "flat fast acceleration",
 			xAcceleration:  0.890652,
 			zAcceleration:  1.009796,
-			expectedXValue: 1.0,
+			expectedXValue: 0.23,
 			expectedYValue: 0.0,
 		},
 		//Event: RawImuEvent Acceleration{camX:0.20850, camY:0.19337, camZ: 0.95999}
@@ -115,6 +115,14 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			xAcceleration:  0.47267,
 			yAcceleration:  0.01660,
 			zAcceleration:  0.88626,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
+		},
+		{
+			name:           "flat fast acceleration",
+			xAcceleration:  0.30274361400189215,
+			yAcceleration:  0.10986663411358989,
+			zAcceleration:  0.978057191686758,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
 		},

@@ -16,7 +16,7 @@ type GnssEvent struct {
 
 func NewGnssEvent(d *neom9n.Data) *GnssEvent {
 	return &GnssEvent{
-		BaseEvent: data.NewBaseEvent("GNSS_EVENT"), // no x, y, z GForces for gnss data
+		BaseEvent: data.NewBaseEvent("GNSS_EVENT", "GNSS"), // no x, y, z GForces for gnss data
 		Data:      d,
 	}
 }
@@ -39,7 +39,7 @@ type GnssTimeSetEvent struct {
 
 func NewGnssTimeSetEvent(t time.Time) *GnssTimeSetEvent {
 	return &GnssTimeSetEvent{
-		BaseEvent: data.NewBaseEvent("GNSS_TIME_SET_EVENT"),
+		BaseEvent: data.NewBaseEvent("GNSS_TIME_SET_EVENT", "GNSS"),
 		Time:      t,
 	}
 }

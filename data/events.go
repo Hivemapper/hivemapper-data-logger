@@ -15,22 +15,25 @@ type Event interface {
 	GetTime() time.Time
 	String() string
 	GetName() string
-}
-
-func NewBaseEvent(name string) *BaseEvent {
-	return &BaseEvent{
-		Name: name,
-		Time: time.Now(),
-	}
+	GetCategory() string
 }
 
 type BaseEvent struct {
-	Time time.Time `json:"time"`
-	Name string    `json:"name"`
+	Time     time.Time `json:"time"`
+	Name     string    `json:"name"`
+	Category string    `json:"category"`
+}
+
+func NewBaseEvent(name string, category string) *BaseEvent {
+	return &BaseEvent{
+		Name:     name,
+		Category: category,
+		Time:     time.Now(),
+	}
 }
 
 func (e *BaseEvent) String() string {
-	return "BaseEvent"
+	return fmt.Sprintf("BaseEvent: %s @ %s", e.Name, e.Category)
 }
 
 func (e *BaseEvent) SetTime(t time.Time) {
@@ -43,6 +46,10 @@ func (e *BaseEvent) GetTime() time.Time {
 
 func (e *BaseEvent) GetName() string {
 	return e.Name
+}
+
+func (e *BaseEvent) GetCategory() string {
+	return e.Category
 }
 
 type Angles struct {

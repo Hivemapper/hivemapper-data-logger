@@ -26,7 +26,7 @@ func (e *CorrectedAccelerationEvent) String() string {
 func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccelerationEvent {
 
 	return &CorrectedAccelerationEvent{
-		BaseEvent: data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT"),
+		BaseEvent: data.NewBaseEvent("IMU_CORRECTED_ACCELERATION_EVENT", "IMU"),
 		X:         x,
 		Y:         y,
 		XAngle:    xAngle,
@@ -91,23 +91,23 @@ func (f *CorrectedAccelerationFeed) Start(raw *RawFeed) {
 				ay := a.CamY()
 				az := a.CamZ()
 
-				xAngle, yAngle := computeTiltAngles(ax, ay, az)
 				correctedX, correctedY := computeCorrectedGForce(ax, ay, az)
+				xAngle, yAngle := computeTiltAngles(correctedX, correctedY, 1)
 
-				now := time.Now()
-				err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
-				if err != nil {
-					panic(fmt.Errorf("updating x filter: %w", err))
-				}
-				x := f.xModel.Value(f.xFilter.State())
+				//now := time.Now()
+				//err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
+				//if err != nil {
+				//	panic(fmt.Errorf("updating x filter: %w", err))
+				//}
+				//x := f.xModel.Value(f.xFilter.State())
+				//
+				//err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
+				//if err != nil {
+				//	panic(fmt.Errorf("updating y filter: %w", err))
+				//}
+				//y := f.yModel.Value(f.yFilter.State())
 
-				err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
-				if err != nil {
-					panic(fmt.Errorf("updating y filter: %w", err))
-				}
-				y := f.yModel.Value(f.yFilter.State())
-
-				correctedEvent := NewCorrectedAccelerationEvent(x, y, xAngle, yAngle)
+				correctedEvent := NewCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}

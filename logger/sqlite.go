@@ -10,19 +10,19 @@ import (
 )
 
 type Sqlite struct {
-	lock                 sync.Mutex
-	db                   *sql.DB
-	file                 string
-	doInsert             bool
-	purgeQueryFunc       PurgeQueryFunc
-	createTableQueryFunc CreateTableQueryFunc
+	lock                     sync.Mutex
+	db                       *sql.DB
+	file                     string
+	doInsert                 bool
+	purgeQueryFuncList       []PurgeQueryFunc
+	createTableQueryFuncList []CreateTableQueryFunc
 }
 
-func NewSqlite(file string, createTableQueryFunc CreateTableQueryFunc, purgeQueryFunc PurgeQueryFunc) *Sqlite {
+func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
 	return &Sqlite{
-		file:                 file,
-		createTableQueryFunc: createTableQueryFunc,
-		purgeQueryFunc:       purgeQueryFunc,
+		file:                     file,
+		createTableQueryFuncList: createTableQueryFuncList,
+		purgeQueryFuncList:       purgeQueryFuncList,
 	}
 }
 
@@ -33,8 +33,10 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		return fmt.Errorf("opening database: %s", err.Error())
 	}
 
-	if _, err := db.Exec(s.createTableQueryFunc()); err != nil {
-		return fmt.Errorf("creating table: %s", err.Error())
+	for _, createQuery := range s.createTableQueryFuncList {
+		if _, err := db.Exec(createQuery()); err != nil {
+			return fmt.Errorf("creating table: %s", err.Error())
+		}
 	}
 
 	fmt.Println("database initialized, will purge every:", logTTL.String())
@@ -65,11 +67,13 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 
 	t := time.Now().Add(ttl * -1)
 	fmt.Println("purging database older than:", t)
-	if res, err := s.db.Exec(s.purgeQueryFunc(), t); err != nil {
-		return err
-	} else {
-		c, _ := res.RowsAffected()
-		fmt.Println("purged rows:", c)
+	for _, purgeQueryFunc := range s.purgeQueryFuncList {
+		if res, err := s.db.Exec(purgeQueryFunc(), t); err != nil {
+			return err
+		} else {
+			c, _ := res.RowsAffected()
+			fmt.Println("purged rows:", c)
+		}
 	}
 
 	return nil

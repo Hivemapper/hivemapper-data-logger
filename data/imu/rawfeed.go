@@ -20,7 +20,7 @@ func (e *RawImuEvent) String() string {
 
 func NewRawImuEvent(acc *iim42652.Acceleration, angularRate *iim42652.AngularRate) *RawImuEvent {
 	return &RawImuEvent{
-		BaseEvent:    data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT"),
+		BaseEvent:    data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT", "IMU"),
 		Acceleration: acc,
 		AngularRate:  angularRate,
 	}
