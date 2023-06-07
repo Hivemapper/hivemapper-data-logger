@@ -6,11 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/tarm/serial"
+
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/streamingfast/gnss-controller/message"
 	"github.com/streamingfast/gnss-controller/message/handlers"
-
-	"github.com/tarm/serial"
 )
 
 type Neom9n struct {
@@ -21,13 +21,16 @@ type Neom9n struct {
 	stream             *serial.Port
 	output             chan ubx.Message
 	mgaOfflineFilePath string
+	decoderDone        chan error
 }
 
 func NewNeom9n(serialConfigName string, mgaOfflineFilePath string) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now(),
 		config: &serial.Config{
-			Name:     serialConfigName, // /dev/ttyAMA1
+			Name: serialConfigName, // /dev/ttyAMA1
+			//Baud: 921600,
+			//Baud: 57600,
 			Baud:     38400,
 			Parity:   serial.ParityNone,
 			StopBits: serial.Stop1,
@@ -51,6 +54,15 @@ func (n *Neom9n) handleOutputMessages() error {
 				return fmt.Errorf("writing message: %w", err)
 			}
 		}
+		if _, ok := msg.(*ubx.NavPvt); ok {
+			encoded, err := ubx.EncodeReq(msg)
+			_, err = n.stream.Write(encoded)
+			if err != nil {
+
+				return fmt.Errorf("writing message: %w", err)
+			}
+		}
+
 		encoded, err := ubx.Encode(msg)
 		_, err = n.stream.Write(encoded)
 		if err != nil {
@@ -73,42 +85,27 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 			panic(err)
 		}
 	}()
-	
-	n.output <- &ubx.CfgValSet{
-		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
-		CfgData: []*ubx.CfgData{
-			{
-				Key:   546374490, //0x2091035a CFG-MSGOUT-UBX_MON_RF_UART1
-				Value: []byte{0x01},
-			},
-		},
-	}
 
-	n.output <- &ubx.CfgValSet{
-		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
-		CfgData: []*ubx.CfgData{
-			{
-				Key:   269549605, //CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
-				Value: []byte{0x01},
-			},
-		},
-	}
+	n.decoderDone = n.decoder.Decode(n.stream)
 
-	cfg2 := ubx.CfgValSet{
-		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
-		CfgData: []*ubx.CfgData{
-			{
-				Key:   269549605, //CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
-				Value: []byte{0x01},
-			},
-		},
-	}
+	//reset := ubx.CfgRst{
+	//	NavBbrMask: ubx.CfgRstAlm,
+	//	ResetMode:  0x01,
+	//}
+	//n.output <- &reset
+	time.Sleep(1 * time.Second)
+	fmt.Println("Reset completed")
 
-	fmt.Println("sending cfg val set")
-	n.output <- &cfg2
+	n.setConfig(1079115777, []byte{0x0e, 0x10, 0x00}) // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
+	time.Sleep(1 * time.Second)
+	fmt.Println("Baud changed")
+	//time.Sleep(1 * time.Second)
+	//n.setConfig(1079115777, []byte{0xe1, 0x00}) // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
+	n.setConfig(807469057, []byte{0x32}) // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
+	n.setConfig(807469058, []byte{0x80}) // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
+	n.setConfig(546374490, []byte{0x01}) // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
+	n.setConfig(269549605, []byte{0x01}) // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
+	n.setConfig(546373639, []byte{0x01}) // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
@@ -123,12 +120,23 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	return nil
 }
 
+func (n *Neom9n) setConfig(key uint32, value []byte) {
+	n.output <- &ubx.CfgValSet{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		CfgData: []*ubx.CfgData{
+			{
+				Key:   key,
+				Value: value,
+			},
+		},
+	}
+}
+
 func (n *Neom9n) Run(dataFeed *DataFeed, timeSetCallback func(now time.Time)) error {
 	timeSet := make(chan time.Time)
 	timeGetter := handlers.NewTimeGetter(timeSet)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, timeGetter)
-
-	done := n.decoder.Decode(n.stream)
 
 	now := time.Time{}
 	loadAll := false
@@ -174,7 +182,7 @@ func (n *Neom9n) Run(dataFeed *DataFeed, timeSetCallback func(now time.Time)) er
 		timeSetCallback(n.startTime)
 	}
 
-	if err := <-done; err != nil {
+	if err := <-n.decoderDone; err != nil {
 		return err
 	}
 

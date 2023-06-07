@@ -20,21 +20,25 @@ type Position struct {
 }
 
 type Data struct {
-	Ttff       int64       `json:"ttff"`
-	SystemTime time.Time   `json:"systemtime"`
-	Timestamp  time.Time   `json:"timestamp"`
-	Fix        string      `json:"fix"`
-	Latitude   float64     `json:"latitude"`
-	Longitude  float64     `json:"longitude"`
-	Altitude   float64     `json:"height"`
-	Heading    float64     `json:"heading"`
-	Speed      float64     `json:"speed"`
-	Dop        *Dop        `json:"dop"`
-	Satellites *Satellites `json:"satellites"`
-	Sep        float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
-	Eph        float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
-	RF         *RF         `json:"rf,omitempty"`
-	startTime  time.Time
+	Ttff               int64       `json:"ttff"`
+	SystemTime         time.Time   `json:"systemtime"`
+	Timestamp          time.Time   `json:"timestamp"`
+	Fix                string      `json:"fix"`
+	Latitude           float64     `json:"latitude"`
+	Longitude          float64     `json:"longitude"`
+	Altitude           float64     `json:"height"`
+	Heading            float64     `json:"heading"`
+	Speed              float64     `json:"speed"`
+	Dop                *Dop        `json:"dop"`
+	Satellites         *Satellites `json:"satellites"`
+	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
+	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	RF                 *RF         `json:"rf,omitempty"`
+	startTime          time.Time
+	SpeedAccuracy      float64
+	HeadingAccuracy    float64
+	HorizontalAccuracy float64
+	VerticalAccuracy   float64
 }
 
 func (d *Data) GetStartTime() time.Time {
@@ -108,13 +112,13 @@ type Satellites struct {
 }
 
 type DataFeed struct {
-	handleData func(data *Data)
+	HandleData func(data *Data)
 	Data       *Data
 }
 
 func NewDataFeed(handleData func(data *Data)) *DataFeed {
 	return &DataFeed{
-		handleData: handleData,
+		HandleData: handleData,
 		Data: &Data{
 			SystemTime: noTime,
 			Timestamp:  noTime,
@@ -158,12 +162,15 @@ type RF struct {
 	MagQ         byte   `json:"mag_q"`
 }
 
+var lastNav = time.Now()
+
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	data := df.Data
 	data.SystemTime = time.Now()
 
 	switch m := msg.(type) {
 	case *ubx.NavPvt:
+		lastNav = time.Now()
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
 		data.Timestamp = now
 		data.Fix = fix[m.FixType]
@@ -182,7 +189,14 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Eph = float64(m.HAcc_mm) / 1000
 
 		data.Heading = float64(m.HeadMot_dege5) * 1e-5 //tv.HeadMot
-		data.Speed = float64(m.GSpeed_mm_s) / 1000     //tv.Speed
+		data.HeadingAccuracy = float64(m.HeadAcc_dege5) * 1e-5
+
+		data.Speed = float64(m.GSpeed_mm_s) / 1000 //tv.Speed
+		data.SpeedAccuracy = float64(m.SAcc_mm_s) / 1000
+
+		data.HorizontalAccuracy = float64(m.HAcc_mm) / 1000
+		data.VerticalAccuracy = float64(m.VAcc_mm) / 1000
+
 	case *ubx.NavDop:
 		data.Dop.GDop = float64(m.GDOP) * 0.01
 		data.Dop.HDop = float64(m.HDOP) * 0.01
@@ -193,7 +207,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Dop.YDop = float64(m.NDOP) * 0.01
 
 		// we receive NavDop at the end so we handleData here
-		df.handleData(data)
+		df.HandleData(data)
 	case *ubx.NavSat:
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
