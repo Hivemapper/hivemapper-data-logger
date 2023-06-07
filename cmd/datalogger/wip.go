@@ -67,13 +67,10 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	rawImuEventFeed.Start()
 
 	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(rawImuEventFeed)
+	correctedImuEventFeed.Start(rawImuEventFeed.Subscribe("corrected"))
 
 	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	err = directionEventFeed.Start(correctedImuEventFeed)
-	if err != nil {
-		return fmt.Errorf("runnign direction event feed: %w", err)
-	}
+	directionEventFeed.Start(rawImuEventFeed.Subscribe("direction"))
 
 	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
@@ -163,6 +160,8 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	handler = cors.New(opts).Handler(handler)
 
 	mux.Handle(path, handler)
+
+	fmt.Printf("Starting server on %s ...\n", listenAddr)
 	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
 
 	if err != nil {

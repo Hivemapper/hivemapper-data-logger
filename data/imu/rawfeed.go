@@ -47,7 +47,7 @@ func (f *RawFeed) Subscribe(name string) *data.Subscription {
 }
 
 func (f *RawFeed) Start() {
-	fmt.Println("Running imu raw feed")
+	fmt.Println("Starting imu raw feed")
 	go func() {
 		err := f.run()
 		if err != nil {

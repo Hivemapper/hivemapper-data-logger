@@ -56,14 +56,29 @@ func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
 }
 
 func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAcceleration float64) (float64, float64) {
-
+	xTilt, yTilt := computeTiltAngles(xAcceleration, yAcceleration, zAcceleration)
 	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
+
+	// base line 0 degrees --> 1.0 -> 35kmh
+	// 45 degrees -> 1.41  --> base line ->35km/h
+
+	xCos := math.Cos(xTilt * math.Pi / 180)
+	_ = xCos
+
+	yCos := math.Cos(yTilt * math.Pi / 180)
+	_ = yCos
+
+	equivalentGForceX := xAcceleration * xCos
+	_ = equivalentGForceX
 
 	accXnorm := xAcceleration / magnitude
 	accYnorm := yAcceleration / magnitude
 
-	correctedX := xAcceleration - accXnorm
-	correctedY := yAcceleration - accYnorm
+	accXCorrNorm := accXnorm * yCos
+	accYCorrNorm := accYnorm * xCos
+
+	correctedX := xAcceleration - accXCorrNorm
+	correctedY := yAcceleration - accYCorrNorm
 
 	return correctedX, correctedY
 }

@@ -98,8 +98,6 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			expectedXValue: 0.23,
 			expectedYValue: 0.0,
 		},
-		//Event: RawImuEvent Acceleration{camX:0.20850, camY:0.19337, camZ: 0.95999}
-		//Event: CorrectedAccelerationEvent: -0.243100, -0.242200, 0.000600 Angles x 12.019704, y 11.135466, z -16.500156
 		{
 			name:           "Tilted x and y but not moving",
 			xAcceleration:  0.20850,
@@ -108,8 +106,6 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
 		},
-		//Event: RawImuEvent Acceleration{camX:0.47267, camY:0.01660, camZ: 0.88626}
-		//Event: CorrectedAccelerationEvent: -0.173100, -0.112200, 0.002000 Angles x 28.068314, y 0.946951, z -28.087156
 		{
 			name:           "Tilted x and y but not moving",
 			xAcceleration:  0.47267,
@@ -123,6 +119,17 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			xAcceleration:  0.30274361400189215,
 			yAcceleration:  0.10986663411358989,
 			zAcceleration:  0.978057191686758,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
+		},
+		//0.2568437757499924,0.021485030671102023,1.000030518509476
+		//0.23291726432081056,0.02294991912594989,0.9804986724448378
+		//0.21338541825617235,0.11670278023621326,1.1807000946073793
+		{
+			name:           "acceleration",
+			xAcceleration:  0.2568437757499924,
+			yAcceleration:  0.021485030671102023,
+			zAcceleration:  1.000030518509476,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
 		},

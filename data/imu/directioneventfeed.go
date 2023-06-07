@@ -65,9 +65,8 @@ func (f *DirectionEventFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (f *DirectionEventFeed) Start(feed *CorrectedAccelerationFeed) error {
+func (f *DirectionEventFeed) Start(sub *data.Subscription) {
 	fmt.Println("Running direction event feed")
-	sub := feed.Subscribe("corrected")
 	now := time.Now()
 	f.lastUpdate = now
 
@@ -80,7 +79,7 @@ func (f *DirectionEventFeed) Start(feed *CorrectedAccelerationFeed) error {
 				}
 				e := event.(*CorrectedAccelerationEvent)
 				err := f.handleEvent(e)
-				f.lastUpdate = time.Now()
+				f.lastUpdate = e.GetTime()
 
 				if err != nil {
 					panic(fmt.Errorf("handling event %s: %w", e.GetName(), err))
@@ -88,8 +87,6 @@ func (f *DirectionEventFeed) Start(feed *CorrectedAccelerationFeed) error {
 			}
 		}
 	}()
-
-	return nil
 }
 
 func (f *DirectionEventFeed) emit(event data.Event) {

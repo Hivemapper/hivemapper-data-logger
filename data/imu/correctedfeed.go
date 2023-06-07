@@ -63,6 +63,7 @@ func NewCorrectedAccelerationFeed() *CorrectedAccelerationFeed {
 		ObservationVariance: 2.0,
 	})
 	f.yFilter = kalman.NewKalmanFilter(f.yModel)
+
 	return f
 }
 
@@ -74,9 +75,8 @@ func (f *CorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (f *CorrectedAccelerationFeed) Start(raw *RawFeed) {
+func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
 	fmt.Println("Running imu corrected feed")
-	sub := raw.Subscribe("corrected")
 	go func() {
 		for {
 			select {
