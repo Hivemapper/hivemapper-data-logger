@@ -8,19 +8,21 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
-type RawImuAccelerationEvent struct {
+type RawImuEvent struct {
 	*data.BaseEvent
 	Acceleration *iim42652.Acceleration `json:"acceleration"`
+	AngularRate  *iim42652.AngularRate  `json:"angular_rate"`
 }
 
-func (e *RawImuAccelerationEvent) String() string {
-	return fmt.Sprintf("RawImuAccelerationEvent %s", e.Acceleration.String())
+func (e *RawImuEvent) String() string {
+	return fmt.Sprintf("RawImuEvent %s %s", e.Acceleration, e.AngularRate)
 }
 
-func NewRawImuAccelerationEvent(acc *iim42652.Acceleration) *RawImuAccelerationEvent {
-	return &RawImuAccelerationEvent{
+func NewRawImuEvent(acc *iim42652.Acceleration, angularRate *iim42652.AngularRate) *RawImuEvent {
+	return &RawImuEvent{
 		BaseEvent:    data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT"),
 		Acceleration: acc,
+		AngularRate:  angularRate,
 	}
 }
 
@@ -64,8 +66,9 @@ func (f *RawFeed) run() error {
 		if err != nil {
 			panic(fmt.Errorf("getting acceleration: %w", err))
 		}
+		angularRate, err := f.imu.GetGyroscopeData()
 
-		event := NewRawImuAccelerationEvent(acceleration)
+		event := NewRawImuEvent(acceleration, angularRate)
 		for _, subscription := range f.subscriptions {
 			subscription.IncomingEvents <- event
 		}

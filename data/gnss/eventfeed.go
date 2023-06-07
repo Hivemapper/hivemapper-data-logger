@@ -23,12 +23,12 @@ func NewGnssEvent(d *neom9n.Data) *GnssEvent {
 
 func (g *GnssEvent) String() string {
 	var sb strings.Builder
-	sb.WriteString("GNSS\n")
-	sb.WriteString(fmt.Sprintf("\tLatitude: %.2f\n", g.Data.Latitude))
-	sb.WriteString(fmt.Sprintf("\tLongitude: %.2f\n", g.Data.Longitude))
-	sb.WriteString(fmt.Sprintf("\tAltitude: %.2f\n", g.Data.Altitude))
-	sb.WriteString(fmt.Sprintf("\tHeading: %.2f\n", g.Data.Heading))
-	sb.WriteString(fmt.Sprintf("\tSpeed: %.2f\n", g.Data.Speed))
+	sb.WriteString("GNSS:")
+	sb.WriteString(fmt.Sprintf(" Latitude: %.5f", g.Data.Latitude))
+	sb.WriteString(fmt.Sprintf(" Longitude: %.5f", g.Data.Longitude))
+	sb.WriteString(fmt.Sprintf(" Altitude: %.2f ", g.Data.Altitude))
+	sb.WriteString(fmt.Sprintf(" Heading: %.2f", g.Data.Heading))
+	sb.WriteString(fmt.Sprintf(" Speed: %.2f", g.Data.Speed))
 	return sb.String()
 }
 

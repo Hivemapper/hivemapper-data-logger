@@ -5,15 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/streamingfast/hivemapper-data-logger/logger"
-
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
-
-	"github.com/streamingfast/hivemapper-data-logger/data"
-
 	"github.com/spf13/cobra"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
@@ -92,10 +89,50 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
 
 	fmt.Println("Starting to listen for events from mergedEventSub")
+	var imuRawEvent *imu.RawImuEvent
+	var correctedImuEvent *imu.CorrectedAccelerationEvent
+	var gnssEvent *gnss.GnssEvent
+	//fmt.Fprintf(os.Stderr, "Raw Acc X, Corrected Acc X, Tilt X, Raw Acc Y, Corrected Acc Y, Tilt Y, Raw Acc Z\n")
 	for {
 		select {
 		case e := <-mergedEventSub.IncomingEvents:
-			fmt.Fprintf(os.Stderr, "%T Event: %s\n", e, e)
+			switch e := e.(type) {
+			case *imu.RawImuEvent:
+				imuRawEvent = e
+			case *imu.CorrectedAccelerationEvent:
+				correctedImuEvent = e
+			case *gnss.GnssEvent:
+				gnssEvent = e
+			}
+		}
+		if imuRawEvent != nil && correctedImuEvent != nil {
+			_ = gnssEvent
+			_ = imuRawEvent
+			_ = correctedImuEvent
+			//printCVS(imuRawEvent, correctedImuEvent, gnssEvent)
+			imuRawEvent = nil
+			correctedImuEvent = nil
 		}
 	}
+}
+
+func printCVS(imuRawEvent *imu.RawImuEvent, correctedImuEvent *imu.CorrectedAccelerationEvent, gnss *gnss.GnssEvent) {
+	fmt.Fprintf(os.Stderr, "%f,%f,%f,%f,%f,%f,%f\n",
+		imuRawEvent.Acceleration.CamX(),
+		correctedImuEvent.X,
+		correctedImuEvent.XAngle,
+		imuRawEvent.Acceleration.CamY(),
+		correctedImuEvent.Y,
+		correctedImuEvent.YAngle,
+		imuRawEvent.Acceleration.CamZ(),
+		gnss.Data.Fix,
+		gnss.Data.Latitude,
+		gnss.Data.Longitude,
+		gnss.Data.Altitude,
+		gnss.Data.Speed,
+		gnss.Data.Heading,
+		gnss.Data.Satellites.Seen,
+		gnss.Data.Satellites.Used,
+		gnss.Data.Eph,
+	)
 }

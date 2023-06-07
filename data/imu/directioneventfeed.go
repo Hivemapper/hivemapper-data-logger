@@ -123,30 +123,29 @@ func (f *DirectionEventFeed) emit(event data.Event) {
 
 func (f *DirectionEventFeed) handleEvent(e *CorrectedAccelerationEvent) error {
 
-	x := e.X
-	y := e.Y
-	z := e.Z
+	//x := e.X
+	//y := e.Y
+	//
+	//now := time.Now()
+	//err := f.xFilter.Update(now, f.xModel.NewMeasurement(x))
+	//if err != nil {
+	//	return fmt.Errorf("updating kalman x filter: %w", err)
+	//}
+	//
+	//err = f.yFilter.Update(now, f.yModel.NewMeasurement(y))
+	//if err != nil {
+	//	return fmt.Errorf("updating kalman y filter: %w", err)
+	//}
+	//
+	//err = f.zFilter.Update(now, f.zModel.NewMeasurement(z))
+	//if err != nil {
+	//	return fmt.Errorf("updating kalman z filter: %w", err)
+	//}
 
-	now := time.Now()
-	err := f.xFilter.Update(now, f.xModel.NewMeasurement(x))
-	if err != nil {
-		return fmt.Errorf("updating kalman x filter: %w", err)
-	}
-
-	err = f.yFilter.Update(now, f.yModel.NewMeasurement(y))
-	if err != nil {
-		return fmt.Errorf("updating kalman y filter: %w", err)
-	}
-
-	err = f.zFilter.Update(now, f.zModel.NewMeasurement(z))
-	if err != nil {
-		return fmt.Errorf("updating kalman z filter: %w", err)
-	}
-
-	f.leftTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
-	f.rightTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
-	f.accelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
-	f.decelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
-	f.stopTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	//f.leftTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	//f.rightTurnTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	//f.accelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	//f.decelerationTracker.trackAcceleration(f.lastUpdate, x, y, z)
+	//f.stopTracker.trackAcceleration(f.lastUpdate, x, y, z)
 	return nil
 }

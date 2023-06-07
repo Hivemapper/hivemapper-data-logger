@@ -1,7 +1,6 @@
 package imu
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -30,7 +29,7 @@ func computeTiltAngle(zAxis, complementaryAxis float64) float64 {
 	return tiltAngleXDegrees
 }
 
-func computeCorrectedTiltAngles(gForceX, gForceY, gForceZ float64) (float64, float64, float64) { // returns x, y, z angles
+func computeTiltAngles(gForceX, gForceY, gForceZ float64) (xAngle float64, yAngle float64) { // returns x, y, z angles
 	// http://www.starlino.com/imu_guide.html
 	//We can deduct from Eq.1 that R = SQRT( Rx^2 + Ry^2 + Rz^2).
 	//
@@ -43,15 +42,10 @@ func computeCorrectedTiltAngles(gForceX, gForceY, gForceZ float64) (float64, flo
 	accelerationX := gForceX * 3.9
 	accelerationY := gForceY * 3.9
 	accelerationZ := gForceZ * 3.9
-	pitchX := 180 * math.Atan(accelerationX/math.Sqrt(accelerationY*accelerationY+accelerationZ*accelerationZ)) / math.Pi
-	rollY := 180 * math.Atan(accelerationY/math.Sqrt(accelerationX*accelerationX+accelerationZ*accelerationZ)) / math.Pi
-	yawZ := 180 * math.Atan(accelerationZ/math.Sqrt(accelerationX*accelerationX+accelerationY*accelerationY)) / math.Pi
+	xAngle = 180 * math.Atan(accelerationX/math.Sqrt(accelerationY*accelerationY+accelerationZ*accelerationZ)) / math.Pi
+	yAngle = 180 * math.Atan(accelerationY/math.Sqrt(accelerationX*accelerationX+accelerationZ*accelerationZ)) / math.Pi
 
-	fmt.Println("stackoverflow pitch", pitchX)
-	fmt.Println("stackoverflow roll", rollY)
-	fmt.Println("stackoverflow yaw", yawZ)
-
-	return pitchX, rollY, yawZ
+	return xAngle, yAngle
 }
 
 func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
@@ -61,38 +55,15 @@ func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
 	return correctedValue
 }
 
-func computeCorrectedGForce(xAcceleration, yAcceleration, zAcceleration, xAngle, yAngle, zAngle float64) (float64, float64, float64) {
-	//// Compute x force with no acceleration. The x value is the computation at the exact angle.
-	//noAccelerationX := math.Sqrt(xAngle / 90)
-	//correctedX := xAcceleration - noAccelerationX
-	//
-	//// Compute x force with no acceleration. The x value is the computation at the exact angle.
-	//noAccelerationY := math.Sqrt(yAngle / 90)
-	//correctedY := yAcceleration - noAccelerationY
-	//
-	//// We want this value to be 1.0 for the moment
-	//correctedZ := 1.0
+func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAcceleration float64) (float64, float64) {
 
 	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
-	normalizedX := xAcceleration / magnitude
-	normalizedY := yAcceleration / magnitude
-	normalizedZ := zAcceleration / magnitude
 
-	angleXRad := xAngle * math.Pi / 180.0
-	angleYRad := yAngle * math.Pi / 180.0
-	angleZRad := zAngle * math.Pi / 180.0
+	accXnorm := xAcceleration / magnitude
+	accYnorm := yAcceleration / magnitude
 
-	cosX := math.Cos(angleXRad)
-	cosY := math.Cos(angleYRad)
-	cosZ := math.Cos(angleZRad)
+	correctedX := xAcceleration - accXnorm
+	correctedY := yAcceleration - accYnorm
 
-	correctedX := normalizedX / cosY / cosZ
-	correctedY := normalizedY / cosX / cosZ
-	correctedZ := normalizedZ / cosX / cosY
-
-	//correctedX := xAcceleration * math.Cos(angleXRad)
-	//correctedY := yAcceleration * math.Cos(angleYRad)
-	//correctedZ := zAcceleration * math.Cos(angleZRad)
-
-	return correctedX, correctedY, correctedZ
+	return correctedX, correctedY
 }

@@ -2,6 +2,7 @@ package imu
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -62,56 +63,81 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 func Test_ComputeCorrectedGForce(t *testing.T) {
 	tests := []struct {
 		name           string
-		xAngles        float64
-		yAngles        float64
-		zAngles        float64
 		xAcceleration  float64
 		yAcceleration  float64
 		zAcceleration  float64
 		expectedXValue float64
 		expectedYValue float64
-		expectedZValue float64
 	}{
 		{
 			name:           "45 degree tilt",
-			xAngles:        45.0,
-			yAngles:        0.0,
-			zAngles:        45.0,
 			xAcceleration:  0.707106781186548,
 			yAcceleration:  0.0,
 			zAcceleration:  0.707106781186548,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
-			expectedZValue: 1.0,
 		},
 		{
-			name:           "45 degree y",
-			xAngles:        0.0,
-			yAngles:        45.0,
-			zAngles:        45.0,
+			name:           "45 degree tilt",
 			xAcceleration:  0.0,
 			yAcceleration:  0.707106781186548,
 			zAcceleration:  0.707106781186548,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
-			expectedZValue: 1.0,
+		},
+		{
+			name:           "flat",
+			zAcceleration:  1.0,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
+		},
+		{
+			name:           "flat fast acceleration",
+			xAcceleration:  0.890652,
+			zAcceleration:  1.009796,
+			expectedXValue: 1.0,
+			expectedYValue: 0.0,
+		},
+		//Event: RawImuEvent Acceleration{camX:0.20850, camY:0.19337, camZ: 0.95999}
+		//Event: CorrectedAccelerationEvent: -0.243100, -0.242200, 0.000600 Angles x 12.019704, y 11.135466, z -16.500156
+		{
+			name:           "Tilted x and y but not moving",
+			xAcceleration:  0.20850,
+			yAcceleration:  0.19337,
+			zAcceleration:  0.95999,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
+		},
+		//Event: RawImuEvent Acceleration{camX:0.47267, camY:0.01660, camZ: 0.88626}
+		//Event: CorrectedAccelerationEvent: -0.173100, -0.112200, 0.002000 Angles x 28.068314, y 0.946951, z -28.087156
+		{
+			name:           "Tilted x and y but not moving",
+			xAcceleration:  0.47267,
+			yAcceleration:  0.01660,
+			zAcceleration:  0.88626,
+			expectedXValue: 0.0,
+			expectedYValue: 0.0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			correctedX, correctedY, correctedZ := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration, test.xAngles, test.yAngles, test.zAngles)
-			//require.Equal(t, test.expectedXValue, correctedX)
-			//require.Equal(t, test.expectedYValue, correctedY)
-			//require.Equal(t, test.expectedZValue, correctedZ)
-			fmt.Println(correctedX)
-			fmt.Println(correctedY)
-			fmt.Println(correctedZ)
+			correctedX, correctedY := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration)
+			r := func(v float64) float64 {
+				return math.Round(v*100) / 100
+			}
+			correctedX = r(correctedX)
+			correctedY = r(correctedY)
+			fmt.Printf("%f\n", correctedX)
+			fmt.Printf("%f\n", correctedY)
+			require.Equal(t, test.expectedXValue, correctedX)
+			require.Equal(t, test.expectedYValue, correctedY)
+
 		})
 	}
 }
 
-func Test_ComputeCorrectedTiltAngles(t *testing.T) {
+func Test_ComputeTiltAngles(t *testing.T) {
 	tests := []struct {
 		name                string
 		xAxis               float64
@@ -119,16 +145,30 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 		zAxis               float64
 		expectedXAngleValue float64
 		expectedYAngleValue float64
-		expectedZAngleValue float64
 	}{
 		{
-			name:                "no acceleration, driving on a 100% plain field",
+			name:                "flat",
 			xAxis:               0.0,
 			yAxis:               0.0,
 			zAxis:               1.0,
 			expectedXAngleValue: 0.0,
 			expectedYAngleValue: 0.0,
-			expectedZAngleValue: 90.0,
+		},
+		{
+			name:                "",
+			xAxis:               0.707106781186548,
+			yAxis:               0.0,
+			zAxis:               0.707106781186548,
+			expectedXAngleValue: 45.0,
+			expectedYAngleValue: 0.0,
+		},
+		{
+			name:                "",
+			xAxis:               -0.707106781186548,
+			yAxis:               0.0,
+			zAxis:               0.707106781186548,
+			expectedXAngleValue: -45.0,
+			expectedYAngleValue: 0.0,
 		},
 		{
 			name:                "acceleration, no turn",
@@ -137,7 +177,6 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: 5.710593137499643,
 			expectedYAngleValue: 0.0,
-			expectedZAngleValue: 95.710593137499643,
 		},
 		{
 			name:                "deceleration, no turn",
@@ -146,7 +185,6 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: -5.710593137499643,
 			expectedYAngleValue: 0.0,
-			expectedZAngleValue: 84.28940686250036,
 		},
 		{
 			name:                "acceleration, right turn",
@@ -155,7 +193,6 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: 5.6824384835168384,
 			expectedYAngleValue: 5.6824384835168384,
-			expectedZAngleValue: 95.68243848351683,
 		},
 		{
 			name:                "deceleration, right turn",
@@ -164,7 +201,6 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: -5.6824384835168384,
 			expectedYAngleValue: 5.6824384835168384,
-			expectedZAngleValue: 84.31756151648317,
 		},
 		{
 			name:                "acceleration, left turn",
@@ -173,7 +209,6 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: 5.6824384835168384,
 			expectedYAngleValue: -5.6824384835168384,
-			expectedZAngleValue: 95.68243848351683,
 		},
 		{
 			name:                "deceleration, left turn",
@@ -182,16 +217,15 @@ func Test_ComputeCorrectedTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: -5.6824384835168384,
 			expectedYAngleValue: -5.6824384835168384,
-			expectedZAngleValue: 84.31756151648317,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			correctedX, correctedY, correctedZ := computeCorrectedTiltAngles(test.xAxis, test.yAxis, test.zAxis)
-			require.Equal(t, test.expectedXAngleValue, correctedX)
-			require.Equal(t, test.expectedYAngleValue, correctedY)
-			require.Equal(t, test.expectedZAngleValue, correctedZ)
+			x, y := computeTiltAngles(test.xAxis, test.yAxis, test.zAxis)
+
+			require.Equal(t, test.expectedXAngleValue, x)
+			require.Equal(t, test.expectedYAngleValue, y)
 		})
 	}
 }

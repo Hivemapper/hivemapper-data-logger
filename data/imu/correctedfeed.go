@@ -11,25 +11,21 @@ type CorrectedAccelerationEvent struct {
 	*data.BaseEvent
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`
-	Z      float64 `json:"z"`
 	XAngle float64 `json:"x_angle"`
 	YAngle float64 `json:"Y_angle"`
-	ZAngle float64 `json:"Z_angle"`
 }
 
 func (e *CorrectedAccelerationEvent) String() string {
-	return fmt.Sprintf("CorrectedAccelerationEvent: %f, %f, %f Angles x %f, y %f, z %f", e.X, e.Y, e.Z, e.XAngle, e.YAngle, e.ZAngle)
+	return fmt.Sprintf("CorrectedAccelerationEvent: %f, %f, Angles x %f, y %f", e.X, e.Y, e.XAngle, e.YAngle)
 }
 
-func NewCorrectedAccelerationEvent(x, y, z, xAngle, yAngle, zAngle float64) *CorrectedAccelerationEvent {
+func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccelerationEvent {
 	return &CorrectedAccelerationEvent{
 		BaseEvent: data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT"),
 		X:         x,
 		Y:         y,
-		Z:         z,
 		XAngle:    xAngle,
 		YAngle:    yAngle,
-		ZAngle:    zAngle,
 	}
 }
 
@@ -62,22 +58,17 @@ func (f *CorrectedAccelerationFeed) Start(raw *RawFeed) {
 				if len(f.subscriptions) == 0 {
 					continue
 				}
+				e := event.(*RawImuEvent)
 
-				e := event.(*RawImuAccelerationEvent)
 				a := e.Acceleration
-				x := a.CamX()
-				y := a.CamY()
-				z := a.CamZ()
+				ax := a.CamX()
+				ay := a.CamY()
+				az := a.CamZ()
 
-				//todo: need to compute the corrected values from the x,y,z values at once
-				// also need to understand how the x, y, z angles works to properly understand
-				// how to calculate the GForce
+				xAngle, yAngle := computeTiltAngles(ax, ay, az)
+				correctedX, correctedY := computeCorrectedGForce(ax, ay, az)
 
-				// todo: seems that we need to fetch some gyro data, to know about the tilt of the cam over time...
-				correctedXAngle, correctedYAngle, correctedZAngle := computeCorrectedTiltAngles(x, y, z)
-				correctedX, correctedY, correctedZ := computeCorrectedGForce(x, y, z, correctedXAngle, correctedYAngle, correctedZAngle)
-
-				correctedEvent := NewCorrectedAccelerationEvent(correctedX, correctedY, correctedZ, correctedXAngle, correctedYAngle, correctedZAngle)
+				correctedEvent := NewCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}
