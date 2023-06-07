@@ -1,7 +1,6 @@
 package imu
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -69,7 +68,6 @@ type AccelerationTracker struct {
 }
 
 func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64) {
-	fmt.Printf("AccelerationTracker %.5f %.5f %.5f\n", x, y, t.config.GForceAcceleratorThreshold)
 	if x > t.config.GForceAcceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)

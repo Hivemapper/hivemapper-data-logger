@@ -50,7 +50,6 @@ func NewEventServer(mergerSub *data.Subscription) *EventsServer {
 		for {
 			select {
 			case event := <-mergerSub.IncomingEvents:
-				//fmt.Println("event", event.String())
 				err := es.SendEvent(event)
 				if err != nil {
 					panic("failed to send event")

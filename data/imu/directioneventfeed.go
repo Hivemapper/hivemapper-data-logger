@@ -93,7 +93,6 @@ func (f *DirectionEventFeed) Start(feed *CorrectedAccelerationFeed) error {
 }
 
 func (f *DirectionEventFeed) emit(event data.Event) {
-	fmt.Println("Emitting DirectionEventFeed", event.String())
 	event.SetTime(time.Now())
 	for _, subscription := range f.subscriptions {
 		subscription.IncomingEvents <- event
