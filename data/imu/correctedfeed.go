@@ -2,6 +2,10 @@ package imu
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/rosshemsley/kalman"
+	"github.com/rosshemsley/kalman/models"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -20,6 +24,7 @@ func (e *CorrectedAccelerationEvent) String() string {
 }
 
 func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccelerationEvent {
+
 	return &CorrectedAccelerationEvent{
 		BaseEvent: data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT"),
 		X:         x,
@@ -32,12 +37,33 @@ func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccel
 type CorrectedAccelerationFeed struct {
 	imu           *iim42652.IIM42652
 	subscriptions data.Subscriptions
+	lastUpdate    interface{}
+	xModel        *models.SimpleModel
+	xFilter       *kalman.KalmanFilter
+	yModel        *models.SimpleModel
+	yFilter       *kalman.KalmanFilter
 }
 
 func NewCorrectedAccelerationFeed() *CorrectedAccelerationFeed {
-	return &CorrectedAccelerationFeed{
+	f := &CorrectedAccelerationFeed{
 		subscriptions: make(data.Subscriptions),
 	}
+	now := time.Now()
+	f.lastUpdate = now
+	f.xModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	f.xFilter = kalman.NewKalmanFilter(f.xModel)
+
+	f.yModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
+		InitialVariance:     0.0,
+		ProcessVariance:     2.0,
+		ObservationVariance: 2.0,
+	})
+	f.yFilter = kalman.NewKalmanFilter(f.yModel)
+	return f
 }
 
 func (f *CorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
@@ -68,7 +94,20 @@ func (f *CorrectedAccelerationFeed) Start(raw *RawFeed) {
 				xAngle, yAngle := computeTiltAngles(ax, ay, az)
 				correctedX, correctedY := computeCorrectedGForce(ax, ay, az)
 
-				correctedEvent := NewCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle)
+				now := time.Now()
+				err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
+				if err != nil {
+					panic(fmt.Errorf("updating x filter: %w", err))
+				}
+				x := f.xModel.Value(f.xFilter.State())
+
+				err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
+				if err != nil {
+					panic(fmt.Errorf("updating y filter: %w", err))
+				}
+				y := f.yModel.Value(f.yFilter.State())
+
+				correctedEvent := NewCorrectedAccelerationEvent(x, y, xAngle, yAngle)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}
