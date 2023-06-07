@@ -1,6 +1,7 @@
 package imu
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -29,7 +30,7 @@ func computeTiltAngle(zAxis, complementaryAxis float64) float64 {
 	return tiltAngleXDegrees
 }
 
-func computeTiltAngles(gForceX, gForceY, gForceZ float64) (xAngle float64, yAngle float64) { // returns x, y, z angles
+func computeTiltAngles(xAcceleration, yAcceleration, zAcceleration float64) (xAngle float64, yAngle float64, zAngle float64) { // returns x, y, z angles
 	// http://www.starlino.com/imu_guide.html
 	//We can deduct from Eq.1 that R = SQRT( Rx^2 + Ry^2 + Rz^2).
 	//
@@ -39,13 +40,19 @@ func computeTiltAngles(gForceX, gForceY, gForceZ float64) (xAngle float64, yAngl
 	//Azr = arccos(Rz/R)
 
 	// https://engineering.stackexchange.com/questions/3348/calculating-pitch-yaw-and-roll-from-mag-acc-and-gyro-data
-	accelerationX := gForceX * 3.9
-	accelerationY := gForceY * 3.9
-	accelerationZ := gForceZ * 3.9
-	xAngle = 180 * math.Atan(accelerationX/math.Sqrt(accelerationY*accelerationY+accelerationZ*accelerationZ)) / math.Pi
-	yAngle = 180 * math.Atan(accelerationY/math.Sqrt(accelerationX*accelerationX+accelerationZ*accelerationZ)) / math.Pi
-
-	return xAngle, yAngle
+	//accelerationX := gForceX * 3.9
+	//accelerationY := gForceY * 3.9
+	//accelerationZ := gForceZ * 3.9
+	//accelerationX := gForceX
+	//accelerationY := gForceY
+	//accelerationZ := gForceZ
+	//xAngle = 180 * math.Atan(accelerationX/math.Sqrt(accelerationY*accelerationY+accelerationZ*accelerationZ)) / math.Pi
+	//yAngle = 180 * math.Atan(accelerationY/math.Sqrt(accelerationX*accelerationX+accelerationZ*accelerationZ)) / math.Pi
+	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
+	xAngle = math.Acos(xAcceleration/magnitude) * 180 / math.Pi
+	yAngle = math.Acos(yAcceleration/magnitude) * 180 / math.Pi
+	zAngle = math.Acos(yAcceleration/magnitude) * 180 / math.Pi
+	return xAngle, yAngle, zAngle
 }
 
 func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
@@ -56,29 +63,18 @@ func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
 }
 
 func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAcceleration float64) (float64, float64) {
-	xTilt, yTilt := computeTiltAngles(xAcceleration, yAcceleration, zAcceleration)
-	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
+	rz := zAcceleration * zAcceleration
+	zAngle := 90 * rz
 
-	// base line 0 degrees --> 1.0 -> 35kmh
-	// 45 degrees -> 1.41  --> base line ->35km/h
+	xBaseAcceleration := math.Cos(zAngle * math.Pi / 180)
 
-	xCos := math.Cos(xTilt * math.Pi / 180)
-	_ = xCos
+	var x float64
+	if xBaseAcceleration > 0 {
+		x = xAcceleration - xBaseAcceleration
+	} else {
+		x = xAcceleration + xBaseAcceleration
+	}
 
-	yCos := math.Cos(yTilt * math.Pi / 180)
-	_ = yCos
-
-	equivalentGForceX := xAcceleration * xCos
-	_ = equivalentGForceX
-
-	accXnorm := xAcceleration / magnitude
-	accYnorm := yAcceleration / magnitude
-
-	accXCorrNorm := accXnorm * yCos
-	accYCorrNorm := accYnorm * xCos
-
-	correctedX := xAcceleration - accXCorrNorm
-	correctedY := yAcceleration - accYCorrNorm
-
-	return correctedX, correctedY
+	fmt.Println("Grrrrrrr", x)
+	return x, yAcceleration
 }

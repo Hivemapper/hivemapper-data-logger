@@ -92,7 +92,7 @@ func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				az := a.CamZ()
 
 				correctedX, correctedY := computeCorrectedGForce(ax, ay, az)
-				xAngle, yAngle := computeTiltAngles(correctedX, correctedY, 1)
+				xAngle, yAngle, _ := computeTiltAngles(correctedX, correctedY, 1)
 
 				//now := time.Now()
 				//err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))

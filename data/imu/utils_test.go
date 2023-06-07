@@ -99,6 +99,13 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			expectedYValue: 0.0,
 		},
 		{
+			name:           "flat fast acceleration",
+			xAcceleration:  0.890652,
+			zAcceleration:  0.977796,
+			expectedXValue: 0.23,
+			expectedYValue: 0.0,
+		},
+		{
 			name:           "Tilted x and y but not moving",
 			xAcceleration:  0.20850,
 			yAcceleration:  0.19337,
@@ -237,7 +244,7 @@ func Test_ComputeTiltAngles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			x, y := computeTiltAngles(test.xAxis, test.yAxis, test.zAxis)
+			x, y, _ := computeTiltAngles(test.xAxis, test.yAxis, test.zAxis)
 
 			require.Equal(t, test.expectedXAngleValue, x)
 			require.Equal(t, test.expectedYAngleValue, y)
