@@ -1,11 +1,12 @@
 package imu
 
 import (
+	"fmt"
 	"time"
 )
 
 type Tracker interface {
-	trackAcceleration(lastUpdate time.Time, xAvg float64, yAvg float64, zAvg float64)
+	trackAcceleration(lastUpdate time.Time, xAvg float64, yAvg float64)
 }
 
 type LeftTurnTracker struct {
@@ -15,7 +16,7 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, z float64) {
+func (t *LeftTurnTracker) trackAcceleration(_ time.Time, x float64, y float64) {
 	magnitude := computeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.LeftTurnThreshold {
 		t.continuousCount++
@@ -40,7 +41,7 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64, z float64) {
+func (t *RightTurnTracker) trackAcceleration(_ time.Time, x float64, y float64) {
 	magnitude := computeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.RightTurnThreshold {
 		t.continuousCount++
@@ -67,7 +68,8 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64, z float64) {
+func (t *AccelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64) {
+	fmt.Printf("AccelerationTracker %.5f %.5f %.5f\n", x, y, t.config.GForceAcceleratorThreshold)
 	if x > t.config.GForceAcceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -96,7 +98,7 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64, z float64) {
+func (t *DecelerationTracker) trackAcceleration(lastUpdate time.Time, x float64, y float64) {
 	if x < t.config.GForceDeceleratorThreshold {
 		t.continuousCount++
 		duration := time.Since(lastUpdate)
@@ -124,8 +126,8 @@ type StopTracker struct {
 	emitFunc        emit
 }
 
-func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64, z float64) {
-	if x < 0.012 && x > -0.012 && y < 0.012 && y > -0.012 && z < 1.012 {
+func (t *StopTracker) trackAcceleration(_ time.Time, x float64, y float64) {
+	if x < 0.012 && x > -0.012 && y < 0.012 && y > -0.012 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {

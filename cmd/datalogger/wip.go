@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/rs/cors"
+	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
+	"github.com/streamingfast/hivemapper-data-logger/webconnect"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"net/http"
 	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data/merged"
@@ -35,6 +41,9 @@ func init() {
 	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	WipCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
+	// Connect-go
+	WipCmd.Flags().String("listen-addr", ":9000", "address to listen on")
+
 	RootCmd.AddCommand(WipCmd)
 }
 
@@ -58,6 +67,12 @@ func wipRun(cmd *cobra.Command, args []string) error {
 
 	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
 	correctedImuEventFeed.Start(rawImuEventFeed)
+
+	directionEventFeed := imu.NewDirectionEventFeed(conf)
+	err = directionEventFeed.Start(correctedImuEventFeed)
+	if err != nil {
+		return fmt.Errorf("runnign direction event feed: %w", err)
+	}
 
 	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
@@ -90,9 +105,10 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	rawEventSub := rawImuEventFeed.Subscribe("merger")
 	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
-	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, correctedImuEventSub)
-	mergedEventFeed.Start()
+	directionEventSub := directionEventFeed.Subscribe("merger")
 
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, correctedImuEventSub, directionEventSub)
+	mergedEventFeed.Start()
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
 
 	fmt.Println("Starting to listen for events from mergedEventSub")
@@ -100,36 +116,59 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	var correctedImuEvent *imu.CorrectedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
-	for {
-		select {
-		case e := <-mergedEventSub.IncomingEvents:
-			switch e := e.(type) {
-			case *imu.RawImuEvent:
-				imuRawEvent = e
-			case *imu.CorrectedAccelerationEvent:
-				correctedImuEvent = e
-			case *gnss.GnssEvent:
-				gnssEvent = e
-			}
-		}
-		if imuRawEvent != nil && correctedImuEvent != nil {
-			ge := gnssEvent
-			if ge == nil {
-				ge = &gnss.GnssEvent{
-					Data: &neom9n.Data{
-						Dop:        &neom9n.Dop{},
-						RF:         &neom9n.RF{},
-						Satellites: &neom9n.Satellites{},
-					},
+	go func() {
+		for {
+			select {
+			case e := <-mergedEventSub.IncomingEvents:
+				switch e := e.(type) {
+				case *imu.RawImuEvent:
+					imuRawEvent = e
+				case *imu.CorrectedAccelerationEvent:
+					correctedImuEvent = e
+				case *gnss.GnssEvent:
+					gnssEvent = e
 				}
 			}
-			w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
-			err = sqliteLogger.Log(w)
-			if err != nil {
-				return fmt.Errorf("logging to sqlite: %w", err)
+			if imuRawEvent != nil && correctedImuEvent != nil {
+				ge := gnssEvent
+				if ge == nil {
+					ge = &gnss.GnssEvent{
+						Data: &neom9n.Data{
+							Dop:        &neom9n.Dop{},
+							RF:         &neom9n.RF{},
+							Satellites: &neom9n.Satellites{},
+						},
+					}
+				}
+				w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
+				err = sqliteLogger.Log(w)
+				if err != nil {
+					panic(fmt.Errorf("logging to sqlite: %w", err))
+				}
+				imuRawEvent = nil
+				correctedImuEvent = nil
 			}
-			imuRawEvent = nil
-			correctedImuEvent = nil
 		}
+	}()
+
+	listenAddr := mustGetString(cmd, "listen-addr")
+	eventServer := webconnect.NewEventServer(mergedEventSub)
+	mux := http.NewServeMux()
+	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
+
+	opts := cors.Options{
+		AllowedHeaders: []string{"*"},
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}
+	handler = cors.New(opts).Handler(handler)
+
+	mux.Handle(path, handler)
+	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
+
+	if err != nil {
+		return fmt.Errorf("running server: %w", err)
+	}
+
+	return nil
 }

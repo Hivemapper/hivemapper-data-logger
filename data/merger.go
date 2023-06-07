@@ -27,6 +27,8 @@ func (m *EventFeedMerger) Subscribe(name string) *Subscription {
 
 func (m *EventFeedMerger) Start() {
 	fmt.Println("Running event feed merger")
+	fmt.Println("number of subscriptions to the event feed merger", len(m.subscriptions))
+	fmt.Println("number of subscriptionsToMerge to the event feed merger", len(m.subscriptionToMerge))
 	for _, sub := range m.subscriptionToMerge {
 		go func(sub *Subscription) {
 			for {
