@@ -74,17 +74,10 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 
 	return nil
 }
-func (s *Sqlite) StartStoring() {
-	s.doInsert = true
-}
 
 func (s *Sqlite) Log(data Sqlable) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	if !s.doInsert {
-		return nil
-	}
 
 	if s.db == nil {
 		return fmt.Errorf("database not initialized")
@@ -102,8 +95,6 @@ func (s *Sqlite) Log(data Sqlable) error {
 func (s *Sqlite) SingleRowQuery(sql string, handleRow func(row *sql.Rows) error, params ...any) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	fmt.Println("Running query:", sql, params)
 
 	rows, err := s.db.Query(sql, params...)
 	if err != nil {

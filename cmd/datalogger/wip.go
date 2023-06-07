@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/streamingfast/hivemapper-data-logger/data/merged"
 
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
@@ -31,7 +32,7 @@ func init() {
 	WipCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
 	WipCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
 	WipCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
-	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.0.3.db", "path to sqliteLogger database")
+	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	WipCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
 	RootCmd.AddCommand(WipCmd)
@@ -80,6 +81,12 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing json logger database: %w", err)
 	}
 
+	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "gnss-db-path"), merged.CreateTableQuery, merged.PurgeQuery)
+	err = sqliteLogger.Init(mustGetDuration(cmd, "gnss-db-log-ttl"))
+	if err != nil {
+		return fmt.Errorf("initializing sqlite logger database: %w", err)
+	}
+
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	rawEventSub := rawImuEventFeed.Subscribe("merger")
 	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
@@ -92,7 +99,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	var imuRawEvent *imu.RawImuEvent
 	var correctedImuEvent *imu.CorrectedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
-	//fmt.Fprintf(os.Stderr, "Raw Acc X, Corrected Acc X, Tilt X, Raw Acc Y, Corrected Acc Y, Tilt Y, Raw Acc Z\n")
+
 	for {
 		select {
 		case e := <-mergedEventSub.IncomingEvents:
@@ -106,33 +113,23 @@ func wipRun(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if imuRawEvent != nil && correctedImuEvent != nil {
-			_ = gnssEvent
-			_ = imuRawEvent
-			_ = correctedImuEvent
-			//printCVS(imuRawEvent, correctedImuEvent, gnssEvent)
+			ge := gnssEvent
+			if ge == nil {
+				ge = &gnss.GnssEvent{
+					Data: &neom9n.Data{
+						Dop:        &neom9n.Dop{},
+						RF:         &neom9n.RF{},
+						Satellites: &neom9n.Satellites{},
+					},
+				}
+			}
+			w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
+			err = sqliteLogger.Log(w)
+			if err != nil {
+				return fmt.Errorf("logging to sqlite: %w", err)
+			}
 			imuRawEvent = nil
 			correctedImuEvent = nil
 		}
 	}
-}
-
-func printCVS(imuRawEvent *imu.RawImuEvent, correctedImuEvent *imu.CorrectedAccelerationEvent, gnss *gnss.GnssEvent) {
-	fmt.Fprintf(os.Stderr, "%f,%f,%f,%f,%f,%f,%f\n",
-		imuRawEvent.Acceleration.CamX(),
-		correctedImuEvent.X,
-		correctedImuEvent.XAngle,
-		imuRawEvent.Acceleration.CamY(),
-		correctedImuEvent.Y,
-		correctedImuEvent.YAngle,
-		imuRawEvent.Acceleration.CamZ(),
-		gnss.Data.Fix,
-		gnss.Data.Latitude,
-		gnss.Data.Longitude,
-		gnss.Data.Altitude,
-		gnss.Data.Speed,
-		gnss.Data.Heading,
-		gnss.Data.Satellites.Seen,
-		gnss.Data.Satellites.Used,
-		gnss.Data.Eph,
-	)
 }
