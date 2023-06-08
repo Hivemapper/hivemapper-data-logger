@@ -18,7 +18,7 @@ func NewRightTurnEventDetected() *RightTurnEventDetected {
 }
 
 func (e *RightTurnEventDetected) String() string {
-	return "Right Turn Event Detected"
+	return "OrientationRight Turn Event Detected"
 }
 
 type RightTurnEvent struct {
@@ -33,7 +33,7 @@ func NewRightTurnEvent(duration time.Duration) *RightTurnEvent {
 	}
 }
 func (e *RightTurnEvent) String() string {
-	return fmt.Sprintf("Right Turn Event for %s", e.Duration)
+	return fmt.Sprintf("OrientationRight Turn Event for %s", e.Duration)
 }
 
 type LeftTurnEventDetected struct {
@@ -47,7 +47,7 @@ func NewLeftTurnEventDetected() *LeftTurnEventDetected {
 }
 
 func (e *LeftTurnEventDetected) String() string {
-	return "Left Turn Event Detected"
+	return "OrientationLeft Turn Event Detected"
 }
 
 type LeftTurnEvent struct {
@@ -62,7 +62,7 @@ func NewLeftTurnEvent(duration time.Duration) *LeftTurnEvent {
 	}
 }
 func (e *LeftTurnEvent) String() string {
-	return fmt.Sprintf("Left Turn Event for %s", e.Duration)
+	return fmt.Sprintf("OrientationLeft Turn Event for %s", e.Duration)
 }
 
 type AccelerationDetectedEvent struct {

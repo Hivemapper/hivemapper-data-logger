@@ -24,7 +24,6 @@ func (e *CorrectedAccelerationEvent) String() string {
 }
 
 func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccelerationEvent {
-
 	return &CorrectedAccelerationEvent{
 		BaseEvent: data.NewBaseEvent("IMU_CORRECTED_ACCELERATION_EVENT", "IMU"),
 		X:         x,
@@ -84,14 +83,12 @@ func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				if len(f.subscriptions) == 0 {
 					continue
 				}
-				e := event.(*RawImuEvent)
+				e := event.(*OrientationEvent)
+				x := e.GetX()
+				y := e.GetY()
+				z := e.GetZ()
 
-				a := e.Acceleration
-				ax := a.CamX()
-				ay := a.CamY()
-				az := a.CamZ()
-
-				correctedX, correctedY := computeCorrectedGForce(ax, ay, az)
+				correctedX, correctedY := computeCorrectedGForce(x, y, z)
 				xAngle, yAngle, _ := computeTiltAngles(correctedX, correctedY, 1)
 
 				//now := time.Now()
