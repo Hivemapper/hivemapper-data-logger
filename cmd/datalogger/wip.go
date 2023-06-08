@@ -32,15 +32,17 @@ func init() {
 	// Imu
 	WipCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 
-	// GNSS
+	// Gnss
 	WipCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
 	WipCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
 	WipCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
 	WipCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
 	WipCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
 	WipCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
-	WipCmd.Flags().String("gnss-db-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
-	WipCmd.Flags().Duration("gnss-db-log-ttl", 12*time.Hour, "ttl of logs in database")
+
+	// Sqlite database
+	WipCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
+	WipCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
 	// Connect-go
 	WipCmd.Flags().String("listen-addr", ":9000", "address to listen on")
@@ -94,8 +96,8 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing json logger database: %w", err)
 	}
 
-	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "gnss-db-path"), []logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery}, []logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
-	err = sqliteLogger.Init(mustGetDuration(cmd, "gnss-db-log-ttl"))
+	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "db-output-path"), []logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery}, []logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
+	err = sqliteLogger.Init(mustGetDuration(cmd, "db-log-ttl"))
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
