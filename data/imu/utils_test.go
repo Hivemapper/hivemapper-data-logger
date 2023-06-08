@@ -134,9 +134,9 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 		//0.21338541825617235,0.11670278023621326,1.1807000946073793
 		{
 			name:           "acceleration",
-			xAcceleration:  0.2568437757499924,
-			yAcceleration:  0.021485030671102023,
-			zAcceleration:  1.000030518509476,
+			xAcceleration:  0.777350269189626,
+			yAcceleration:  0.577350269189626,
+			zAcceleration:  0.577350269189626,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
 		},

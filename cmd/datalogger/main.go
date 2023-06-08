@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Goodbye")
+	fmt.Println("Goodbye!")
 }
 
 func mustGetString(cmd *cobra.Command, flagName string) string {

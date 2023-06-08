@@ -3,19 +3,23 @@ package sql
 import (
 	"database/sql"
 	"fmt"
+	"math"
+	"time"
+
+	"github.com/streamingfast/shutter"
+
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
-	"math"
-	"time"
 )
 
 var LIMIT = 200
 
 type SqlFeed struct {
+	*shutter.Shutter
 	sqlite            *logger.Sqlite
 	imuSubscriptions  data.Subscriptions
 	gnssSubscriptions data.Subscriptions
@@ -23,6 +27,7 @@ type SqlFeed struct {
 
 func NewSqlFeed(sqlite *logger.Sqlite) *SqlFeed {
 	return &SqlFeed{
+		Shutter:           shutter.New(),
 		sqlite:            sqlite,
 		imuSubscriptions:  make(data.Subscriptions),
 		gnssSubscriptions: make(data.Subscriptions),
@@ -56,7 +61,7 @@ func (s *SqlFeed) Start() {
 		}
 		return nil
 	}, nil)
-
+	fmt.Printf("found rows %d in merged table\n", numOfRows)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch number of rows in table merged: %w", err))
 	}
@@ -140,6 +145,8 @@ func (s *SqlFeed) Start() {
 				panic(fmt.Errorf("failed to query database: %w", err))
 			}
 		}
+		fmt.Println("Finished sql feed")
+		s.Shutdown(nil)
 	}()
 }
 

@@ -11,11 +11,13 @@ replace github.com/streamingfast/imu-controller => ../imu-controller
 require (
 	github.com/bufbuild/connect-go v1.8.0
 	github.com/google/uuid v1.3.0
+	github.com/paulmach/go.geojson v1.4.0
 	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/streamingfast/gnss-controller v0.1.20-0.20230601115847-de75ed063a55
 	github.com/streamingfast/imu-controller v0.0.0-20230531144200-f741eb6d9f3d
+	github.com/streamingfast/shutter v1.5.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	google.golang.org/protobuf v1.30.0

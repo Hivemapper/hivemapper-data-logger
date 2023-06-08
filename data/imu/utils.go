@@ -1,7 +1,6 @@
 package imu
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -75,6 +74,5 @@ func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAccel
 		x = xAcceleration + xBaseAcceleration
 	}
 
-	fmt.Println("Grrrrrrr", x)
 	return x, yAcceleration
 }

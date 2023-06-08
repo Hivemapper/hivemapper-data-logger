@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
+
+	geojson "github.com/paulmach/go.geojson"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
@@ -9,7 +13,7 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data/merged"
 	"github.com/streamingfast/hivemapper-data-logger/data/sql"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
-	"time"
+	"github.com/streamingfast/shutter"
 )
 
 var ReRunCmd = &cobra.Command{
@@ -33,6 +37,7 @@ func init() {
 }
 
 func reRunE(cmd *cobra.Command, _ []string) error {
+	sh := shutter.New()
 	sqliteOutput := logger.NewSqlite(
 		mustGetString(cmd, "db-output-path"),
 		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery},
@@ -49,6 +54,8 @@ func reRunE(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 	sqlFeed := sql.NewSqlFeed(sqliteImporter)
+	sqlFeed.OnTerminated(sh.Shutdown)
+
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
@@ -68,12 +75,21 @@ func reRunE(cmd *cobra.Command, _ []string) error {
 	mergedEventSub := mergedEventFeed.Subscribe("rerun")
 	sqlFeed.Start()
 
+	fmt.Println("Sql import started")
+	fmt.Println("Waiting for events...")
+
 	var imuRawEvent *imu.RawImuEvent
 	var correctedImuEvent *imu.CorrectedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
-	for {
+	featureCollection := geojson.NewFeatureCollection()
+	var geometry *geojson.Geometry
+
+	for !sh.IsTerminating() && !sh.IsTerminated() {
 		select {
+		case <-sh.Terminating():
+			fmt.Println("Terminating")
+			break
 		case e := <-mergedEventSub.IncomingEvents:
 			switch e := e.(type) {
 			case *imu.RawImuEvent:
@@ -82,12 +98,18 @@ func reRunE(cmd *cobra.Command, _ []string) error {
 				correctedImuEvent = e
 			case *gnss.GnssEvent:
 				gnssEvent = e
+				geometry = geojson.NewPointGeometry([]float64{e.Data.Latitude, e.Data.Longitude})
 			}
 			if e.GetCategory() == "DIRECTION_CHANGE" {
 				err := sqliteOutput.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))
 				if err != nil {
-					panic(fmt.Errorf("logging to sqlite: %w", err))
+					return fmt.Errorf("logging to sqlite: %w", err)
 				}
+
+				feature := geojson.NewFeature(geometry)
+				feature.Type = e.GetName()
+				feature.SetProperty("event", e.GetName())
+				featureCollection.AddFeature(feature)
 			}
 		}
 		if imuRawEvent != nil && correctedImuEvent != nil {
@@ -95,11 +117,20 @@ func reRunE(cmd *cobra.Command, _ []string) error {
 			w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
 			err = sqliteOutput.Log(w)
 			if err != nil {
-				panic(fmt.Errorf("logging to sqlite: %w", err))
+				return fmt.Errorf("logging to sqlite: %w", err)
 			}
 			imuRawEvent = nil
 			correctedImuEvent = nil
 		}
+	}
+	gj, err := featureCollection.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("marshalling geojson: %w", err)
+	}
+
+	err = os.WriteFile("geo.json", gj, 0644)
+	if err != nil {
+		return fmt.Errorf("writing geojson: %w", err)
 	}
 
 	return nil
