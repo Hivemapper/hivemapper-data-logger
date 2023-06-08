@@ -31,11 +31,11 @@ GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
 # db-output-path is the location to where we want the imu and gnss events to be saved
 ```
 
-### Run the rerun command with events which were saved to a sqlite file
+### Run the replay command with events which were saved to a sqlite file
 Once you have run the command above to run on the camera, all the events that you have emitted, they will be saved to a sqlite database. Given the path of where the sqlite has saved the events, then we can rerun the _car run_ instead of going back out and driving. Permits to easily iterate on data.
 ```bash
-datalogger rerun --clean --db-import-path=/path/to/databse --db-output-path=/tmp/out.db
-# clean will delete the db-output-path prior to running the rerun command -> this is good to remove previous runs
+datalogger replay --clean --db-import-path=/path/to/databse --db-output-path=/tmp/out.db
+# clean will delete the db-output-path prior to running the replay command -> this is good to remove previous runs
 # db-import-path will take the .db file which was produced by the datalogger log command
 # db-output-path is the location to where the rerun db will be saved
 ```

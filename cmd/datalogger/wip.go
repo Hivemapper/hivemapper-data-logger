@@ -68,11 +68,15 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	rawImuEventFeed := imu.NewRawFeed(imuDevice)
 	rawImuEventFeed.Start()
 
+	orientationEventFeed := imu.NewOrientationFeed()
+	orientationEventFeed.Start(rawImuEventFeed.Subscribe("orientation"))
+
+	// TODO: change the correctedImuEventFeed -> TiltCorrectionEventFeed
 	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(rawImuEventFeed.Subscribe("corrected"))
+	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
 
 	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(rawImuEventFeed.Subscribe("direction"))
+	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"))
 
 	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
