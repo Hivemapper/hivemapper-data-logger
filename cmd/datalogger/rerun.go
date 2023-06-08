@@ -30,16 +30,25 @@ func init() {
 	ReRunCmd.Flags().String("db-import-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	ReRunCmd.Flags().String("db-output-path", "/mnt/data/output.db", "path to sqliteLogger database")
 	ReRunCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
-
-	// todo: add remove out.db option
+	ReRunCmd.Flags().BoolP("clean", "c", false, "purges output db where db-output-path is located before running rerun command")
 
 	RootCmd.AddCommand(ReRunCmd)
 }
 
 func reRunE(cmd *cobra.Command, _ []string) error {
+	dbOutputPath := mustGetString(cmd, "db-output-path")
+	clean := mustGetBool(cmd, "clean")
+	if clean {
+		err := os.Remove(dbOutputPath)
+		if err != nil {
+			return fmt.Errorf("failed to remove %s: %w", dbOutputPath, err)
+		}
+		fmt.Printf("Removed %s\n", dbOutputPath)
+	}
+
 	sh := shutter.New()
 	sqliteOutput := logger.NewSqlite(
-		mustGetString(cmd, "db-output-path"),
+		dbOutputPath,
 		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery},
 		nil,
 	)
