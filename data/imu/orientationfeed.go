@@ -75,8 +75,6 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 				}
 				e := event.(*RawImuEvent)
 
-				fmt.Println("RawImuEvent: ", e.Acceleration.CamX(), e.Acceleration.CamY(), e.Acceleration.CamZ(), e.Acceleration.TotalMagnitude)
-
 				if !initialOrientationSet {
 					ori := computeOrientation(e)
 
