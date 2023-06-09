@@ -17,7 +17,7 @@ type TiltCorrectedAccelerationEvent struct {
 	Y           float64     `json:"y"`
 	XAngle      float64     `json:"x_angle"`
 	YAngle      float64     `json:"Y_angle"`
-	orientation Orientation `json:"orientation"`
+	Orientation Orientation `json:"orientation"`
 }
 
 func NewTiltCorrectedAccelerationEvent(x, y, xAngle, yAngle float64, orientation Orientation) *TiltCorrectedAccelerationEvent {
@@ -27,16 +27,12 @@ func NewTiltCorrectedAccelerationEvent(x, y, xAngle, yAngle float64, orientation
 		Y:           y,
 		XAngle:      xAngle,
 		YAngle:      yAngle,
-		orientation: orientation,
+		Orientation: orientation,
 	}
 }
 
 func (e *TiltCorrectedAccelerationEvent) String() string {
 	return fmt.Sprintf("TiltCorrectedAccelerationEvent: %f, %f, Angles x %f, y %f", e.X, e.Y, e.XAngle, e.YAngle)
-}
-
-func (e *TiltCorrectedAccelerationEvent) GetOrientation() Orientation {
-	return e.orientation
 }
 
 type TiltCorrectedAccelerationFeed struct {

@@ -95,7 +95,7 @@ func (w *SqlWrapper) InsertQuery() (string, []any) {
 		w.correctedImuEvent.Y,
 		w.correctedImuEvent.YAngle,
 		w.imuRawEvent.Acceleration.CamZ(), // -> imu_acc_z -> Y
-		w.correctedImuEvent.GetOrientation(),
+		w.correctedImuEvent.Orientation,
 		w.gnss.Data.SystemTime,
 		w.gnss.Data.Timestamp,
 		w.gnss.Data.Fix,
