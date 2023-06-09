@@ -73,6 +73,7 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 		// store the events from the beginning up until we have a confident orientation
 		// then we can start sending the events with the proper orientation
 		var rawImuEvents []*RawImuEvent
+		rawImuEventsSet := false
 
 		for {
 			select {
@@ -132,17 +133,21 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 				}
 
 				if initialOrientationSet {
-					for _, rawImuEvent := range rawImuEvents {
-						orientationEvent := NewOrientationEvent(
-							rawImuEvent.Acceleration.CamX(),
-							rawImuEvent.Acceleration.CamY(),
-							rawImuEvent.Acceleration.CamZ(),
-							rawImuEvent.Acceleration.TotalMagnitude,
-							orientation,
-						)
+					if !rawImuEventsSet {
+						for _, rawImuEvent := range rawImuEvents {
+							orientationEvent := NewOrientationEvent(
+								rawImuEvent.Acceleration.CamX(),
+								rawImuEvent.Acceleration.CamY(),
+								rawImuEvent.Acceleration.CamZ(),
+								rawImuEvent.Acceleration.TotalMagnitude,
+								orientation,
+							)
 
-						for _, sub := range f.subscriptions {
-							sub.IncomingEvents <- orientationEvent
+							for _, sub := range f.subscriptions {
+								sub.IncomingEvents <- orientationEvent
+							}
+
+							rawImuEventsSet = true
 						}
 					}
 
