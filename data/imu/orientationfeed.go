@@ -1,9 +1,36 @@
 package imu
 
 import (
+	"fmt"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"math"
 )
+
+type OrientationCounter struct {
+	frontCounter int
+	rightCounter int
+	leftCounter  int
+	backCounter  int
+	unsetCounter int
+}
+
+func NewOrientationCounter() *OrientationCounter {
+	return &OrientationCounter{
+		frontCounter: 0,
+		rightCounter: 0,
+		leftCounter:  0,
+		backCounter:  0,
+		unsetCounter: 0,
+	}
+}
+
+func (o *OrientationCounter) Reset() {
+	o.frontCounter = 0
+	o.rightCounter = 0
+	o.leftCounter = 0
+	o.backCounter = 0
+	o.unsetCounter = 0
+}
 
 type OrientationFeed struct {
 	subscriptions data.Subscriptions
@@ -34,15 +61,11 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 	//  - write the direction in the sqlite
 
 	go func() {
-		counter := 0
-		lastOrientation := OrientationFront
-		orientation := OrientationFront
 		initialOrientationSet := false
 
-		//frontOrientationCounter := 0
-		//rightOrientationCounter := 0
-		//leftOrientationCounter := 0
-		//backOrientationCounter := 0
+		// We assume a front orientation as a base orientation
+		orientation := OrientationFront
+		orientationCounter := NewOrientationCounter()
 
 		for {
 			select {
@@ -51,32 +74,58 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 					continue
 				}
 				e := event.(*RawImuEvent)
-				ori := computeOrientation(e)
 
-				if ori == lastOrientation {
-					counter++
-				} else {
-					counter = 0
-					lastOrientation = ori
-				}
+				fmt.Println("RawImuEvent: ", e.Acceleration.CamX(), e.Acceleration.CamY(), e.Acceleration.CamZ(), e.Acceleration.TotalMagnitude)
 
-				if counter < 10 {
-					// once we get 10 same orientations then we know that we have a correct orientation
-					continue
-				}
+				if !initialOrientationSet {
+					ori := computeOrientation(e)
 
-				if counter == 10 {
-					orientation = lastOrientation
-					initialOrientationSet = true
-				}
-
-				if counter == 1000 {
-					orientation = lastOrientation
+					switch ori {
+					case OrientationFront:
+						orientationCounter.frontCounter++
+						if orientationCounter.frontCounter > 50 {
+							orientation = OrientationFront
+							initialOrientationSet = true
+							fmt.Println("Mount Orientation: Front ")
+						}
+					case OrientationRight:
+						orientationCounter.rightCounter++
+						if orientationCounter.rightCounter > 50 {
+							orientation = OrientationRight
+							initialOrientationSet = true
+							fmt.Println("Mount Orientation: Right")
+						}
+					case OrientationLeft:
+						orientationCounter.leftCounter++
+						if orientationCounter.leftCounter > 50 {
+							orientation = OrientationLeft
+							initialOrientationSet = true
+							fmt.Println("Mount Orientation: Left")
+						}
+					case OrientationBack:
+						orientationCounter.backCounter++
+						if orientationCounter.backCounter > 50 {
+							orientation = OrientationBack
+							initialOrientationSet = true
+							fmt.Println("Mount Orientation: Back")
+						}
+					case OrientationUnset:
+						orientationCounter.unsetCounter++
+						if orientationCounter.unsetCounter > 50 {
+							fmt.Println("Can't determine the mount direction, need to keep looping")
+							orientationCounter.Reset()
+						}
+					}
 				}
 
 				if initialOrientationSet {
-					x, y, z := computeAxesOrientation(e)
-					orientationEvent := NewOrientationEvent(x, y, z, e.Acceleration.TotalMagnitude, orientation)
+					orientationEvent := NewOrientationEvent(
+						e.Acceleration.CamX(),
+						e.Acceleration.CamY(),
+						e.Acceleration.CamZ(),
+						e.Acceleration.TotalMagnitude,
+						orientation,
+					)
 					for _, sub := range f.subscriptions {
 						sub.IncomingEvents <- orientationEvent
 					}
@@ -90,25 +139,23 @@ func computeOrientation(event *RawImuEvent) Orientation {
 	camX := event.Acceleration.CamX()
 	camY := event.Acceleration.CamY()
 
-	if camX > 0.05 && camY > -0.05 && camY < 0.05 {
+	movementThreshold := 0.015
+
+	if camX > movementThreshold && camY > -movementThreshold && camY < movementThreshold {
 		return OrientationFront
-	} else if camY < 0.05 && camX > -0.05 && camX < 0.05 {
+	} else if camY < -movementThreshold && camX > -movementThreshold && camX < movementThreshold {
 		return OrientationRight
-	} else if camY > 0.05 && camX > -0.05 && camX < 0.05 {
+	} else if camY > movementThreshold && camX > -movementThreshold && camX < movementThreshold {
 		return OrientationLeft
-	} else if camX < -0.05 && camY > -0.05 && camY < 0.05 {
+	} else if camX < -movementThreshold && camY > -movementThreshold && camY < movementThreshold {
 		return OrientationBack
 	}
 
 	return OrientationUnset
 }
 
-func computeAxesOrientation(event *RawImuEvent) (float64, float64, float64) {
-	return event.Acceleration.CamX(), event.Acceleration.CamY(), event.Acceleration.CamZ()
-}
-
 // OrientationEvent X, Y and Z are the real world orientation values
-// X forward and backwards movement, Y left and light and Z up and down
+// X forward and backwards, Y left and light and Z up and down
 type OrientationEvent struct {
 	*data.BaseEvent
 	acceleration *OrientedAcceleration

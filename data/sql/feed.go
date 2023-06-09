@@ -72,7 +72,7 @@ func (s *SqlFeed) Start() {
 		lastGnssSystemTime := time.Time{}
 		for i := 0; i < numOfIterations; i++ {
 			offset := LIMIT * i
-			err := s.sqlite.Query(query(offset), func(rows *sql.Rows) error {
+			err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
 				acceleration := &iim42652.Acceleration{}
 				gnssData := &neom9n.Data{
 					SystemTime: time.Time{},
@@ -83,9 +83,9 @@ func (s *SqlFeed) Start() {
 				}
 				err := rows.Scan(
 					&acceleration.TotalMagnitude,
-					&acceleration.Z, // X -> Z
-					&acceleration.X, // Y -> X
-					&acceleration.Y, // Z -> Y
+					&acceleration.Z, // CamX -> Z
+					&acceleration.X, // CamY -> X
+					&acceleration.Y, // CamZ -> Y
 					&gnssData.SystemTime,
 					&gnssData.Timestamp,
 					&gnssData.Fix,

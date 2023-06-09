@@ -117,11 +117,12 @@ func (s *Sqlite) SingleRowQuery(sql string, handleRow func(row *sql.Rows) error,
 	return nil
 }
 
-func (s *Sqlite) Query(sql string, handleRow func(row *sql.Rows) error, params []any) error {
+func (s *Sqlite) Query(debugLogQuery bool, sql string, handleRow func(row *sql.Rows) error, params []any) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	fmt.Println("Running query:", sql, params)
+	if debugLogQuery {
+		fmt.Println("Running query:", sql, params)
+	}
 
 	rows, err := s.db.Query(sql, params...)
 	if err != nil {
