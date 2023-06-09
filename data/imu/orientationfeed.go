@@ -204,6 +204,10 @@ func (m *OrientationEvent) GetZ() float64 {
 	return m.acceleration.GetZ()
 }
 
+func (m *OrientationEvent) GetOrientation() Orientation {
+	return m.acceleration.GetOrientation()
+}
+
 func invert(val float64) float64 {
 	return -val
 }

@@ -77,7 +77,7 @@ func (f *DirectionEventFeed) Start(sub *data.Subscription) {
 				if len(f.subscriptions) == 0 {
 					continue
 				}
-				e := event.(*CorrectedAccelerationEvent)
+				e := event.(*TiltCorrectedAccelerationEvent)
 				err := f.handleEvent(e)
 				f.lastUpdate = e.GetTime()
 
@@ -96,7 +96,7 @@ func (f *DirectionEventFeed) emit(event data.Event) {
 	}
 }
 
-func (f *DirectionEventFeed) handleEvent(e *CorrectedAccelerationEvent) error {
+func (f *DirectionEventFeed) handleEvent(e *TiltCorrectedAccelerationEvent) error {
 	x := e.X
 	y := e.Y
 

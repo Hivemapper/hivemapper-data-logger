@@ -11,29 +11,31 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
-type CorrectedAccelerationEvent struct {
+type TiltCorrectedAccelerationEvent struct {
 	*data.BaseEvent
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
-	XAngle float64 `json:"x_angle"`
-	YAngle float64 `json:"Y_angle"`
+	X           float64     `json:"x"`
+	Y           float64     `json:"y"`
+	XAngle      float64     `json:"x_angle"`
+	YAngle      float64     `json:"Y_angle"`
+	Orientation Orientation `json:"orientation"`
 }
 
-func (e *CorrectedAccelerationEvent) String() string {
-	return fmt.Sprintf("CorrectedAccelerationEvent: %f, %f, Angles x %f, y %f", e.X, e.Y, e.XAngle, e.YAngle)
+func (e *TiltCorrectedAccelerationEvent) String() string {
+	return fmt.Sprintf("TiltCorrectedAccelerationEvent: %f, %f, Angles x %f, y %f", e.X, e.Y, e.XAngle, e.YAngle)
 }
 
-func NewCorrectedAccelerationEvent(x, y, xAngle, yAngle float64) *CorrectedAccelerationEvent {
-	return &CorrectedAccelerationEvent{
-		BaseEvent: data.NewBaseEvent("IMU_CORRECTED_ACCELERATION_EVENT", "IMU"),
-		X:         x,
-		Y:         y,
-		XAngle:    xAngle,
-		YAngle:    yAngle,
+func NewTiltCorrectedAccelerationEvent(x, y, xAngle, yAngle float64, Orientation Orientation) *TiltCorrectedAccelerationEvent {
+	return &TiltCorrectedAccelerationEvent{
+		BaseEvent:   data.NewBaseEvent("IMU_TILT_CORRECTED_ACCELERATION_EVENT", "IMU"),
+		X:           x,
+		Y:           y,
+		XAngle:      xAngle,
+		YAngle:      yAngle,
+		Orientation: Orientation,
 	}
 }
 
-type CorrectedAccelerationFeed struct {
+type TiltCorrectedAccelerationFeed struct {
 	imu           *iim42652.IIM42652
 	subscriptions data.Subscriptions
 	lastUpdate    interface{}
@@ -43,8 +45,8 @@ type CorrectedAccelerationFeed struct {
 	yFilter       *kalman.KalmanFilter
 }
 
-func NewCorrectedAccelerationFeed() *CorrectedAccelerationFeed {
-	f := &CorrectedAccelerationFeed{
+func NewTiltCorrectedAccelerationFeed() *TiltCorrectedAccelerationFeed {
+	f := &TiltCorrectedAccelerationFeed{
 		subscriptions: make(data.Subscriptions),
 	}
 	now := time.Now()
@@ -66,7 +68,7 @@ func NewCorrectedAccelerationFeed() *CorrectedAccelerationFeed {
 	return f
 }
 
-func (f *CorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
+func (f *TiltCorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
 	sub := &data.Subscription{
 		IncomingEvents: make(chan data.Event),
 	}
@@ -74,7 +76,7 @@ func (f *CorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
+func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 	fmt.Println("Running imu corrected feed")
 	go func() {
 		for {
@@ -87,6 +89,7 @@ func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				x := e.GetX()
 				y := e.GetY()
 				z := e.GetZ()
+				orientation := e.GetOrientation()
 
 				correctedX, correctedY := computeCorrectedGForce(x, y, z)
 				xAngle, yAngle, _ := computeTiltAngles(correctedX, correctedY, 1)
@@ -104,7 +107,7 @@ func (f *CorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				//}
 				//y := f.yModel.Value(f.yFilter.State())
 
-				correctedEvent := NewCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle)
+				correctedEvent := NewTiltCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle, orientation)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}

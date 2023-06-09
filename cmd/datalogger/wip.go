@@ -87,7 +87,10 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing json logger database: %w", err)
 	}
 
-	sqliteLogger := logger.NewSqlite(mustGetString(cmd, "db-output-path"), []logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery}, []logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
+	sqliteLogger := logger.NewSqlite(
+		mustGetString(cmd, "db-output-path"),
+		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery},
+		[]logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
 	err = sqliteLogger.Init(mustGetDuration(cmd, "db-log-ttl"))
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -99,25 +102,24 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	orientationEventFeed := imu.NewOrientationFeed()
 	orientationEventFeed.Start(rawImuEventFeed.Subscribe("orientation"))
 
-	// TODO: change the correctedImuEventFeed -> TiltCorrectionEventFeed
-	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
+	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed()
+	tiltCorrectedAccelerationEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
 
 	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"))
+	directionEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("direction"))
 
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	rawEventSub := rawImuEventFeed.Subscribe("merger")
-	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
+	tiltCorrectedAccelerationSub := tiltCorrectedAccelerationEventFeed.Subscribe("merger")
 	directionEventSub := directionEventFeed.Subscribe("merger")
 
-	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, correctedImuEventSub, directionEventSub)
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, tiltCorrectedAccelerationSub, directionEventSub)
 	mergedEventFeed.Start()
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
 
 	fmt.Println("Starting to listen for events from mergedEventSub")
 	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.CorrectedAccelerationEvent
+	var correctedImuEvent *imu.TiltCorrectedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
 	go func() {
@@ -127,7 +129,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 				switch e := e.(type) {
 				case *imu.RawImuEvent:
 					imuRawEvent = e
-				case *imu.CorrectedAccelerationEvent:
+				case *imu.TiltCorrectedAccelerationEvent:
 					correctedImuEvent = e
 				case *gnss.GnssEvent:
 					gnssEvent = e

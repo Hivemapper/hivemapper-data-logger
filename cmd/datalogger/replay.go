@@ -71,7 +71,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	orientationEventFeed := imu.NewOrientationFeed()
 	orientationEventFeed.Start(sqlFeed.SubscribeImu("imu-orientation"))
 
-	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
+	correctedImuEventFeed := imu.NewTiltCorrectedAccelerationFeed()
 	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("imu-corrected"))
 
 	directionEventFeed := imu.NewDirectionEventFeed(conf)
@@ -91,7 +91,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	fmt.Println("Waiting for events...")
 
 	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.CorrectedAccelerationEvent
+	var correctedImuEvent *imu.TiltCorrectedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
 	featureCollection := geojson.NewFeatureCollection()
@@ -106,7 +106,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 			switch e := e.(type) {
 			case *imu.RawImuEvent:
 				imuRawEvent = e
-			case *imu.CorrectedAccelerationEvent:
+			case *imu.TiltCorrectedAccelerationEvent:
 				correctedImuEvent = e
 			case *gnss.GnssEvent:
 				gnssEvent = e
