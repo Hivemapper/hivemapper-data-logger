@@ -94,20 +94,20 @@ func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				correctedX, correctedY := computeCorrectedGForce(x, y, z)
 				xAngle, yAngle, _ := computeTiltAngles(correctedX, correctedY, 1)
 
-				//now := time.Now()
-				//err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
-				//if err != nil {
-				//	panic(fmt.Errorf("updating x filter: %w", err))
-				//}
-				//x := f.xModel.Value(f.xFilter.State())
-				//
-				//err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
-				//if err != nil {
-				//	panic(fmt.Errorf("updating y filter: %w", err))
-				//}
-				//y := f.yModel.Value(f.yFilter.State())
+				now := time.Now()
+				err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
+				if err != nil {
+					panic(fmt.Errorf("updating x filter: %w", err))
+				}
+				correctedFilteredX := f.xModel.Value(f.xFilter.State())
 
-				correctedEvent := NewTiltCorrectedAccelerationEvent(correctedX, correctedY, xAngle, yAngle, orientation)
+				err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
+				if err != nil {
+					panic(fmt.Errorf("updating y filter: %w", err))
+				}
+				correctedFilteredY := f.yModel.Value(f.yFilter.State())
+
+				correctedEvent := NewTiltCorrectedAccelerationEvent(correctedFilteredX, correctedFilteredY, xAngle, yAngle, orientation)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}
