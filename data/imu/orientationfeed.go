@@ -63,9 +63,16 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 	go func() {
 		initialOrientationSet := false
 
-		// We assume a front orientation as a base orientation
+		// we assume a front orientation as a base orientation
 		orientation := OrientationFront
 		orientationCounter := NewOrientationCounter()
+
+		// if we can't determine the orientation after getting 10 unsets -> panic
+		unsetPanicCounter := 0
+
+		// store the events from the beginning up until we have a confident orientation
+		// then we can start sending the events with the proper orientation
+		var rawImuEvents []*RawImuEvent
 
 		for {
 			select {
@@ -112,11 +119,33 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 						if orientationCounter.unsetCounter > 50 {
 							fmt.Println("Can't determine the mount direction, need to keep looping")
 							orientationCounter.Reset()
+							if unsetPanicCounter == 10 {
+								panic("can't determine the mount direction")
+							}
+							unsetPanicCounter++
 						}
+					}
+
+					if !initialOrientationSet {
+						rawImuEvents = append(rawImuEvents, e)
 					}
 				}
 
 				if initialOrientationSet {
+					for _, rawImuEvent := range rawImuEvents {
+						orientationEvent := NewOrientationEvent(
+							rawImuEvent.Acceleration.CamX(),
+							rawImuEvent.Acceleration.CamY(),
+							rawImuEvent.Acceleration.CamZ(),
+							rawImuEvent.Acceleration.TotalMagnitude,
+							orientation,
+						)
+
+						for _, sub := range f.subscriptions {
+							sub.IncomingEvents <- orientationEvent
+						}
+					}
+
 					orientationEvent := NewOrientationEvent(
 						e.Acceleration.CamX(),
 						e.Acceleration.CamY(),

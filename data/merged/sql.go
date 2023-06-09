@@ -17,7 +17,7 @@ const MergedCreateTable string = `
 		imu_corrected_acc_y REAL NOT NULL,
 		imu_tilt_angle_y REAL NOT NULL,
 		imu_acc_z REAL NOT NULL,
-		cam_orientation STRING NOT NULL,
+		cam_orientation TEXT NOT NULL,
 		gnss_system_time DATETIME NOT NULL,
 		gnss_time DATETIME NOT NULL,
 		gnss_fix TEXT NOT NULL,
@@ -95,7 +95,7 @@ func (w *SqlWrapper) InsertQuery() (string, []any) {
 		w.correctedImuEvent.Y,
 		w.correctedImuEvent.YAngle,
 		w.imuRawEvent.Acceleration.CamZ(), // -> imu_acc_z -> Y
-		w.correctedImuEvent.Orientation,
+		w.correctedImuEvent.GetOrientation(),
 		w.gnss.Data.SystemTime,
 		w.gnss.Data.Timestamp,
 		w.gnss.Data.Fix,

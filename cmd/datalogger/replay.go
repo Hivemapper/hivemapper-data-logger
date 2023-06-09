@@ -87,7 +87,6 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	mergedEventSub := mergedEventFeed.Subscribe("rerun")
 	sqlFeed.Start()
 
-	fmt.Println("Sql import started")
 	fmt.Println("Waiting for events...")
 
 	var imuRawEvent *imu.RawImuEvent
