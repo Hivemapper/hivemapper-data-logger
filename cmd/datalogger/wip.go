@@ -65,19 +65,6 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	rawImuEventFeed := imu.NewRawFeed(imuDevice)
-	rawImuEventFeed.Start()
-
-	orientationEventFeed := imu.NewOrientationFeed()
-	orientationEventFeed.Start(rawImuEventFeed.Subscribe("orientation"))
-
-	// TODO: change the correctedImuEventFeed -> TiltCorrectionEventFeed
-	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
-
-	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"))
-
 	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
@@ -106,6 +93,19 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 
+	rawImuEventFeed := imu.NewRawFeed(imuDevice)
+	rawImuEventFeed.Start()
+
+	orientationEventFeed := imu.NewOrientationFeed()
+	orientationEventFeed.Start(rawImuEventFeed.Subscribe("orientation"))
+
+	// TODO: change the correctedImuEventFeed -> TiltCorrectionEventFeed
+	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
+	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
+
+	directionEventFeed := imu.NewDirectionEventFeed(conf)
+	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"))
+
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	rawEventSub := rawImuEventFeed.Subscribe("merger")
 	correctedImuEventSub := correctedImuEventFeed.Subscribe("merger")
@@ -133,7 +133,6 @@ func wipRun(cmd *cobra.Command, args []string) error {
 					gnssEvent = e
 				}
 				if e.GetCategory() == "DIRECTION_CHANGE" {
-
 					err := sqliteLogger.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))
 					if err != nil {
 						panic(fmt.Errorf("logging to sqlite: %w", err))

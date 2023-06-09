@@ -36,10 +36,11 @@ type BaseAcceleration struct {
 	m float64
 }
 
+// NewBaseAcceleration The X, Y and Z are the values which come out of the RawImuEvent
 func NewBaseAcceleration(x, y, z, m float64) *BaseAcceleration {
 	return &BaseAcceleration{
 		x: x,
-		y: x,
+		y: y,
 		z: z,
 		m: m,
 	}

@@ -68,8 +68,11 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
+	orientationEventFeed := imu.NewOrientationFeed()
+	orientationEventFeed.Start(sqlFeed.SubscribeImu("imu-orientation"))
+
 	correctedImuEventFeed := imu.NewCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(sqlFeed.SubscribeImu("imu-corrected"))
+	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("imu-corrected"))
 
 	directionEventFeed := imu.NewDirectionEventFeed(conf)
 	directionEventFeed.Start(correctedImuEventFeed.Subscribe("imu-direction"))

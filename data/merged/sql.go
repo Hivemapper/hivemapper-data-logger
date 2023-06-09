@@ -86,13 +86,13 @@ func (w *SqlWrapper) InsertQuery() (string, []any) {
 	return insertQuery, []any{
 		w.imuRawEvent.Time,
 		w.imuRawEvent.Acceleration.TotalMagnitude,
-		w.imuRawEvent.Acceleration.CamX(),
+		w.imuRawEvent.Acceleration.CamX(), // -> imu_acc_x -> Z
 		w.correctedImuEvent.X,
 		w.correctedImuEvent.XAngle,
-		w.imuRawEvent.Acceleration.CamY(),
+		w.imuRawEvent.Acceleration.CamY(), // -> imu_acc_y -> X
 		w.correctedImuEvent.Y,
 		w.correctedImuEvent.YAngle,
-		w.imuRawEvent.Acceleration.CamZ(),
+		w.imuRawEvent.Acceleration.CamZ(), // -> imu_acc_z -> Y
 		w.gnss.Data.SystemTime,
 		w.gnss.Data.Timestamp,
 		w.gnss.Data.Fix,
