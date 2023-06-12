@@ -10,7 +10,7 @@ import (
 
 type CfgData struct {
 	Key   uint32
-	Value []byte
+	Value interface{}
 }
 type CfgValSet struct {
 	Version   byte
@@ -29,14 +29,31 @@ const (
 
 func (CfgValSet) classID() uint16 { return 0x8a06 }
 
+type CfgValGetReq struct {
+	Version byte
+	Layers  CfgValSetLayers
+	Key     uint32
+}
+
+func (CfgValGetReq) classID() uint16 { return 0x8b06 }
+
 type CfgValGet struct {
-	Version   byte
-	Layers    byte
-	Reserved1 [2]byte
-	CfgData   []*CfgData
+	Version  byte
+	Layers   byte
+	Position uint16
+	CfgData  []*CfgData
 }
 
 func (CfgValGet) classID() uint16 { return 0x8b06 }
+
+type CfgValDel struct {
+	Version   byte
+	Layers    CfgValSetLayers
+	Reserved1 [2]byte
+	Key       uint32
+}
+
+func (CfgValDel) classID() uint16 { return 0x8c06 }
 
 // Message ubx-ack-ack
 
