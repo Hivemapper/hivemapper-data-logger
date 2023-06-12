@@ -1,6 +1,7 @@
 package message
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"reflect"
@@ -8,15 +9,18 @@ import (
 	"github.com/daedaleanai/ublox"
 	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
+	"github.com/streamingfast/shutter"
 	"github.com/tarm/serial"
 )
 
 type Decoder struct {
+	*shutter.Shutter
 	registry *HandlerRegistry
 }
 
 func NewDecoder(registry *HandlerRegistry) *Decoder {
 	return &Decoder{
+		Shutter:  shutter.New(),
 		registry: registry,
 	}
 }
@@ -26,6 +30,10 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 	ubxDecoder := ublox.NewDecoder(stream)
 	go func() {
 		for {
+			if d.IsTerminating() || d.IsTerminated() {
+				done <- d.Err()
+				break
+			}
 			msg, err := ubxDecoder.Decode()
 			if err != nil {
 				if err == io.EOF {
@@ -38,10 +46,13 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 			if txt, ok := msg.(*nmea.TXT); ok {
 				fmt.Println("TXT:", txt.Text)
 			}
-			if nack, ok := msg.(*ubx.AckNak); ok {
-				fmt.Println("NACK:", nack)
+			if cfg, ok := msg.(*ubx.CfgValGet); ok {
+				fmt.Println("CFG:", cfg)
 			}
-
+			if nack, ok := msg.(*ubx.AckNak); ok {
+				fmt.Println("NACK:", nack, hex.EncodeToString([]byte{nack.ClsID, nack.MsgID}))
+			}
+			//fmt.Printf("Decoded: %T, %s\n", msg, msg)
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
 				err := handler.HandleUbxMessage(msg)
 				if err != nil {
@@ -51,5 +62,4 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 		}
 	}()
 	return done
-
 }

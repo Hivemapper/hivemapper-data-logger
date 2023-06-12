@@ -2,10 +2,13 @@ module github.com/streamingfast/gnss-controller
 
 go 1.20
 
-replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230531132611-c1a91eeb44cf
+//replace github.com/daedaleanai/ublox => /Users/cbillett/devel/github/ublox
+
+replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230612141255-f8202e5f6890
 
 require (
 	github.com/daedaleanai/ublox v0.0.0-00010101000000-000000000000
+	github.com/streamingfast/shutter v1.5.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 )
 

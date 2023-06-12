@@ -30,7 +30,6 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string) *Neom9n {
 		config: &serial.Config{
 			Name: serialConfigName, // /dev/ttyAMA1
 			//Baud: 921600,
-			//Baud: 57600,
 			Baud:     38400,
 			Parity:   serial.ParityNone,
 			StopBits: serial.Stop1,
@@ -54,14 +53,6 @@ func (n *Neom9n) handleOutputMessages() error {
 				return fmt.Errorf("writing message: %w", err)
 			}
 		}
-		if _, ok := msg.(*ubx.NavPvt); ok {
-			encoded, err := ubx.EncodeReq(msg)
-			_, err = n.stream.Write(encoded)
-			if err != nil {
-
-				return fmt.Errorf("writing message: %w", err)
-			}
-		}
 
 		encoded, err := ubx.Encode(msg)
 		_, err = n.stream.Write(encoded)
@@ -74,6 +65,7 @@ func (n *Neom9n) handleOutputMessages() error {
 func (n *Neom9n) Init(lastPosition *Position) error {
 	n.decoder = message.NewDecoder(n.handlersRegistry)
 	stream, err := serial.OpenPort(n.config)
+
 	if err != nil {
 		return fmt.Errorf("opening gps serial port: %w", err)
 	}
@@ -86,26 +78,33 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 		}
 	}()
 
+	_ = n.decoder.Decode(n.stream)
+
+	n.delConfig(1079115777)
+	n.delConfig(807469057)
+	n.delConfig(269549605)
+	n.delConfig(546374490)
+	n.delConfig(546373639)
+
+	n.setConfig(1079115777, uint32(921600), "CFG-UART1-BAUDRATE") // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
+	time.Sleep(100 * time.Millisecond)
+
+	n.decoder.Shutdown(nil)
+
+	n.config.Baud = 921600
+	n.stream.Close()
+	n.stream, err = serial.OpenPort(n.config)
+	n.decoder = message.NewDecoder(n.handlersRegistry)
 	n.decoderDone = n.decoder.Decode(n.stream)
 
-	//reset := ubx.CfgRst{
-	//	NavBbrMask: ubx.CfgRstAlm,
-	//	ResetMode:  0x01,
-	//}
-	//n.output <- &reset
-	time.Sleep(1 * time.Second)
-	fmt.Println("Reset completed")
-
-	n.setConfig(1079115777, []byte{0x0e, 0x10, 0x00}) // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
-	time.Sleep(1 * time.Second)
 	fmt.Println("Baud changed")
-	//time.Sleep(1 * time.Second)
-	//n.setConfig(1079115777, []byte{0xe1, 0x00}) // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
-	n.setConfig(807469057, []byte{0x32}) // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
-	n.setConfig(807469058, []byte{0x80}) // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
-	n.setConfig(546374490, []byte{0x01}) // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
-	n.setConfig(269549605, []byte{0x01}) // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
-	n.setConfig(546373639, []byte{0x01}) // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
+
+	n.setConfig(269549605, []byte{0x01}, "CFG-NAVSPG-ACKAIDING")         // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
+	n.setConfig(546374490, []byte{0x01}, "CFG-MSGOUT-UBX_MON_RF_UART1")  // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
+	n.setConfig(546373639, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
+
+	//n.setConfig(807469057, uint16(0), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
+	//n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")             // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
@@ -120,10 +119,10 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	return nil
 }
 
-func (n *Neom9n) setConfig(key uint32, value []byte) {
+func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 	n.output <- &ubx.CfgValSet{
 		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
 		CfgData: []*ubx.CfgData{
 			{
 				Key:   key,
@@ -131,6 +130,24 @@ func (n *Neom9n) setConfig(key uint32, value []byte) {
 			},
 		},
 	}
+	fmt.Println("Set config:", description)
+	time.Sleep(500 * time.Millisecond)
+}
+
+func (n *Neom9n) getConfig(key uint32) {
+	n.output <- &ubx.CfgValGetReq{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
+		Key:     key,
+	}
+	time.Sleep(500 * time.Millisecond)
+}
+func (n *Neom9n) delConfig(key uint32) {
+	n.output <- &ubx.CfgValDel{
+		Layers: ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
+		Key:    key,
+	}
+	time.Sleep(500 * time.Millisecond)
 }
 
 func (n *Neom9n) Run(dataFeed *DataFeed, timeSetCallback func(now time.Time)) error {
