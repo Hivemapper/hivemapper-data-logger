@@ -51,15 +51,6 @@ func (f *OrientationFeed) Subscribe(name string) *data.Subscription {
 }
 
 func (f *OrientationFeed) Start(subscription *data.Subscription) {
-	//todo: as long as we don't know for sure what the direction of the mount is
-	// then we won't be sending any events.
-	// Once we know the direction and confidently know enough to estimate the direction:
-	//  - read the last known direction in the sqlite and if we have something
-	//    then
-	// 	- return the event with directions AND then simply pass through the events
-	//    no need to keep checking what is the direction that we have
-	//  - write the direction in the sqlite
-
 	go func() {
 		initialOrientationSet := false
 
@@ -194,10 +185,21 @@ type OrientationEvent struct {
 }
 
 func NewOrientationEvent(x, y, z, m float64, orientation Orientation) *OrientationEvent {
-	return &OrientationEvent{
+	orientationEvent := &OrientationEvent{
 		BaseEvent:    data.NewBaseEvent("OrientedAcceleration", "IMU"),
 		acceleration: NewOrientedAcceleration(NewBaseAcceleration(x, y, z, m), orientation),
 	}
+	if orientationEvent.GetZ() > 0.99 || orientationEvent.GetZ() < 1.01 {
+		orientationEvent.setAngles()
+	}
+	return orientationEvent
+}
+
+func (m *OrientationEvent) setAngles() {
+	xAngle, yAngle, zAngle := computeTiltAngles(m.GetX(), m.GetY(), m.GetZ())
+	m.acceleration.SetXAngle(xAngle)
+	m.acceleration.SetYAngle(yAngle)
+	m.acceleration.SetZAngle(zAngle)
 }
 
 func (m *OrientationEvent) GetX() float64 {
@@ -236,6 +238,20 @@ func (m *OrientationEvent) GetY() float64 {
 
 func (m *OrientationEvent) GetZ() float64 {
 	return m.acceleration.GetZ()
+}
+
+//todo: everytime the magnitude is neutral (1.0 ~maybe add a 1-5% threshold) we recalculate the x, y and z angles
+
+func (m *OrientationEvent) GetXAngle() float64 {
+	return m.acceleration.GetXAngle()
+}
+
+func (m *OrientationEvent) GetYAngle() float64 {
+	return m.acceleration.GetYAngle()
+}
+
+func (m *OrientationEvent) GetZAngle() float64 {
+	return m.acceleration.GetZAngle()
 }
 
 func (m *OrientationEvent) GetOrientation() Orientation {

@@ -64,6 +64,9 @@ func (a *BaseAcceleration) GetMagnitude() float64 {
 
 type OrientedAcceleration struct {
 	*BaseAcceleration
+	xAngle      float64
+	yAngle      float64
+	zAngle      float64
 	orientation Orientation
 }
 
@@ -76,4 +79,28 @@ func NewOrientedAcceleration(acceleration *BaseAcceleration, orientation Orienta
 
 func (o *OrientedAcceleration) GetOrientation() Orientation {
 	return o.orientation
+}
+
+func (o *OrientedAcceleration) GetXAngle() float64 {
+	return o.xAngle
+}
+
+func (o *OrientedAcceleration) GetYAngle() float64 {
+	return o.yAngle
+}
+
+func (o *OrientedAcceleration) GetZAngle() float64 {
+	return o.zAngle
+}
+
+func (o *OrientedAcceleration) SetXAngle(xAngle float64) {
+	o.xAngle = xAngle
+}
+
+func (o *OrientedAcceleration) SetYAngle(yAngle float64) {
+	o.yAngle = yAngle
+}
+
+func (o *OrientedAcceleration) SetZAngle(zAngle float64) {
+	o.zAngle = zAngle
 }

@@ -2,10 +2,9 @@ package imu
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
+	"time"
 )
 
 type RawImuEvent struct {

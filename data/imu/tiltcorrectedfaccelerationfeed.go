@@ -88,11 +88,11 @@ func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				e := event.(*OrientationEvent)
 				x := e.GetX()
 				y := e.GetY()
-				z := e.GetZ()
+				xAngle := e.GetXAngle()
+				yAngle := e.GetYAngle()
+				zAngle := e.GetZAngle()
 				orientation := e.GetOrientation()
-
-				correctedX, correctedY := computeCorrectedGForce(x, y, z)
-				xAngle, yAngle, _ := computeTiltAngles(correctedX, correctedY, 1)
+				correctedX, correctedY := computeCorrectedGForce(x, y, zAngle)
 
 				now := time.Now()
 				err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
