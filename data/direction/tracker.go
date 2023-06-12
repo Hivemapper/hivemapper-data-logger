@@ -1,11 +1,12 @@
 package imu
 
 import (
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"time"
 )
 
 type Tracker interface {
-	track(lastUpdate time.Time, e *TiltCorrectedAccelerationEvent)
+	track(lastUpdate time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent)
 }
 
 type LeftTurnTracker struct {
@@ -15,7 +16,7 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+func (t *LeftTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
 	x := e.X
 	y := e.Y
 
@@ -43,7 +44,7 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+func (t *RightTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
 	x := e.X
 	y := e.Y
 	magnitude := computeTotalMagnitude(x, y)
@@ -72,7 +73,7 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+func (t *AccelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
 	x := e.X
 	if x > t.config.GForceAcceleratorThreshold {
 		if t.continuousCount == 0 {
@@ -105,7 +106,7 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+func (t *DecelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
 	x := e.X
 	if x < t.config.GForceDeceleratorThreshold {
 		if t.continuousCount == 0 {
@@ -137,8 +138,7 @@ type StopTracker struct {
 	emitFunc        emit
 }
 
-func (t *StopTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
-	//todo: we need gps speed
+func (t *StopTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
 	if e.Magnitude > 0.96 && e.Magnitude < 1.04 {
 		t.continuousCount++
 
