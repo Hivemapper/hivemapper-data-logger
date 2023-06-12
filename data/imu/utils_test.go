@@ -66,87 +66,119 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 		xAcceleration  float64
 		yAcceleration  float64
 		zAcceleration  float64
+		xAngle         float64
+		yAngle         float64
+		zAngle         float64
 		expectedXValue float64
 		expectedYValue float64
+		expectedZValue float64
 	}{
 		{
 			name:           "45 degree tilt",
 			xAcceleration:  0.707106781186548,
 			yAcceleration:  0.0,
 			zAcceleration:  0.707106781186548,
+			xAngle:         45.0,
+			yAngle:         0.0,
+			zAngle:         45.0,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "45 degree tilt",
-			xAcceleration:  0.0,
-			yAcceleration:  0.707106781186548,
+			name:           "45 degree tilts + 0.1g acceleration",
+			xAcceleration:  0.807106781186548,
+			yAcceleration:  0.0,
 			zAcceleration:  0.707106781186548,
-			expectedXValue: 0.0,
+			xAngle:         45.0,
+			yAngle:         0.0,
+			zAngle:         45.0,
+			expectedXValue: 0.093,
 			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "flat",
+			name:           "45 degree tilts + 0.1g deceleration",
+			xAcceleration:  0.607106781186548,
+			yAcceleration:  0.0,
+			zAcceleration:  0.707106781186548,
+			xAngle:         45.0,
+			yAngle:         0.0,
+			zAngle:         45.0,
+			expectedXValue: -0.107,
+			expectedYValue: 0.0,
+			expectedZValue: 1.0,
+		},
+		{
+			name:           "Flat",
+			xAcceleration:  0.0,
+			yAcceleration:  0.0,
 			zAcceleration:  1.0,
+			xAngle:         0.0,
+			yAngle:         0.0,
+			zAngle:         90.0,
 			expectedXValue: 0.0,
 			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "flat fast acceleration",
-			xAcceleration:  0.890652,
-			zAcceleration:  1.009796,
-			expectedXValue: 0.23,
+			name:           "Flat + 0.1g acceleration",
+			xAcceleration:  0.1,
+			yAcceleration:  0.0,
+			zAcceleration:  1.0,
+			xAngle:         0.0,
+			yAngle:         0.0,
+			zAngle:         90.0,
+			expectedXValue: 0.104,
 			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "flat fast acceleration",
-			xAcceleration:  0.890652,
-			zAcceleration:  0.977796,
-			expectedXValue: 0.23,
-			expectedYValue: 0.0,
+			name:           "Flat + 0.1g acceleration in curve",
+			xAcceleration:  0.25,
+			yAcceleration:  0.25,
+			zAcceleration:  1.0,
+			xAngle:         0.0,
+			yAngle:         0.0,
+			zAngle:         90.0,
+			expectedXValue: 0.264,
+			expectedYValue: 0.264,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "Tilted x and y but not moving",
-			xAcceleration:  0.20850,
-			yAcceleration:  0.19337,
-			zAcceleration:  0.95999,
-			expectedXValue: 0.0,
+			name:           "Flat + 0.1g deceleration",
+			xAcceleration:  -0.1,
+			yAcceleration:  0.0,
+			zAcceleration:  1.0,
+			xAngle:         0.0,
+			yAngle:         0.0,
+			zAngle:         90.0,
+			expectedXValue: -0.095,
 			expectedYValue: 0.0,
+			expectedZValue: 1.0,
 		},
 		{
-			name:           "Tilted x and y but not moving",
-			xAcceleration:  0.47267,
-			yAcceleration:  0.01660,
-			zAcceleration:  0.88626,
-			expectedXValue: 0.0,
-			expectedYValue: 0.0,
-		},
-		{
-			name:           "flat fast acceleration",
-			xAcceleration:  0.30274361400189215,
-			yAcceleration:  0.10986663411358989,
-			zAcceleration:  0.978057191686758,
-			expectedXValue: 0.0,
-			expectedYValue: 0.0,
-		},
-		//0.2568437757499924,0.021485030671102023,1.000030518509476
-		//0.23291726432081056,0.02294991912594989,0.9804986724448378
-		//0.21338541825617235,0.11670278023621326,1.1807000946073793
-		{
-			name:           "acceleration",
-			xAcceleration:  0.777350269189626,
-			yAcceleration:  0.577350269189626,
-			zAcceleration:  0.577350269189626,
-			expectedXValue: 0.0,
-			expectedYValue: 0.0,
+			name:           "Flat + 0.1g deceleration and going right",
+			xAcceleration:  -0.1,
+			yAcceleration:  0.1,
+			zAcceleration:  1.0,
+			xAngle:         0.0,
+			yAngle:         0.0,
+			zAngle:         90.0,
+			expectedXValue: -0.099,
+			expectedYValue: 0.099,
+			expectedZValue: 1.0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			correctedX, correctedY := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration)
+			correctedX, correctedY, correctedZ := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration, test.xAngle, test.yAngle, test.zAngle)
 			r := func(v float64) float64 {
-				return math.Round(v*100) / 100
+				if v == 0 {
+					return v
+				}
+				return math.Round(v*1000) / 1000
 			}
 			correctedX = r(correctedX)
 			correctedY = r(correctedY)
@@ -154,6 +186,7 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 			fmt.Printf("%f\n", correctedY)
 			require.Equal(t, test.expectedXValue, correctedX)
 			require.Equal(t, test.expectedYValue, correctedY)
+			require.Equal(t, test.expectedZValue, correctedZ)
 
 		})
 	}

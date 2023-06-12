@@ -31,22 +31,31 @@ func computeTiltAngles(xAcceleration, yAcceleration, zAcceleration float64) (xAn
 	return xAngle, yAngle, zAngle
 }
 
-func computeCorrectedGForceAxis(zAxis, complementaryAxis float64) float64 {
-	tiltAngleXRad := math.Atan2(zAxis, complementaryAxis)
-	correctedValue := complementaryAxis * math.Cos(tiltAngleXRad)
+func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAcceleration float64, xTilt float64, yTilt float64, zTilt float64) (float64, float64, float64) {
+	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
 
-	return correctedValue
-}
+	tiltXacc := math.Sqrt(xTilt / 90)
+	tiltYacc := math.Sqrt(yTilt / 90)
+	tiltZacc := math.Sqrt(zTilt / 90)
 
-func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAngle float64) (float64, float64) {
-	xBaseAcceleration := math.Cos(zAngle * math.Pi / 180)
+	normalizedX := xAcceleration / magnitude
+	normalizedY := yAcceleration / magnitude
+	normalizedZ := zAcceleration / magnitude
 
-	var x float64
-	if xBaseAcceleration > 0 {
-		x = xAcceleration - xBaseAcceleration
-	} else {
-		x = xAcceleration + xBaseAcceleration
+	normalizedXY := normalizedX + normalizedY
+	distRatioX := 0.0
+	distRatioY := 0.0
+	if normalizedXY != 0 {
+		distRatioX = normalizedX / normalizedXY
+		distRatioY = normalizedY / normalizedXY
 	}
 
-	return x, yAcceleration
+	zDelta := 1 - tiltZacc
+	correctedGForceZ := tiltZacc + zDelta
+	foo := normalizedZ - tiltZacc
+
+	correctedGForceX := normalizedX - tiltXacc - (foo * distRatioX)
+	correctedGForceY := normalizedY - tiltYacc - (foo * distRatioY)
+
+	return correctedGForceX, correctedGForceY, correctedGForceZ
 }

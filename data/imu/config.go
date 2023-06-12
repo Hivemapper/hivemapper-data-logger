@@ -52,10 +52,10 @@ func DefaultConfig() *Config {
 		TurnContinuousCountWindow:         20,
 		AccelerationContinuousCountWindow: 18,
 		DecelerationContinuousCountWindow: 18,
-		StopEndContinuousCountWindow:      50,
+		StopEndContinuousCountWindow:      30,
 		TurnMagnitudeThreshold:            0.12,
-		LeftTurnThreshold:                 0.15,
-		RightTurnThreshold:                -0.15,
+		LeftTurnThreshold:                 -0.15,
+		RightTurnThreshold:                0.15,
 		GForceAcceleratorThreshold:        0.10,
 		GForceDeceleratorThreshold:        -0.10,
 	}

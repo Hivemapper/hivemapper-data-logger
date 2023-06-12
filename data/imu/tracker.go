@@ -5,7 +5,7 @@ import (
 )
 
 type Tracker interface {
-	track(lastUpdate time.Time, xAvg float64, yAvg float64)
+	track(lastUpdate time.Time, e *TiltCorrectedAccelerationEvent)
 }
 
 type LeftTurnTracker struct {
@@ -15,19 +15,22 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(_ time.Time, x float64, y float64) {
+func (t *LeftTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+	x := e.X
+	y := e.Y
+
 	magnitude := computeTotalMagnitude(x, y)
-	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.LeftTurnThreshold {
+	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.LeftTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
-			t.start = time.Now()
+			t.start = now
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
 			t.emitFunc(NewLeftTurnEventDetected())
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewLeftTurnEvent(time.Since(t.start)))
+			t.emitFunc(NewLeftTurnEvent(Since(t.start, now)))
 		}
 		t.continuousCount = 0
 	}
@@ -40,12 +43,14 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(_ time.Time, x float64, y float64) {
+func (t *RightTurnTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+	x := e.X
+	y := e.Y
 	magnitude := computeTotalMagnitude(x, y)
-	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.RightTurnThreshold {
+	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.RightTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
-			t.start = time.Now()
+			t.start = now
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
 			t.emitFunc(NewRightTurnEventDetected())
@@ -53,7 +58,7 @@ func (t *RightTurnTracker) track(_ time.Time, x float64, y float64) {
 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewRightTurnEvent(time.Since(t.start)))
+			t.emitFunc(NewRightTurnEvent(Since(t.start, now)))
 		}
 		t.continuousCount = 0
 	}
@@ -67,14 +72,18 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) track(lastUpdate time.Time, x float64, y float64) {
+func (t *AccelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+	x := e.X
 	if x > t.config.GForceAcceleratorThreshold {
-		t.continuousCount++
-		duration := time.Since(lastUpdate)
-		t.speed += computeSpeedVariation(duration.Seconds(), x)
-		if t.continuousCount == 1 {
-			t.start = time.Now()
+		if t.continuousCount == 0 {
+			t.start = now
+			t.continuousCount++
+			return
 		}
+		t.continuousCount++
+		duration := Since(t.start, now)
+		t.speed += computeSpeedVariation(duration.Seconds(), x)
+
 		if t.continuousCount == t.config.AccelerationContinuousCountWindow {
 			t.emitFunc(NewAccelerationDetectedEvent())
 		}
@@ -96,21 +105,25 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) track(lastUpdate time.Time, x float64, y float64) {
+func (t *DecelerationTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+	x := e.X
 	if x < t.config.GForceDeceleratorThreshold {
-		t.continuousCount++
-		duration := time.Since(lastUpdate)
-		t.speed += computeSpeedVariation(duration.Seconds(), x)
-		if t.continuousCount == 1 {
-			t.start = time.Now()
+		if t.continuousCount == 0 {
+			t.start = now
+			t.continuousCount++
+			return
 		}
+		t.continuousCount++
+		duration := Since(t.start, now)
+		t.speed += computeSpeedVariation(duration.Seconds(), x)
+
 		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
 			t.emitFunc(NewDecelerationDetectedEvent())
 		}
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(NewDecelerationEvent(t.speed, time.Since(t.start)))
+			t.emitFunc(NewDecelerationEvent(t.speed, Since(t.start, now)))
 		}
 		t.speed = 0
 		t.continuousCount = 0
@@ -124,21 +137,27 @@ type StopTracker struct {
 	emitFunc        emit
 }
 
-func (t *StopTracker) track(_ time.Time, x float64, y float64) {
-	if x < 0.012 && x > -0.012 && y < 0.012 && y > -0.012 {
+func (t *StopTracker) track(now time.Time, e *TiltCorrectedAccelerationEvent) {
+	//todo: we need gps speed
+	if e.Magnitude > 0.96 && e.Magnitude < 1.04 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {
-			t.start = time.Now()
+			t.start = now
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
 			t.emitFunc(NewStopDetectedEvent())
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
-			t.emitFunc(NewStopEndEvent(time.Since(t.start)))
+			t.emitFunc(NewStopEndEvent(Since(t.start, now)))
 		}
 
 		t.continuousCount = 0
 	}
+}
+
+func Since(since time.Time, t time.Time) time.Duration {
+
+	return t.Sub(since)
 }

@@ -109,7 +109,8 @@ func replayE(cmd *cobra.Command, _ []string) error {
 				correctedImuEvent = e
 			case *gnss.GnssEvent:
 				gnssEvent = e
-				geometry = geojson.NewPointGeometry([]float64{e.Data.Latitude, e.Data.Longitude})
+				//geometry = geojson.NewPointGeometry([]float64{e.Data.Latitude, e.Data.Longitude})
+				geometry = geojson.NewPointGeometry([]float64{e.Data.Longitude, e.Data.Latitude})
 			}
 			if e.GetCategory() == "DIRECTION_CHANGE" {
 				err := sqliteOutput.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))

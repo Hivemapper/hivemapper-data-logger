@@ -72,7 +72,6 @@ func (s *SqlFeed) Start() {
 		lastGnssSystemTime := time.Time{}
 		for i := 0; i < numOfIterations; i++ {
 			offset := LIMIT * i
-			fmt.Printf("Fetching events from sqlite database with offset %d\n", offset)
 			err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
 				acceleration := &iim42652.Acceleration{}
 				gnssData := &neom9n.Data{

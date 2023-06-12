@@ -2,10 +2,6 @@ package imu
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/rosshemsley/kalman"
-	"github.com/rosshemsley/kalman/models"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -15,18 +11,24 @@ type TiltCorrectedAccelerationEvent struct {
 	*data.BaseEvent
 	X           float64     `json:"x"`
 	Y           float64     `json:"y"`
+	Z           float64     `json:"z"`
+	Magnitude   float64     `json:"magnitude"`
 	XAngle      float64     `json:"x_angle"`
 	YAngle      float64     `json:"Y_angle"`
+	ZAngle      float64     `json:"z_angle"`
 	Orientation Orientation `json:"orientation"`
 }
 
-func NewTiltCorrectedAccelerationEvent(x, y, xAngle, yAngle float64, orientation Orientation) *TiltCorrectedAccelerationEvent {
+func NewTiltCorrectedAccelerationEvent(x, y, z, magnitude, xAngle, yAngle, zAngle float64, orientation Orientation) *TiltCorrectedAccelerationEvent {
 	return &TiltCorrectedAccelerationEvent{
 		BaseEvent:   data.NewBaseEvent("IMU_TILT_CORRECTED_ACCELERATION_EVENT", "IMU"),
 		X:           x,
 		Y:           y,
+		Z:           z,
+		Magnitude:   magnitude,
 		XAngle:      xAngle,
 		YAngle:      yAngle,
+		ZAngle:      zAngle,
 		Orientation: orientation,
 	}
 }
@@ -36,34 +38,22 @@ func (e *TiltCorrectedAccelerationEvent) String() string {
 }
 
 type TiltCorrectedAccelerationFeed struct {
-	imu           *iim42652.IIM42652
-	subscriptions data.Subscriptions
-	lastUpdate    interface{}
-	xModel        *models.SimpleModel
-	xFilter       *kalman.KalmanFilter
-	yModel        *models.SimpleModel
-	yFilter       *kalman.KalmanFilter
+	imu              *iim42652.IIM42652
+	subscriptions    data.Subscriptions
+	lastUpdate       interface{}
+	xAngleCalibrated *data.AverageFloat64
+	yAngleCalibrated *data.AverageFloat64
+	zAngleCalibrated *data.AverageFloat64
+	calibrated       bool
 }
 
 func NewTiltCorrectedAccelerationFeed() *TiltCorrectedAccelerationFeed {
 	f := &TiltCorrectedAccelerationFeed{
-		subscriptions: make(data.Subscriptions),
+		subscriptions:    make(data.Subscriptions),
+		xAngleCalibrated: data.NewAverageFloat64WithCount("angleX", 100),
+		yAngleCalibrated: data.NewAverageFloat64WithCount("angleY", 100),
+		zAngleCalibrated: data.NewAverageFloat64WithCount("angleZ", 100),
 	}
-	now := time.Now()
-	f.lastUpdate = now
-	f.xModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
-		ProcessVariance:     2.0,
-		ObservationVariance: 2.0,
-	})
-	f.xFilter = kalman.NewKalmanFilter(f.xModel)
-
-	f.yModel = models.NewSimpleModel(now, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
-		ProcessVariance:     2.0,
-		ObservationVariance: 2.0,
-	})
-	f.yFilter = kalman.NewKalmanFilter(f.yModel)
 
 	return f
 }
@@ -76,6 +66,38 @@ func (f *TiltCorrectedAccelerationFeed) Subscribe(name string) *data.Subscriptio
 	return sub
 }
 
+var continuousCount = 0
+var xAvg = *data.NewAverageFloat64WithCount("", 30)
+var yAvg = *data.NewAverageFloat64WithCount("", 30)
+var zAvg = *data.NewAverageFloat64WithCount("", 30)
+
+func (f *TiltCorrectedAccelerationFeed) calibrate(e *OrientationEvent) bool {
+	magnitude := e.acceleration.GetMagnitude()
+
+	if magnitude > 0.96 && magnitude < 1.04 {
+		continuousCount++
+		xAngle, yAngle, zAngle := computeTiltAngles(e.GetX(), e.GetY(), e.GetZ())
+		xAvg.Add(xAngle)
+		yAvg.Add(yAngle)
+		zAvg.Add(zAngle)
+	} else {
+		if continuousCount > 30 {
+			f.xAngleCalibrated.Add(xAvg.Average)
+			f.yAngleCalibrated.Add(yAvg.Average)
+			f.zAngleCalibrated.Add(zAvg.Average)
+			//fmt.Println("Calibrating with:", xAvg.Average, yAvg.Average, zAvg.Average)
+			fmt.Println("Calibrated:", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated)
+			f.calibrated = true
+		}
+		continuousCount = 0
+		xAvg.Reset()
+		yAvg.Reset()
+		zAvg.Reset()
+	}
+
+	return f.calibrated
+}
+
 func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 	fmt.Println("Running imu corrected feed")
 	go func() {
@@ -85,29 +107,20 @@ func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 				if len(f.subscriptions) == 0 {
 					continue
 				}
+
 				e := event.(*OrientationEvent)
+				if !f.calibrate(e) {
+					continue
+				}
+
 				x := e.GetX()
 				y := e.GetY()
-				xAngle := e.GetXAngle()
-				yAngle := e.GetYAngle()
-				zAngle := e.GetZAngle()
+				z := e.GetY()
+
 				orientation := e.GetOrientation()
-				correctedX, correctedY := computeCorrectedGForce(x, y, zAngle)
+				correctedX, correctedY, correctedZ := computeCorrectedGForce(x, y, z, f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
 
-				now := time.Now()
-				err := f.xFilter.Update(now, f.xModel.NewMeasurement(correctedX))
-				if err != nil {
-					panic(fmt.Errorf("updating x filter: %w", err))
-				}
-				correctedFilteredX := f.xModel.Value(f.xFilter.State())
-
-				err = f.yFilter.Update(now, f.yModel.NewMeasurement(correctedY))
-				if err != nil {
-					panic(fmt.Errorf("updating y filter: %w", err))
-				}
-				correctedFilteredY := f.yModel.Value(f.yFilter.State())
-
-				correctedEvent := NewTiltCorrectedAccelerationEvent(correctedFilteredX, correctedFilteredY, xAngle, yAngle, orientation)
+				correctedEvent := NewTiltCorrectedAccelerationEvent(correctedX, correctedY, correctedZ, e.acceleration.GetMagnitude(), f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average, orientation)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent
 				}

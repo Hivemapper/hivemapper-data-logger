@@ -97,14 +97,11 @@ func (f *DirectionEventFeed) emit(event data.Event) {
 }
 
 func (f *DirectionEventFeed) handleEvent(e *TiltCorrectedAccelerationEvent) error {
-	x := e.X
-	y := e.Y
-
-	f.leftTurnTracker.track(f.lastUpdate, x, y)
-	f.rightTurnTracker.track(f.lastUpdate, x, y)
-	f.accelerationTracker.track(f.lastUpdate, x, y)
-	f.decelerationTracker.track(f.lastUpdate, x, y)
-	f.stopTracker.track(f.lastUpdate, x, y)
+	f.leftTurnTracker.track(f.lastUpdate, e)
+	f.rightTurnTracker.track(f.lastUpdate, e)
+	f.accelerationTracker.track(f.lastUpdate, e)
+	f.decelerationTracker.track(f.lastUpdate, e)
+	f.stopTracker.track(f.lastUpdate, e)
 
 	return nil
 }
