@@ -1,28 +1,27 @@
-package imu
+package direction
 
 import (
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type emit func(event data.Event)
 
 type DirectionEventFeed struct {
-	imu                 *iim42652.IIM42652
 	subscriptions       data.Subscriptions
-	config              *Config
+	config              *imu.Config
 	leftTurnTracker     *LeftTurnTracker
 	rightTurnTracker    *RightTurnTracker
 	accelerationTracker *AccelerationTracker
 	decelerationTracker *DecelerationTracker
 	stopTracker         *StopTracker
-	lastUpdate          time.Time
 }
 
-func NewDirectionEventFeed(config *Config) *DirectionEventFeed {
+func NewDirectionEventFeed(config *imu.Config) *DirectionEventFeed {
 	feed := &DirectionEventFeed{
 		config:        config,
 		subscriptions: make(data.Subscriptions),
@@ -65,24 +64,32 @@ func (f *DirectionEventFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
-func (f *DirectionEventFeed) Start(sub *data.Subscription) {
+func (f *DirectionEventFeed) Start(imuCorrectedAccelerationSub *data.Subscription, gnssSub *data.Subscription) {
 	fmt.Println("Running direction event feed")
-	now := time.Now()
-	f.lastUpdate = now
 
 	go func() {
+		var imuEvent *imu.TiltCorrectedAccelerationEvent
+		var gnssEvent *gnss.GnssEvent
 		for {
+
 			select {
-			case event := <-sub.IncomingEvents:
+			case event := <-imuCorrectedAccelerationSub.IncomingEvents:
 				if len(f.subscriptions) == 0 {
 					continue
 				}
-				e := event.(*TiltCorrectedAccelerationEvent)
-				err := f.handleEvent(e)
-				f.lastUpdate = e.GetTime()
+				imuEvent = event.(*imu.TiltCorrectedAccelerationEvent)
 
+			case event := <-gnssSub.IncomingEvents:
+				if len(f.subscriptions) == 0 {
+					continue
+				}
+				gnssEvent = event.(*gnss.GnssEvent)
+			}
+
+			if imuEvent != nil && gnssEvent != nil {
+				err := f.handleEvent(imuEvent, gnssEvent)
 				if err != nil {
-					panic(fmt.Errorf("handling event %s: %w", e.GetName(), err))
+					panic(fmt.Errorf("handling event: %w", err))
 				}
 			}
 		}
@@ -96,12 +103,12 @@ func (f *DirectionEventFeed) emit(event data.Event) {
 	}
 }
 
-func (f *DirectionEventFeed) handleEvent(e *TiltCorrectedAccelerationEvent) error {
-	f.leftTurnTracker.track(f.lastUpdate, e)
-	f.rightTurnTracker.track(f.lastUpdate, e)
-	f.accelerationTracker.track(f.lastUpdate, e)
-	f.decelerationTracker.track(f.lastUpdate, e)
-	f.stopTracker.track(f.lastUpdate, e)
+func (f *DirectionEventFeed) handleEvent(eventImu *imu.TiltCorrectedAccelerationEvent, eventGnss *gnss.GnssEvent) error {
+	f.leftTurnTracker.track(eventImu, eventGnss)
+	f.rightTurnTracker.track(eventImu, eventGnss)
+	f.accelerationTracker.track(eventImu, eventGnss)
+	f.decelerationTracker.track(eventImu, eventGnss)
+	f.stopTracker.track(eventImu, eventGnss)
 
 	return nil
 }

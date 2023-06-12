@@ -55,7 +55,7 @@ func Test_ComputeAccelerationSpeed(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expectedSpeed, computeSpeedVariation(test.timeInSeconds, test.gForce))
+			require.Equal(t, test.expectedSpeed, ComputeSpeedVariation(test.timeInSeconds, test.gForce))
 		})
 	}
 }

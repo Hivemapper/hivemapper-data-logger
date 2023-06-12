@@ -1,4 +1,4 @@
-package imu
+package direction
 
 import (
 	"fmt"

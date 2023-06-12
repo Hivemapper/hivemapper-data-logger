@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"net/http"
 	"time"
 
@@ -105,8 +106,8 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed()
 	tiltCorrectedAccelerationEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
 
-	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("direction"))
+	directionEventFeed := direction.NewDirectionEventFeed(conf)
+	directionEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("direction"), gnssEventFeed.Subscribe("direction"))
 
 	gnssEventSub := gnssEventFeed.Subscribe("merger")
 	rawEventSub := rawImuEventFeed.Subscribe("merger")

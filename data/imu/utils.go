@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-func computeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
+func ComputeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
 	// Convert g-force to meters per second squared
 	acceleration := gForce * 9.8
 
@@ -17,7 +17,7 @@ func computeSpeedVariation(timeInSeconds float64, gForce float64) float64 {
 	return speedKMH
 }
 
-func computeTotalMagnitude(xAcceleration float64, yAcceleration float64) float64 {
+func ComputeTotalMagnitude(xAcceleration float64, yAcceleration float64) float64 {
 	return math.Sqrt(math.Pow(xAcceleration, 2) + math.Pow(yAcceleration, 2))
 }
 

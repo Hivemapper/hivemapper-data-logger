@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"os"
 	"time"
 
@@ -74,8 +75,8 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	correctedImuEventFeed := imu.NewTiltCorrectedAccelerationFeed()
 	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("imu-corrected"))
 
-	directionEventFeed := imu.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(correctedImuEventFeed.Subscribe("imu-direction"))
+	directionEventFeed := direction.NewDirectionEventFeed(conf)
+	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"), sqlFeed.SubscribeGnss("direction"))
 	mergedEventFeed := data.NewEventFeedMerger(
 		sqlFeed.SubscribeImu("merger"),
 		sqlFeed.SubscribeGnss("merger"),
@@ -84,7 +85,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	)
 
 	mergedEventFeed.Start()
-	mergedEventSub := mergedEventFeed.Subscribe("rerun")
+	mergedEventSub := mergedEventFeed.Subscribe("replay")
 	sqlFeed.Start()
 
 	fmt.Println("Waiting for events...")
