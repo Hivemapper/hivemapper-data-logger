@@ -18,9 +18,8 @@ type LeftTurnTracker struct {
 }
 
 func (t *LeftTurnTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.X
-	y := e.Y
-
+	x := e.Acceleration.X
+	y := e.Acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.LeftTurnThreshold {
 		t.continuousCount++
@@ -46,8 +45,8 @@ type RightTurnTracker struct {
 }
 
 func (t *RightTurnTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.X
-	y := e.Y
+	x := e.Acceleration.X
+	y := e.Acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.RightTurnThreshold {
 		t.continuousCount++
@@ -75,7 +74,7 @@ type AccelerationTracker struct {
 }
 
 func (t *AccelerationTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.X
+	x := e.Acceleration.X
 	if x > t.config.GForceAcceleratorThreshold {
 		if t.continuousCount == 0 {
 			t.start = e.GetTime()
@@ -108,7 +107,7 @@ type DecelerationTracker struct {
 }
 
 func (t *DecelerationTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.X
+	x := e.Acceleration.X
 	if x < t.config.GForceDeceleratorThreshold {
 		if t.continuousCount == 0 {
 			t.start = e.GetTime()
@@ -140,7 +139,7 @@ type StopTracker struct {
 }
 
 func (t *StopTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	if e.Magnitude > 0.96 && e.Magnitude < 1.04 && g.Data.Speed > 0.0 {
+	if e.Acceleration.Magnitude > 0.96 && e.Acceleration.Magnitude < 1.04 && g.Data.Speed > 0.0 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {
