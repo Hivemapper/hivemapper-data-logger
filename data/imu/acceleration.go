@@ -1,5 +1,7 @@
 package imu
 
+import "math"
+
 type Orientation string
 
 const (
@@ -10,97 +12,89 @@ const (
 	OrientationBack  Orientation = "OrientationBack"
 )
 
-type AccelerationData interface {
-	GetX() float64
-	GetY() float64
-	GetZ() float64
-	GetMagnitude() float64
+type Acceleration struct {
+	X         float64
+	Y         float64
+	Z         float64
+	Magnitude float64
 }
 
-type OrientedAccelerationData interface {
-	AccelerationData
-	GetOrientation() Orientation
-}
-
-type TiltCorrectedAccelerationData interface {
-	AccelerationData
-	OrientedAccelerationData
-	GetXAngle() float64
-	GetYAngle() float64
-}
-
-type BaseAcceleration struct {
-	x float64
-	y float64
-	z float64
-	m float64
-}
-
-// NewBaseAcceleration The X, Y and Z are the values which come out of the RawImuEvent
-func NewBaseAcceleration(x, y, z, m float64) *BaseAcceleration {
-	return &BaseAcceleration{
-		x: x,
-		y: y,
-		z: z,
-		m: m,
+func NewAcceleration(x, y, z, m float64) *Acceleration {
+	return &Acceleration{
+		X:         x,
+		Y:         y,
+		Z:         z,
+		Magnitude: m,
 	}
-}
-
-func (a *BaseAcceleration) GetX() float64 {
-	return a.x
-}
-
-func (a *BaseAcceleration) GetY() float64 {
-	return a.y
-}
-
-func (a *BaseAcceleration) GetZ() float64 {
-	return a.z
-}
-
-func (a *BaseAcceleration) GetMagnitude() float64 {
-	return a.m
 }
 
 type OrientedAcceleration struct {
-	*BaseAcceleration
-	xAngle      float64
-	yAngle      float64
-	zAngle      float64
-	orientation Orientation
+	*Acceleration
+	Orientation Orientation
 }
 
-func NewOrientedAcceleration(acceleration *BaseAcceleration, orientation Orientation) *OrientedAcceleration {
+func NewOrientedAcceleration(acceleration *Acceleration, orientation Orientation) *OrientedAcceleration {
+	a := NewAcceleration(
+		fixX(acceleration, orientation),
+		fixX(acceleration, orientation),
+		acceleration.Z,
+		acceleration.Magnitude)
 	return &OrientedAcceleration{
-		BaseAcceleration: acceleration,
-		orientation:      orientation,
+		Acceleration: a,
+		Orientation:  orientation,
 	}
 }
 
-func (o *OrientedAcceleration) GetOrientation() Orientation {
-	return o.orientation
+func fixX(acceleration *Acceleration, orientation Orientation) float64 {
+	switch orientation {
+	case OrientationFront:
+		return acceleration.X
+	case OrientationRight:
+		return invert(acceleration.Y)
+	case OrientationLeft:
+		return acceleration.Y
+	case OrientationBack:
+		return invert(acceleration.X)
+	case OrientationUnset:
+		return math.MaxFloat64
+	default:
+		panic("invalid orientation")
+	}
 }
 
-func (o *OrientedAcceleration) GetXAngle() float64 {
-	return o.xAngle
+func fixY(acceleration *Acceleration, orientation Orientation) float64 {
+	switch orientation {
+	case OrientationFront:
+		return acceleration.Y
+	case OrientationRight:
+		return acceleration.X
+	case OrientationLeft:
+		return invert(acceleration.X)
+	case OrientationBack:
+		return invert(acceleration.Y)
+	case OrientationUnset:
+		return math.MaxFloat64
+	default:
+		panic("invalid orientation")
+	}
 }
 
-func (o *OrientedAcceleration) GetYAngle() float64 {
-	return o.yAngle
+func invert(val float64) float64 {
+	return -val
 }
 
-func (o *OrientedAcceleration) GetZAngle() float64 {
-	return o.zAngle
+type TiltCorrectedAcceleration struct {
+	*OrientedAcceleration
+	XAngle float64
+	YAngle float64
+	ZAngle float64
 }
 
-func (o *OrientedAcceleration) SetXAngle(xAngle float64) {
-	o.xAngle = xAngle
-}
-
-func (o *OrientedAcceleration) SetYAngle(yAngle float64) {
-	o.yAngle = yAngle
-}
-
-func (o *OrientedAcceleration) SetZAngle(zAngle float64) {
-	o.zAngle = zAngle
+func NewTiltCorrectedAcceleration(orientedAcceleration *OrientedAcceleration, xAngle, yAngle, zAngle float64) *TiltCorrectedAcceleration {
+	return &TiltCorrectedAcceleration{
+		OrientedAcceleration: orientedAcceleration,
+		XAngle:               xAngle,
+		YAngle:               yAngle,
+		ZAngle:               zAngle,
+	}
 }

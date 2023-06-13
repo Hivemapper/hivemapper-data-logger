@@ -2,8 +2,8 @@ package imu
 
 import (
 	"fmt"
+
 	"github.com/streamingfast/hivemapper-data-logger/data"
-	"math"
 )
 
 type OrientationCounter struct {
@@ -177,87 +177,17 @@ func computeOrientation(event *RawImuEvent) Orientation {
 	return OrientationUnset
 }
 
-// OrientationEvent X, Y and Z are the real world orientation values
+// OrientedAccelerationEvent X, Y and Z are the real world orientation values
 // X forward and backwards, Y left and light and Z up and down
-type OrientationEvent struct {
+type OrientedAccelerationEvent struct {
 	*data.BaseEvent
-	acceleration *OrientedAcceleration
+	Acceleration *OrientedAcceleration
 }
 
-func NewOrientationEvent(x, y, z, m float64, orientation Orientation) *OrientationEvent {
-	orientationEvent := &OrientationEvent{
+func NewOrientationEvent(x, y, z, m float64, orientation Orientation) *OrientedAccelerationEvent {
+	orientationEvent := &OrientedAccelerationEvent{
 		BaseEvent:    data.NewBaseEvent("OrientedAcceleration", "IMU"),
-		acceleration: NewOrientedAcceleration(NewBaseAcceleration(x, y, z, m), orientation),
-	}
-	if orientationEvent.GetZ() > 0.99 || orientationEvent.GetZ() < 1.01 {
-		orientationEvent.setAngles()
+		Acceleration: NewOrientedAcceleration(NewAcceleration(x, y, z, m), orientation),
 	}
 	return orientationEvent
-}
-
-func (m *OrientationEvent) setAngles() {
-	xAngle, yAngle, zAngle := computeTiltAngles(m.GetX(), m.GetY(), m.GetZ())
-	m.acceleration.SetXAngle(xAngle)
-	m.acceleration.SetYAngle(yAngle)
-	m.acceleration.SetZAngle(zAngle)
-}
-
-func (m *OrientationEvent) GetX() float64 {
-	switch m.acceleration.GetOrientation() {
-	case OrientationFront:
-		return m.acceleration.GetX()
-	case OrientationRight:
-		return invert(m.acceleration.GetY())
-	case OrientationLeft:
-		return m.acceleration.GetY()
-	case OrientationBack:
-		return invert(m.acceleration.GetX())
-	case OrientationUnset:
-		return math.MaxFloat64
-	default:
-		panic("invalid orientation")
-	}
-}
-
-func (m *OrientationEvent) GetY() float64 {
-	switch m.acceleration.GetOrientation() {
-	case OrientationFront:
-		return m.acceleration.GetY()
-	case OrientationRight:
-		return m.acceleration.GetX()
-	case OrientationLeft:
-		return invert(m.acceleration.GetX())
-	case OrientationBack:
-		return invert(m.acceleration.GetY())
-	case OrientationUnset:
-		return math.MaxFloat64
-	default:
-		panic("invalid orientation")
-	}
-}
-
-func (m *OrientationEvent) GetZ() float64 {
-	return m.acceleration.GetZ()
-}
-
-//todo: everytime the magnitude is neutral (1.0 ~maybe add a 1-5% threshold) we recalculate the x, y and z angles
-
-func (m *OrientationEvent) GetXAngle() float64 {
-	return m.acceleration.GetXAngle()
-}
-
-func (m *OrientationEvent) GetYAngle() float64 {
-	return m.acceleration.GetYAngle()
-}
-
-func (m *OrientationEvent) GetZAngle() float64 {
-	return m.acceleration.GetZAngle()
-}
-
-func (m *OrientationEvent) GetOrientation() Orientation {
-	return m.acceleration.GetOrientation()
-}
-
-func invert(val float64) float64 {
-	return -val
 }

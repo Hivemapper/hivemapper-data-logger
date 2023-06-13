@@ -22,25 +22,27 @@ func ComputeTotalMagnitude(xAcceleration float64, yAcceleration float64) float64
 }
 
 // computeTiltAngles Compute the tilt angles ONLY when the total magnitude is of 1.0
-func computeTiltAngles(xAcceleration, yAcceleration, zAcceleration float64) (xAngle float64, yAngle float64, zAngle float64) { // returns x, y, z angles
+func computeTiltAngles(acceleration *OrientedAcceleration) (xAngle float64, yAngle float64, zAngle float64) { // returns x, y, z angles
 	// http://www.starlino.com/imu_guide.html
-	rz := zAcceleration * zAcceleration
-	zAngle = 90 * rz
-	xAngle = (xAcceleration * xAcceleration) * 90
-	yAngle = (yAcceleration * yAcceleration) * 90
-	return xAngle, yAngle, zAngle
+	xAngle = (acceleration.X * acceleration.X) * 90
+	yAngle = (acceleration.Y * acceleration.Y) * 90
+	zAngle = (acceleration.Z * acceleration.Z) * 90
+	return
 }
 
-func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAcceleration float64, xTilt float64, yTilt float64, zTilt float64) (float64, float64, float64) {
-	magnitude := math.Sqrt(xAcceleration*xAcceleration + yAcceleration*yAcceleration + zAcceleration*zAcceleration)
+func computeCorrectedGForce(acceleration *OrientedAcceleration, xTilt float64, yTilt float64, zTilt float64) *Acceleration {
+	x := acceleration.X
+	y := acceleration.Y
+	z := acceleration.Z
+	magnitude := math.Sqrt(x*x + y*y + z*z)
 
 	tiltXacc := math.Sqrt(xTilt / 90)
 	tiltYacc := math.Sqrt(yTilt / 90)
 	tiltZacc := math.Sqrt(zTilt / 90)
 
-	normalizedX := xAcceleration / magnitude
-	normalizedY := yAcceleration / magnitude
-	normalizedZ := zAcceleration / magnitude
+	normalizedX := x / magnitude
+	normalizedY := y / magnitude
+	normalizedZ := z / magnitude
 
 	normalizedXY := normalizedX + normalizedY
 	distRatioX := 0.0
@@ -57,5 +59,5 @@ func computeCorrectedGForce(xAcceleration float64, yAcceleration float64, zAccel
 	correctedGForceX := normalizedX - tiltXacc - (foo * distRatioX)
 	correctedGForceY := normalizedY - tiltYacc - (foo * distRatioY)
 
-	return correctedGForceX, correctedGForceY, correctedGForceZ
+	return NewAcceleration(correctedGForceX, correctedGForceY, correctedGForceZ, magnitude)
 }
