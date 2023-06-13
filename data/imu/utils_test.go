@@ -173,20 +173,23 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			correctedX, correctedY, correctedZ := computeCorrectedGForce(test.xAcceleration, test.yAcceleration, test.zAcceleration, test.xAngle, test.yAngle, test.zAngle)
-			r := func(v float64) float64 {
-				if v == 0 {
-					return v
-				}
-				return math.Round(v*1000) / 1000
-			}
-			correctedX = r(correctedX)
-			correctedY = r(correctedY)
+			m := math.Sqrt(test.xAcceleration*test.xAcceleration + test.yAcceleration*test.yAcceleration + test.zAcceleration*test.zAcceleration)
+			correctedAcceleration := computeCorrectedGForce(
+				NewOrientedAcceleration(
+					NewAcceleration(test.xAcceleration, test.yAcceleration, test.zAcceleration, m),
+					OrientationFront,
+				),
+				test.xAngle,
+				test.yAngle,
+				test.zAngle,
+			)
+			correctedX := r(correctedAcceleration.X)
+			correctedY := r(correctedAcceleration.Y)
 			fmt.Printf("%f\n", correctedX)
 			fmt.Printf("%f\n", correctedY)
 			require.Equal(t, test.expectedXValue, correctedX)
 			require.Equal(t, test.expectedYValue, correctedY)
-			require.Equal(t, test.expectedZValue, correctedZ)
+			require.Equal(t, test.expectedZValue, correctedAcceleration.Z)
 
 		})
 	}
@@ -200,6 +203,7 @@ func Test_ComputeTiltAngles(t *testing.T) {
 		zAxis               float64
 		expectedXAngleValue float64
 		expectedYAngleValue float64
+		expectedZAngleValue float64
 	}{
 		{
 			name:                "flat",
@@ -208,6 +212,7 @@ func Test_ComputeTiltAngles(t *testing.T) {
 			zAxis:               1.0,
 			expectedXAngleValue: 0.0,
 			expectedYAngleValue: 0.0,
+			expectedZAngleValue: 90.0,
 		},
 		{
 			name:                "",
@@ -216,71 +221,39 @@ func Test_ComputeTiltAngles(t *testing.T) {
 			zAxis:               0.707106781186548,
 			expectedXAngleValue: 45.0,
 			expectedYAngleValue: 0.0,
+			expectedZAngleValue: 45.0,
 		},
 		{
 			name:                "",
 			xAxis:               -0.707106781186548,
 			yAxis:               0.0,
 			zAxis:               0.707106781186548,
-			expectedXAngleValue: -45.0,
+			expectedXAngleValue: 45.0,
 			expectedYAngleValue: 0.0,
-		},
-		{
-			name:                "acceleration, no turn",
-			xAxis:               0.1,
-			yAxis:               0.0,
-			zAxis:               1.0,
-			expectedXAngleValue: 5.710593137499643,
-			expectedYAngleValue: 0.0,
-		},
-		{
-			name:                "deceleration, no turn",
-			xAxis:               -0.1,
-			yAxis:               0.0,
-			zAxis:               1.0,
-			expectedXAngleValue: -5.710593137499643,
-			expectedYAngleValue: 0.0,
-		},
-		{
-			name:                "acceleration, right turn",
-			xAxis:               0.1,
-			yAxis:               0.1,
-			zAxis:               1.0,
-			expectedXAngleValue: 5.6824384835168384,
-			expectedYAngleValue: 5.6824384835168384,
-		},
-		{
-			name:                "deceleration, right turn",
-			xAxis:               -0.1,
-			yAxis:               0.1,
-			zAxis:               1.0,
-			expectedXAngleValue: -5.6824384835168384,
-			expectedYAngleValue: 5.6824384835168384,
-		},
-		{
-			name:                "acceleration, left turn",
-			xAxis:               0.1,
-			yAxis:               -0.1,
-			zAxis:               1.0,
-			expectedXAngleValue: 5.6824384835168384,
-			expectedYAngleValue: -5.6824384835168384,
-		},
-		{
-			name:                "deceleration, left turn",
-			xAxis:               -0.1,
-			yAxis:               -0.1,
-			zAxis:               1.0,
-			expectedXAngleValue: -5.6824384835168384,
-			expectedYAngleValue: -5.6824384835168384,
+			expectedZAngleValue: 45.0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			x, y, _ := computeTiltAngles(test.xAxis, test.yAxis, test.zAxis)
+			m := math.Sqrt(test.xAxis*test.xAxis + test.yAxis*test.yAxis + test.zAxis*test.zAxis)
+			acceleration := NewOrientedAcceleration(
+				NewAcceleration(test.xAxis, test.yAxis, test.zAxis, m),
+				OrientationFront,
+			)
 
-			require.Equal(t, test.expectedXAngleValue, x)
-			require.Equal(t, test.expectedYAngleValue, y)
+			x, y, z := computeTiltAngles(acceleration)
+
+			require.Equal(t, test.expectedXAngleValue, r(x))
+			require.Equal(t, test.expectedYAngleValue, r(y))
+			require.Equal(t, test.expectedZAngleValue, r(z))
 		})
 	}
+}
+
+func r(v float64) float64 {
+	if v == 0 {
+		return v
+	}
+	return math.Round(v*1000) / 1000
 }

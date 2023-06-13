@@ -33,10 +33,18 @@ type OrientedAcceleration struct {
 	Orientation Orientation
 }
 
+func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientation) *Acceleration {
+	return NewAcceleration(
+		fixX(acceleration, orientation),
+		fixY(acceleration, orientation),
+		acceleration.Z,
+		acceleration.Magnitude)
+}
+
 func NewOrientedAcceleration(acceleration *Acceleration, orientation Orientation) *OrientedAcceleration {
 	a := NewAcceleration(
-		fixX(acceleration, orientation),
-		fixX(acceleration, orientation),
+		acceleration.X,
+		acceleration.Y,
 		acceleration.Z,
 		acceleration.Magnitude)
 	return &OrientedAcceleration{

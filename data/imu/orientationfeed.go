@@ -187,7 +187,7 @@ type OrientedAccelerationEvent struct {
 func NewOrientationEvent(x, y, z, m float64, orientation Orientation) *OrientedAccelerationEvent {
 	orientationEvent := &OrientedAccelerationEvent{
 		BaseEvent:    data.NewBaseEvent("OrientedAcceleration", "IMU"),
-		Acceleration: NewOrientedAcceleration(NewAcceleration(x, y, z, m), orientation),
+		Acceleration: NewOrientedAcceleration(FixAccelerationOrientation(NewAcceleration(x, y, z, m), orientation), orientation),
 	}
 	return orientationEvent
 }

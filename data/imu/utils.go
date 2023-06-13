@@ -34,15 +34,15 @@ func computeCorrectedGForce(acceleration *OrientedAcceleration, xTilt float64, y
 	x := acceleration.X
 	y := acceleration.Y
 	z := acceleration.Z
-	magnitude := math.Sqrt(x*x + y*y + z*z)
+	m := acceleration.Magnitude
 
 	tiltXacc := math.Sqrt(xTilt / 90)
 	tiltYacc := math.Sqrt(yTilt / 90)
 	tiltZacc := math.Sqrt(zTilt / 90)
 
-	normalizedX := x / magnitude
-	normalizedY := y / magnitude
-	normalizedZ := z / magnitude
+	normalizedX := x / m
+	normalizedY := y / m
+	normalizedZ := z / m
 
 	normalizedXY := normalizedX + normalizedY
 	distRatioX := 0.0
@@ -59,5 +59,5 @@ func computeCorrectedGForce(acceleration *OrientedAcceleration, xTilt float64, y
 	correctedGForceX := normalizedX - tiltXacc - (foo * distRatioX)
 	correctedGForceY := normalizedY - tiltYacc - (foo * distRatioY)
 
-	return NewAcceleration(correctedGForceX, correctedGForceY, correctedGForceZ, magnitude)
+	return NewAcceleration(correctedGForceX, correctedGForceY, correctedGForceZ, m)
 }

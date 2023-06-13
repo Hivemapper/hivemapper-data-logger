@@ -1,9 +1,10 @@
 package direction
 
 import (
+	"time"
+
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"time"
 )
 
 type Tracker interface {
