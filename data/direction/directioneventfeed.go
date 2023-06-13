@@ -84,6 +84,9 @@ func (f *DirectionEventFeed) Start(imuCorrectedAccelerationSub *data.Subscriptio
 				if len(f.subscriptions) == 0 {
 					continue
 				}
+				if _, ok := event.(*gnss.GnssTimeSetEvent); ok {
+					continue
+				}
 				gnssEvent = event.(*gnss.GnssEvent)
 			}
 
