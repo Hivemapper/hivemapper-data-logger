@@ -6,30 +6,26 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
-type OrientationCounter struct {
-	frontCounter int
-	rightCounter int
-	leftCounter  int
-	backCounter  int
-	unsetCounter int
-}
+type OrientationCounter map[Orientation]int
 
-func NewOrientationCounter() *OrientationCounter {
-	return &OrientationCounter{
-		frontCounter: 0,
-		rightCounter: 0,
-		leftCounter:  0,
-		backCounter:  0,
-		unsetCounter: 0,
+func (c OrientationCounter) Increment(o Orientation) {
+	if _, found := c[o]; !found {
+		c[o] = 1
+		return
 	}
+	c[o] = c[o] + 1
 }
 
-func (o *OrientationCounter) Reset() {
-	o.frontCounter = 0
-	o.rightCounter = 0
-	o.leftCounter = 0
-	o.backCounter = 0
-	o.unsetCounter = 0
+func (c OrientationCounter) Orientation() Orientation {
+	max := 0
+	var orientation Orientation
+	for o, count := range c {
+		if count > max {
+			max = count
+			orientation = o
+		}
+	}
+	return orientation
 }
 
 type OrientationFeed struct {
@@ -50,21 +46,15 @@ func (f *OrientationFeed) Subscribe(name string) *data.Subscription {
 	return sub
 }
 
+var counter = 0
+var lastOrientation = OrientationUnset
+
 func (f *OrientationFeed) Start(subscription *data.Subscription) {
 	go func() {
-		initialOrientationSet := false
 
 		// we assume a front orientation as a base orientation
-		orientation := OrientationFront
-		orientationCounter := NewOrientationCounter()
-
-		// if we can't determine the orientation after getting 10 unsets -> panic
-		unsetPanicCounter := 0
-
-		// store the events from the beginning up until we have a confident orientation
-		// then we can start sending the events with the proper orientation
-		var rawImuEvents []*RawImuEvent
-		rawImuEventsSet := false
+		orientation := OrientationUnset
+		orientationCounter := make(OrientationCounter)
 
 		for {
 			select {
@@ -74,81 +64,25 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 				}
 				e := event.(*RawImuEvent)
 
-				if !initialOrientationSet {
-					ori := computeOrientation(e)
-
-					switch ori {
-					case OrientationFront:
-						orientationCounter.frontCounter++
-						if orientationCounter.frontCounter > 50 {
-							orientation = OrientationFront
-							initialOrientationSet = true
-							fmt.Println("Mount Orientation: Front ")
-						}
-					case OrientationRight:
-						orientationCounter.rightCounter++
-						if orientationCounter.rightCounter > 50 {
-							orientation = OrientationRight
-							initialOrientationSet = true
-							fmt.Println("Mount Orientation: Right")
-						}
-					case OrientationLeft:
-						orientationCounter.leftCounter++
-						if orientationCounter.leftCounter > 50 {
-							orientation = OrientationLeft
-							initialOrientationSet = true
-							fmt.Println("Mount Orientation: Left")
-						}
-					case OrientationBack:
-						orientationCounter.backCounter++
-						if orientationCounter.backCounter > 50 {
-							orientation = OrientationBack
-							initialOrientationSet = true
-							fmt.Println("Mount Orientation: Back")
-						}
-					case OrientationUnset:
-						orientationCounter.unsetCounter++
-						if orientationCounter.unsetCounter > 50 {
-							fmt.Println("Can't determine the mount direction, need to keep looping")
-							orientationCounter.Reset()
-							if unsetPanicCounter == 10 {
-								panic("can't determine the mount direction")
-							}
-							unsetPanicCounter++
-						}
-					}
-
-					if !initialOrientationSet {
-						rawImuEvents = append(rawImuEvents, e)
-					}
+				//if orientation == OrientationUnset {
+				o := computeOrientation(e)
+				if o == OrientationUnset || lastOrientation != o {
+					lastOrientation = OrientationUnset
+					counter = 0
+					continue
 				}
 
-				if initialOrientationSet {
-					if !rawImuEventsSet {
-						for _, rawImuEvent := range rawImuEvents {
-							orientationEvent := NewOrientationEvent(
-								rawImuEvent.Acceleration.CamX(),
-								rawImuEvent.Acceleration.CamY(),
-								rawImuEvent.Acceleration.CamZ(),
-								rawImuEvent.Acceleration.TotalMagnitude,
-								orientation,
-							)
+				counter++
+				if counter > 20 {
+					orientationCounter.Increment(o)
+					fmt.Println("Mount Orientation:", orientation)
+				}
 
-							for _, sub := range f.subscriptions {
-								sub.IncomingEvents <- orientationEvent
-							}
+				if orientationCounter.Orientation() != OrientationUnset {
+					a := NewAcceleration(e.Acceleration.CamX(), e.Acceleration.CamY(), e.Acceleration.CamZ(), e.Acceleration.TotalMagnitude)
+					a = FixAccelerationOrientation(a, orientationCounter.Orientation())
 
-							rawImuEventsSet = true
-						}
-					}
-
-					orientationEvent := NewOrientationEvent(
-						e.Acceleration.CamX(),
-						e.Acceleration.CamY(),
-						e.Acceleration.CamZ(),
-						e.Acceleration.TotalMagnitude,
-						orientation,
-					)
+					orientationEvent := NewOrientatedAccelerationEvent(NewOrientedAcceleration(a, orientationCounter.Orientation()))
 					for _, sub := range f.subscriptions {
 						sub.IncomingEvents <- orientationEvent
 					}
@@ -184,10 +118,10 @@ type OrientedAccelerationEvent struct {
 	Acceleration *OrientedAcceleration
 }
 
-func NewOrientationEvent(x, y, z, m float64, orientation Orientation) *OrientedAccelerationEvent {
+func NewOrientatedAccelerationEvent(acceleration *OrientedAcceleration) *OrientedAccelerationEvent {
 	orientationEvent := &OrientedAccelerationEvent{
 		BaseEvent:    data.NewBaseEvent("OrientedAcceleration", "IMU"),
-		Acceleration: NewOrientedAcceleration(FixAccelerationOrientation(NewAcceleration(x, y, z, m), orientation), orientation),
+		Acceleration: acceleration,
 	}
 	return orientationEvent
 }
