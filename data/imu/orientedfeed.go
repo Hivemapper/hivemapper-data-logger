@@ -25,6 +25,10 @@ func (c OrientationCounter) Orientation() Orientation {
 			orientation = o
 		}
 	}
+	if orientation == "" {
+		return OrientationUnset
+	}
+
 	return orientation
 }
 
@@ -55,8 +59,8 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 	go func() {
 
 		// we assume a front orientation as a base orientation
-		orientation := OrientationUnset
 		orientationCounter := make(OrientationCounter)
+		//todo: stop lock for orientation when confident
 
 		for {
 			select {
@@ -66,30 +70,42 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 					continue
 				}
 				e := event.(*TiltCorrectedAccelerationEvent)
-				o := computeOrientation(e.Acceleration.Acceleration)
-				fmt.Println("Orientation:", o, lastOrientation, g)
-				if o == OrientationUnset || lastOrientation != o {
+				newOrientation := computeOrientation(e.Acceleration.Acceleration)
+				if newOrientation == OrientationUnset {
 					lastOrientation = OrientationUnset
+					counter = 0
+					continue
+
+				}
+
+				if newOrientation != lastOrientation && lastOrientation != OrientationUnset {
+					lastOrientation = newOrientation
 					counter = 0
 					continue
 				}
 
 				counter++
+				//fmt.Println("Orientation:", newOrientation, lastOrientation, g)
 				if counter > 20 {
-					orientationCounter.Increment(o)
-					fmt.Println("Mount Orientation:", orientation)
+					fmt.Println("Incrementing:", newOrientation)
+					if newOrientation == OrientationFront {
+						panic("should not happen")
+					}
+					orientationCounter.Increment(newOrientation)
 				}
 
 				if orientationCounter.Orientation() != OrientationUnset {
 					a := NewAcceleration(e.Acceleration.Acceleration.X, e.Acceleration.Acceleration.Y, e.Acceleration.Acceleration.Z, e.Acceleration.Magnitude)
 					a = FixAccelerationOrientation(a, orientationCounter.Orientation())
-					t := FixTiltOrientation(e.Acceleration.TiltAngles, o)
+					t := FixTiltOrientation(e.Acceleration.TiltAngles, orientationCounter.Orientation())
 
 					orientationEvent := NewOrientatedAccelerationEvent(NewOrientedAcceleration(a, t, orientationCounter.Orientation()))
 					for _, sub := range f.subscriptions {
 						sub.IncomingEvents <- orientationEvent
 					}
 				}
+
+				lastOrientation = newOrientation
 			}
 		}
 	}()

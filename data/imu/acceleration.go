@@ -1,11 +1,14 @@
 package imu
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Orientation string
 
 const (
-	OrientationUnset Orientation = "Unset"
+	OrientationUnset Orientation = ""
 	OrientationFront Orientation = "OrientationFront"
 	OrientationRight Orientation = "OrientationRight"
 	OrientationLeft  Orientation = "OrientationLeft"
@@ -83,7 +86,7 @@ func fixX(acceleration *Acceleration, orientation Orientation) float64 {
 	case OrientationBack:
 		return invert(acceleration.X)
 	default:
-		panic("invalid orientation")
+		panic(fmt.Sprintf("invalid orientation %q", orientation))
 	}
 }
 
