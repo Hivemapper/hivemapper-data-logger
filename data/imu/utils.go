@@ -22,7 +22,7 @@ func ComputeTotalMagnitude(xAcceleration float64, yAcceleration float64) float64
 }
 
 // computeTiltAngles Compute the tilt angles ONLY when the total magnitude is of 1.0
-func computeTiltAngles(acceleration *OrientedAcceleration) (xAngle float64, yAngle float64, zAngle float64) { // returns x, y, z angles
+func computeTiltAngles(acceleration *Acceleration) (xAngle float64, yAngle float64, zAngle float64) { // returns x, y, z angles
 	// http://www.starlino.com/imu_guide.html
 	xAngle = (acceleration.X * acceleration.X) * 90
 	yAngle = (acceleration.Y * acceleration.Y) * 90
@@ -30,7 +30,7 @@ func computeTiltAngles(acceleration *OrientedAcceleration) (xAngle float64, yAng
 	return
 }
 
-func computeCorrectedGForce(acceleration *OrientedAcceleration, xTilt float64, yTilt float64, zTilt float64) *Acceleration {
+func computeCorrectedGForce(acceleration *Acceleration, xTilt float64, yTilt float64, zTilt float64) *Acceleration {
 	x := acceleration.X
 	y := acceleration.Y
 	z := acceleration.Z

@@ -12,15 +12,15 @@ type TiltCorrectedAccelerationEvent struct {
 	Acceleration *TiltCorrectedAcceleration
 }
 
-func NewTiltCorrectedAccelerationEvent(acceleration *OrientedAcceleration, xAngle, yAngle, zAngle float64) *TiltCorrectedAccelerationEvent {
+func NewTiltCorrectedAccelerationEvent(acceleration *Acceleration, tilt *TiltAngles) *TiltCorrectedAccelerationEvent {
 	return &TiltCorrectedAccelerationEvent{
 		BaseEvent:    data.NewBaseEvent("IMU_TILT_CORRECTED_ACCELERATION_EVENT", "IMU"),
-		Acceleration: NewTiltCorrectedAcceleration(acceleration, xAngle, yAngle, zAngle),
+		Acceleration: NewTiltCorrectedAcceleration(acceleration, tilt),
 	}
 }
 
 func (e *TiltCorrectedAccelerationEvent) String() string {
-	return fmt.Sprintf("TiltCorrectedAccelerationEvent: %f, %f, Angles x %f, y %f, z %f", e.Acceleration.X, e.Acceleration.Y, e.Acceleration.XAngle, e.Acceleration.YAngle, e.Acceleration.ZAngle)
+	return fmt.Sprintf("TiltCorrectedAccelerationEvent")
 }
 
 type TiltCorrectedAccelerationFeed struct {
@@ -57,12 +57,12 @@ var xAvg = *data.NewAverageFloat64WithCount("", 30)
 var yAvg = *data.NewAverageFloat64WithCount("", 30)
 var zAvg = *data.NewAverageFloat64WithCount("", 30)
 
-func (f *TiltCorrectedAccelerationFeed) calibrate(e *OrientedAccelerationEvent) bool {
-	magnitude := e.Acceleration.Magnitude
+func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bool {
+	magnitude := acceleration.Magnitude
 
 	if magnitude > 0.96 && magnitude < 1.04 {
 		continuousCount++
-		xAngle, yAngle, zAngle := computeTiltAngles(e.Acceleration)
+		xAngle, yAngle, zAngle := computeTiltAngles(acceleration)
 		xAvg.Add(xAngle)
 		yAvg.Add(yAngle)
 		zAvg.Add(zAngle)
@@ -71,7 +71,6 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(e *OrientedAccelerationEvent) 
 			f.xAngleCalibrated.Add(xAvg.Average)
 			f.yAngleCalibrated.Add(yAvg.Average)
 			f.zAngleCalibrated.Add(zAvg.Average)
-			fmt.Println("Calibrated:", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated)
 			f.calibrated = true
 		}
 		continuousCount = 0
@@ -80,6 +79,7 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(e *OrientedAccelerationEvent) 
 		zAvg.Reset()
 	}
 
+	//fmt.Println("Calibrated:", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated, f.calibrated)
 	return f.calibrated
 }
 
@@ -93,18 +93,16 @@ func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
 					continue
 				}
 
-				e := event.(*OrientedAccelerationEvent)
-				if !f.calibrate(e) {
+				e := event.(*RawImuEvent)
+				if !f.calibrate(e.Acceleration) {
 					continue
 				}
 
 				correctedAcceleration := computeCorrectedGForce(e.Acceleration, f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
 
 				correctedEvent := NewTiltCorrectedAccelerationEvent(
-					NewOrientedAcceleration(correctedAcceleration, e.Acceleration.Orientation),
-					f.xAngleCalibrated.Average,
-					f.yAngleCalibrated.Average,
-					f.zAngleCalibrated.Average,
+					correctedAcceleration,
+					NewTiltAngles(f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average),
 				)
 				for _, subscription := range f.subscriptions {
 					subscription.IncomingEvents <- correctedEvent

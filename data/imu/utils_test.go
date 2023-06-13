@@ -175,10 +175,7 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			m := math.Sqrt(test.xAcceleration*test.xAcceleration + test.yAcceleration*test.yAcceleration + test.zAcceleration*test.zAcceleration)
 			correctedAcceleration := computeCorrectedGForce(
-				NewOrientedAcceleration(
-					NewAcceleration(test.xAcceleration, test.yAcceleration, test.zAcceleration, m),
-					OrientationFront,
-				),
+				NewAcceleration(test.xAcceleration, test.yAcceleration, test.zAcceleration, m),
 				test.xAngle,
 				test.yAngle,
 				test.zAngle,
@@ -237,10 +234,7 @@ func Test_ComputeTiltAngles(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			m := math.Sqrt(test.xAxis*test.xAxis + test.yAxis*test.yAxis + test.zAxis*test.zAxis)
-			acceleration := NewOrientedAcceleration(
-				NewAcceleration(test.xAxis, test.yAxis, test.zAxis, m),
-				OrientationFront,
-			)
+			acceleration := NewAcceleration(test.xAxis, test.yAxis, test.zAxis, m)
 
 			x, y, z := computeTiltAngles(acceleration)
 

@@ -2,9 +2,10 @@ package direction
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"time"
 
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
@@ -68,7 +69,7 @@ func (f *DirectionEventFeed) Start(imuCorrectedAccelerationSub *data.Subscriptio
 	fmt.Println("Running direction event feed")
 
 	go func() {
-		var imuEvent *imu.TiltCorrectedAccelerationEvent
+		var imuEvent *imu.OrientedAccelerationEvent
 		var gnssEvent *gnss.GnssEvent
 		for {
 
@@ -77,7 +78,7 @@ func (f *DirectionEventFeed) Start(imuCorrectedAccelerationSub *data.Subscriptio
 				if len(f.subscriptions) == 0 {
 					continue
 				}
-				imuEvent = event.(*imu.TiltCorrectedAccelerationEvent)
+				imuEvent = event.(*imu.OrientedAccelerationEvent)
 
 			case event := <-gnssSub.IncomingEvents:
 				if len(f.subscriptions) == 0 {
@@ -103,12 +104,12 @@ func (f *DirectionEventFeed) emit(event data.Event) {
 	}
 }
 
-func (f *DirectionEventFeed) handleEvent(eventImu *imu.TiltCorrectedAccelerationEvent, eventGnss *gnss.GnssEvent) error {
-	f.leftTurnTracker.track(eventImu, eventGnss)
-	f.rightTurnTracker.track(eventImu, eventGnss)
-	f.accelerationTracker.track(eventImu, eventGnss)
-	f.decelerationTracker.track(eventImu, eventGnss)
-	f.stopTracker.track(eventImu, eventGnss)
+func (f *DirectionEventFeed) handleEvent(e *imu.OrientedAccelerationEvent, eventGnss *gnss.GnssEvent) error {
+	f.leftTurnTracker.track(e, eventGnss)
+	f.rightTurnTracker.track(e, eventGnss)
+	f.accelerationTracker.track(e, eventGnss)
+	f.decelerationTracker.track(e, eventGnss)
+	f.stopTracker.track(e, eventGnss)
 
 	return nil
 }

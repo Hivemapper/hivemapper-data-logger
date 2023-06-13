@@ -2,25 +2,23 @@ package main
 
 import (
 	"fmt"
-	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"net/http"
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
-	"github.com/streamingfast/hivemapper-data-logger/webconnect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
-	"github.com/streamingfast/hivemapper-data-logger/data/merged"
-
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/hivemapper-data-logger/data/merged"
+	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"github.com/streamingfast/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 var WipCmd = &cobra.Command{
@@ -100,27 +98,22 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	rawImuEventFeed := imu.NewRawFeed(imuDevice)
 	rawImuEventFeed.Start()
 
-	orientationEventFeed := imu.NewOrientationFeed()
-	orientationEventFeed.Start(rawImuEventFeed.Subscribe("orientation"))
-
 	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed()
-	tiltCorrectedAccelerationEventFeed.Start(orientationEventFeed.Subscribe("corrected"))
+	tiltCorrectedAccelerationEventFeed.Start(rawImuEventFeed.Subscribe("tilt"))
+
+	orientedEventFeed := imu.NewOrientedAccelerationFeed()
+	orientedEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("orientation"))
 
 	directionEventFeed := direction.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("direction"), gnssEventFeed.Subscribe("direction"))
+	directionEventFeed.Start(orientedEventFeed.Subscribe("direction"), gnssEventFeed.Subscribe("direction"))
 
-	gnssEventSub := gnssEventFeed.Subscribe("merger")
-	rawEventSub := rawImuEventFeed.Subscribe("merger")
-	tiltCorrectedAccelerationSub := tiltCorrectedAccelerationEventFeed.Subscribe("merger")
-	directionEventSub := directionEventFeed.Subscribe("merger")
-
-	mergedEventFeed := data.NewEventFeedMerger(gnssEventSub, rawEventSub, tiltCorrectedAccelerationSub, directionEventSub)
+	mergedEventFeed := data.NewEventFeedMerger(gnssEventFeed.Subscribe("merger"), rawImuEventFeed.Subscribe("merger"), orientedEventFeed.Subscribe("merger"), directionEventFeed.Subscribe("merger"))
 	mergedEventFeed.Start()
 	mergedEventSub := mergedEventFeed.Subscribe("wip")
 
 	fmt.Println("Starting to listen for events from mergedEventSub")
 	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.TiltCorrectedAccelerationEvent
+	var correctedImuEvent *imu.OrientedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
 	go func() {
@@ -130,7 +123,7 @@ func wipRun(cmd *cobra.Command, args []string) error {
 				switch e := e.(type) {
 				case *imu.RawImuEvent:
 					imuRawEvent = e
-				case *imu.TiltCorrectedAccelerationEvent:
+				case *imu.OrientedAccelerationEvent:
 					correctedImuEvent = e
 				case *gnss.GnssEvent:
 					gnssEvent = e

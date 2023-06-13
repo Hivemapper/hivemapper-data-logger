@@ -32,7 +32,7 @@ type OrientationFeed struct {
 	subscriptions data.Subscriptions
 }
 
-func NewOrientationFeed() *OrientationFeed {
+func NewOrientedAccelerationFeed() *OrientationFeed {
 	return &OrientationFeed{
 		subscriptions: make(data.Subscriptions),
 	}
@@ -45,6 +45,8 @@ func (f *OrientationFeed) Subscribe(name string) *data.Subscription {
 	f.subscriptions[name] = sub
 	return sub
 }
+
+var g = 0
 
 var counter = 0
 var lastOrientation = OrientationUnset
@@ -59,13 +61,13 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 		for {
 			select {
 			case event := <-subscription.IncomingEvents:
+				g += 1
 				if len(f.subscriptions) == 0 {
 					continue
 				}
-				e := event.(*RawImuEvent)
-
-				//if orientation == OrientationUnset {
-				o := computeOrientation(e)
+				e := event.(*TiltCorrectedAccelerationEvent)
+				o := computeOrientation(e.Acceleration.Acceleration)
+				fmt.Println("Orientation:", o, lastOrientation, g)
 				if o == OrientationUnset || lastOrientation != o {
 					lastOrientation = OrientationUnset
 					counter = 0
@@ -79,10 +81,11 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 				}
 
 				if orientationCounter.Orientation() != OrientationUnset {
-					a := NewAcceleration(e.Acceleration.CamX(), e.Acceleration.CamY(), e.Acceleration.CamZ(), e.Acceleration.TotalMagnitude)
+					a := NewAcceleration(e.Acceleration.Acceleration.X, e.Acceleration.Acceleration.Y, e.Acceleration.Acceleration.Z, e.Acceleration.Magnitude)
 					a = FixAccelerationOrientation(a, orientationCounter.Orientation())
+					t := FixTiltOrientation(e.Acceleration.TiltAngles, o)
 
-					orientationEvent := NewOrientatedAccelerationEvent(NewOrientedAcceleration(a, orientationCounter.Orientation()))
+					orientationEvent := NewOrientatedAccelerationEvent(NewOrientedAcceleration(a, t, orientationCounter.Orientation()))
 					for _, sub := range f.subscriptions {
 						sub.IncomingEvents <- orientationEvent
 					}
@@ -92,19 +95,20 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 	}()
 }
 
-func computeOrientation(event *RawImuEvent) Orientation {
-	camX := event.Acceleration.CamX()
-	camY := event.Acceleration.CamY()
+func computeOrientation(acceleration *Acceleration) Orientation {
+	x := acceleration.X
+	y := acceleration.Y
 
+	fmt.Println("X:", x, "Y:", y)
 	movementThreshold := 0.015
 
-	if camX > movementThreshold && camY > -movementThreshold && camY < movementThreshold {
+	if x > movementThreshold && y > -movementThreshold && y < movementThreshold {
 		return OrientationFront
-	} else if camY < -movementThreshold && camX > -movementThreshold && camX < movementThreshold {
+	} else if y < -movementThreshold && x > -movementThreshold && x < movementThreshold {
 		return OrientationRight
-	} else if camY > movementThreshold && camX > -movementThreshold && camX < movementThreshold {
+	} else if y > movementThreshold && x > -movementThreshold && x < movementThreshold {
 		return OrientationLeft
-	} else if camX < -movementThreshold && camY > -movementThreshold && camY < movementThreshold {
+	} else if x < -movementThreshold && y > -movementThreshold && y < movementThreshold {
 		return OrientationBack
 	}
 

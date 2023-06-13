@@ -71,31 +71,31 @@ func PurgeQuery() string {
 }
 
 type SqlWrapper struct {
-	imuRawEvent       *imu.RawImuEvent
-	correctedImuEvent *imu.TiltCorrectedAccelerationEvent
-	gnss              *gnss.GnssEvent
+	imuRawEvent               *imu.RawImuEvent
+	orientedAccelerationEvent *imu.OrientedAccelerationEvent
+	gnss                      *gnss.GnssEvent
 }
 
-func NewSqlWrapper(imuRawEvent *imu.RawImuEvent, correctedImuEvent *imu.TiltCorrectedAccelerationEvent, gnss *gnss.GnssEvent) *SqlWrapper {
+func NewSqlWrapper(imuRawEvent *imu.RawImuEvent, orientedAccelerationEvent *imu.OrientedAccelerationEvent, gnss *gnss.GnssEvent) *SqlWrapper {
 	return &SqlWrapper{
-		imuRawEvent:       imuRawEvent,
-		correctedImuEvent: correctedImuEvent,
-		gnss:              gnss,
+		imuRawEvent:               imuRawEvent,
+		orientedAccelerationEvent: orientedAccelerationEvent,
+		gnss:                      gnss,
 	}
 }
 
 func (w *SqlWrapper) InsertQuery() (string, []any) {
 	return insertQuery, []any{
 		w.imuRawEvent.Time,
-		w.imuRawEvent.Acceleration.TotalMagnitude,
-		w.imuRawEvent.Acceleration.CamX(), // -> imu_acc_x -> Z
-		w.correctedImuEvent.Acceleration.X,
-		w.correctedImuEvent.Acceleration.XAngle,
-		w.imuRawEvent.Acceleration.CamY(), // -> imu_acc_y -> X
-		w.correctedImuEvent.Acceleration.Y,
-		w.correctedImuEvent.Acceleration.YAngle,
-		w.imuRawEvent.Acceleration.CamZ(), // -> imu_acc_z -> Y
-		w.correctedImuEvent.Acceleration.Orientation,
+		w.imuRawEvent.Acceleration.Magnitude,
+		w.imuRawEvent.Acceleration.Y, // Back to device orientation
+		w.orientedAccelerationEvent.Acceleration.Acceleration.X,
+		w.orientedAccelerationEvent.Acceleration.TiltAngles.X,
+		w.imuRawEvent.Acceleration.Z, // Back to device orientation
+		w.orientedAccelerationEvent.Acceleration.Acceleration.Y,
+		w.orientedAccelerationEvent.Acceleration.Acceleration.Y,
+		w.imuRawEvent.Acceleration.X, //Back to device orientation
+		w.orientedAccelerationEvent.Acceleration.Orientation,
 		w.gnss.Data.SystemTime,
 		w.gnss.Data.Timestamp,
 		w.gnss.Data.Fix,

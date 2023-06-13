@@ -83,9 +83,9 @@ func (s *SqlFeed) Start() {
 				}
 				err := rows.Scan(
 					&acceleration.TotalMagnitude,
-					&acceleration.Z, // CamX -> Z
-					&acceleration.X, // CamY -> X
-					&acceleration.Y, // CamZ -> Y
+					&acceleration.X,
+					&acceleration.Y,
+					&acceleration.Z,
 					&gnssData.SystemTime,
 					&gnssData.Timestamp,
 					&gnssData.Fix,

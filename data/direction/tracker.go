@@ -8,7 +8,7 @@ import (
 )
 
 type Tracker interface {
-	track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent)
+	track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent)
 }
 
 type LeftTurnTracker struct {
@@ -18,9 +18,9 @@ type LeftTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.X
-	y := e.Acceleration.Y
+func (t *LeftTurnTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
+	x := e.Acceleration.Acceleration.X
+	y := e.Acceleration.Acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.LeftTurnThreshold {
 		t.continuousCount++
@@ -45,9 +45,9 @@ type RightTurnTracker struct {
 	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.X
-	y := e.Acceleration.Y
+func (t *RightTurnTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
+	x := e.Acceleration.Acceleration.X
+	y := e.Acceleration.Acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.RightTurnThreshold {
 		t.continuousCount++
@@ -74,8 +74,8 @@ type AccelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *AccelerationTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.X
+func (t *AccelerationTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
+	x := e.Acceleration.Acceleration.X
 	if x > t.config.GForceAcceleratorThreshold {
 		if t.continuousCount == 0 {
 			t.start = e.GetTime()
@@ -107,8 +107,8 @@ type DecelerationTracker struct {
 	emitFunc        emit
 }
 
-func (t *DecelerationTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.X
+func (t *DecelerationTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
+	x := e.Acceleration.Acceleration.X
 	if x < t.config.GForceDeceleratorThreshold {
 		if t.continuousCount == 0 {
 			t.start = e.GetTime()
@@ -139,7 +139,7 @@ type StopTracker struct {
 	emitFunc        emit
 }
 
-func (t *StopTracker) track(e *imu.TiltCorrectedAccelerationEvent, g *gnss.GnssEvent) {
+func (t *StopTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
 	if e.Acceleration.Magnitude > 0.96 && e.Acceleration.Magnitude < 1.04 && g.Data.Speed > 0.0 {
 		t.continuousCount++
 

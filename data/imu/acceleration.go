@@ -12,6 +12,20 @@ const (
 	OrientationBack  Orientation = "OrientationBack"
 )
 
+type TiltAngles struct {
+	X float64
+	Y float64
+	Z float64
+}
+
+func NewTiltAngles(x, y, z float64) *TiltAngles {
+	return &TiltAngles{
+		X: x,
+		Y: y,
+		Z: z,
+	}
+}
+
 type Acceleration struct {
 	X         float64
 	Y         float64
@@ -30,6 +44,7 @@ func NewAcceleration(x, y, z, m float64) *Acceleration {
 
 type OrientedAcceleration struct {
 	*Acceleration
+	*TiltAngles
 	Orientation Orientation
 }
 
@@ -41,14 +56,18 @@ func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientat
 		acceleration.Magnitude)
 }
 
-func NewOrientedAcceleration(acceleration *Acceleration, orientation Orientation) *OrientedAcceleration {
-	a := NewAcceleration(
-		acceleration.X,
-		acceleration.Y,
-		acceleration.Z,
-		acceleration.Magnitude)
+func FixTiltOrientation(tilt *TiltAngles, orientation Orientation) *TiltAngles {
+	return NewTiltAngles(
+		fixXAngle(tilt, orientation),
+		fixYAngle(tilt, orientation),
+		tilt.Z,
+	)
+}
+
+func NewOrientedAcceleration(acceleration *Acceleration, tilt *TiltAngles, orientation Orientation) *OrientedAcceleration {
 	return &OrientedAcceleration{
-		Acceleration: a,
+		Acceleration: acceleration,
+		TiltAngles:   tilt,
 		Orientation:  orientation,
 	}
 }
@@ -63,8 +82,21 @@ func fixX(acceleration *Acceleration, orientation Orientation) float64 {
 		return acceleration.Y
 	case OrientationBack:
 		return invert(acceleration.X)
-	case OrientationUnset:
-		return math.MaxFloat64
+	default:
+		panic("invalid orientation")
+	}
+}
+
+func fixXAngle(tilt *TiltAngles, orientation Orientation) float64 {
+	switch orientation {
+	case OrientationFront:
+		return tilt.X
+	case OrientationRight:
+		return invert(tilt.Y)
+	case OrientationLeft:
+		return tilt.Y
+	case OrientationBack:
+		return invert(tilt.X)
 	default:
 		panic("invalid orientation")
 	}
@@ -80,6 +112,21 @@ func fixY(acceleration *Acceleration, orientation Orientation) float64 {
 		return invert(acceleration.X)
 	case OrientationBack:
 		return invert(acceleration.Y)
+	default:
+		panic("invalid orientation")
+	}
+}
+
+func fixYAngle(tilt *TiltAngles, orientation Orientation) float64 {
+	switch orientation {
+	case OrientationFront:
+		return tilt.Y
+	case OrientationRight:
+		return tilt.X
+	case OrientationLeft:
+		return invert(tilt.X)
+	case OrientationBack:
+		return invert(tilt.Y)
 	case OrientationUnset:
 		return math.MaxFloat64
 	default:
@@ -92,17 +139,13 @@ func invert(val float64) float64 {
 }
 
 type TiltCorrectedAcceleration struct {
-	*OrientedAcceleration
-	XAngle float64
-	YAngle float64
-	ZAngle float64
+	*Acceleration
+	*TiltAngles
 }
 
-func NewTiltCorrectedAcceleration(orientedAcceleration *OrientedAcceleration, xAngle, yAngle, zAngle float64) *TiltCorrectedAcceleration {
+func NewTiltCorrectedAcceleration(acceleration *Acceleration, tilt *TiltAngles) *TiltCorrectedAcceleration {
 	return &TiltCorrectedAcceleration{
-		OrientedAcceleration: orientedAcceleration,
-		XAngle:               xAngle,
-		YAngle:               yAngle,
-		ZAngle:               zAngle,
+		Acceleration: acceleration,
+		TiltAngles:   tilt,
 	}
 }

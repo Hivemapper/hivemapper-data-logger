@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"os"
 	"time"
 
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/hivemapper-data-logger/data/merged"
@@ -69,18 +69,18 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	orientationEventFeed := imu.NewOrientationFeed()
-	orientationEventFeed.Start(sqlFeed.SubscribeImu("imu-orientation"))
+	tiltCorrectedImuEventFeed := imu.NewTiltCorrectedAccelerationFeed()
+	tiltCorrectedImuEventFeed.Start(sqlFeed.SubscribeImu("imu-orientation"))
 
-	correctedImuEventFeed := imu.NewTiltCorrectedAccelerationFeed()
-	correctedImuEventFeed.Start(orientationEventFeed.Subscribe("imu-corrected"))
+	orientatedEventFeed := imu.NewOrientedAccelerationFeed()
+	orientatedEventFeed.Start(tiltCorrectedImuEventFeed.Subscribe("orientation"))
 
 	directionEventFeed := direction.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(correctedImuEventFeed.Subscribe("direction"), sqlFeed.SubscribeGnss("direction"))
+	directionEventFeed.Start(orientatedEventFeed.Subscribe("direction"), sqlFeed.SubscribeGnss("direction"))
 	mergedEventFeed := data.NewEventFeedMerger(
 		sqlFeed.SubscribeImu("merger"),
 		sqlFeed.SubscribeGnss("merger"),
-		correctedImuEventFeed.Subscribe("merger"),
+		orientatedEventFeed.Subscribe("merger"),
 		directionEventFeed.Subscribe("merger"),
 	)
 
@@ -91,7 +91,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	fmt.Println("Waiting for events...")
 
 	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.TiltCorrectedAccelerationEvent
+	var correctedImuEvent *imu.OrientedAccelerationEvent
 	var gnssEvent *gnss.GnssEvent
 
 	featureCollection := geojson.NewFeatureCollection()
@@ -106,11 +106,10 @@ func replayE(cmd *cobra.Command, _ []string) error {
 			switch e := e.(type) {
 			case *imu.RawImuEvent:
 				imuRawEvent = e
-			case *imu.TiltCorrectedAccelerationEvent:
+			case *imu.OrientedAccelerationEvent:
 				correctedImuEvent = e
 			case *gnss.GnssEvent:
 				gnssEvent = e
-				//geometry = geojson.NewPointGeometry([]float64{e.Data.Latitude, e.Data.Longitude})
 				geometry = geojson.NewPointGeometry([]float64{e.Data.Longitude, e.Data.Latitude})
 			}
 			if e.GetCategory() == "DIRECTION_CHANGE" {

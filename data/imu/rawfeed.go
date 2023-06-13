@@ -2,25 +2,26 @@ package imu
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
-	"time"
 )
 
 type RawImuEvent struct {
 	*data.BaseEvent
-	Acceleration *iim42652.Acceleration `json:"acceleration"`
-	AngularRate  *iim42652.AngularRate  `json:"angular_rate"`
+	Acceleration *Acceleration         `json:"acceleration"`
+	AngularRate  *iim42652.AngularRate `json:"angular_rate"`
 }
 
 func (e *RawImuEvent) String() string {
-	return fmt.Sprintf("RawImuEvent %s %s", e.Acceleration, e.AngularRate)
+	return fmt.Sprintf("RawImuEvent")
 }
 
 func NewRawImuEvent(acc *iim42652.Acceleration, angularRate *iim42652.AngularRate) *RawImuEvent {
 	return &RawImuEvent{
 		BaseEvent:    data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT", "IMU"),
-		Acceleration: acc,
+		Acceleration: NewAcceleration(acc.CamX(), acc.CamY(), acc.CamZ(), acc.TotalMagnitude),
 		AngularRate:  angularRate,
 	}
 }
