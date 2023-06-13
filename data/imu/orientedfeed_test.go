@@ -33,6 +33,11 @@ func Test_CameraMountOrientation(t *testing.T) {
 			acceleration:        NewAcceleration(-0.5, 0.0, 1.0, -99),
 			expectedOrientation: OrientationBack,
 		},
+		//{
+		//	name:                "low back camera orientation",
+		//	acceleration:        NewAcceleration(-0.1, 0.0, 1.0, -99),
+		//	expectedOrientation: OrientationBack,
+		//},
 		{
 			name:                "don't know for sure the position of the camera",
 			acceleration:        NewAcceleration(0.5, 0.5, 1.0, -99),

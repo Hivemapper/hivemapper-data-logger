@@ -1,8 +1,6 @@
 package imu
 
 import (
-	"fmt"
-
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
@@ -71,28 +69,6 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 				}
 				e := event.(*TiltCorrectedAccelerationEvent)
 				newOrientation := computeOrientation(e.Acceleration.Acceleration)
-				if newOrientation == OrientationUnset {
-					lastOrientation = OrientationUnset
-					counter = 0
-					continue
-
-				}
-
-				if newOrientation != lastOrientation && lastOrientation != OrientationUnset {
-					lastOrientation = newOrientation
-					counter = 0
-					continue
-				}
-
-				counter++
-				//fmt.Println("Orientation:", newOrientation, lastOrientation, g)
-				if counter > 20 {
-					fmt.Println("Incrementing:", newOrientation)
-					if newOrientation == OrientationFront {
-						panic("should not happen")
-					}
-					orientationCounter.Increment(newOrientation)
-				}
 
 				if orientationCounter.Orientation() != OrientationUnset {
 					a := NewAcceleration(e.Acceleration.Acceleration.X, e.Acceleration.Acceleration.Y, e.Acceleration.Acceleration.Z, e.Acceleration.Magnitude)
@@ -105,6 +81,23 @@ func (f *OrientationFeed) Start(subscription *data.Subscription) {
 					}
 				}
 
+				if newOrientation == OrientationUnset {
+					lastOrientation = OrientationUnset
+					counter = 0
+					continue
+				}
+
+				if newOrientation != lastOrientation && lastOrientation != OrientationUnset {
+					lastOrientation = newOrientation
+					counter = 0
+					continue
+				}
+
+				counter++
+				if counter > 20 {
+					orientationCounter.Increment(newOrientation)
+				}
+
 				lastOrientation = newOrientation
 			}
 		}
@@ -115,16 +108,18 @@ func computeOrientation(acceleration *Acceleration) Orientation {
 	x := acceleration.X
 	y := acceleration.Y
 
-	fmt.Println("X:", x, "Y:", y)
-	movementThreshold := 0.015
+	movementThreshold := 0.1
+	backDetectionThreshold := -0.1
+	rightDetectionThreshold := 0.1
+	leftDetectionThreshold := -0.1
 
-	if x > movementThreshold && y > -movementThreshold && y < movementThreshold {
+	if x > movementThreshold {
 		return OrientationFront
-	} else if y < -movementThreshold && x > -movementThreshold && x < movementThreshold {
+	} else if y > rightDetectionThreshold {
 		return OrientationRight
-	} else if y > movementThreshold && x > -movementThreshold && x < movementThreshold {
+	} else if y < leftDetectionThreshold {
 		return OrientationLeft
-	} else if x < -movementThreshold && y > -movementThreshold && y < movementThreshold {
+	} else if x < backDetectionThreshold {
 		return OrientationBack
 	}
 

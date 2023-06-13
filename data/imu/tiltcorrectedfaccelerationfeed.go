@@ -66,13 +66,16 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bo
 		xAvg.Add(xAngle)
 		yAvg.Add(yAngle)
 		zAvg.Add(zAngle)
-	} else {
 		if continuousCount > 30 {
 			f.xAngleCalibrated.Add(xAvg.Average)
 			f.yAngleCalibrated.Add(yAvg.Average)
 			f.zAngleCalibrated.Add(zAvg.Average)
+			if !f.calibrated {
+				fmt.Println("calibrated", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated)
+			}
 			f.calibrated = true
 		}
+	} else {
 		continuousCount = 0
 		xAvg.Reset()
 		yAvg.Reset()

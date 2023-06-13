@@ -4,7 +4,7 @@ go 1.20
 
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230612141255-f8202e5f6890
 
-//replace github.com/streamingfast/gnss-controller => ../gnss-controller
+replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
 //replace github.com/streamingfast/imu-controller => ../imu-controller
 
