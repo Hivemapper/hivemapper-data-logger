@@ -1,6 +1,8 @@
 package direction
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
@@ -16,7 +18,7 @@ const MergedCreateTable string = `
   );`
 
 const insertQuery string = `
-INSERT INTO direction_events VALUES(NULL,?,?,?,?,?);
+	INSERT INTO direction_events VALUES(NULL,?,?,?,?,?);
 `
 
 const purgeQuery string = `
@@ -43,8 +45,19 @@ func NewSqlWrapper(event data.Event, gnssData *neom9n.Data) *SqlWrapper {
 	}
 }
 
-func (w *SqlWrapper) InsertQuery() (string, []any) {
-	return insertQuery, []any{
+var prepareDirectionEventsStatement *sql.Stmt
+
+func InitDirectionEvents(db *sql.DB) error {
+	stmt, err := db.Prepare(insertQuery)
+	if err != nil {
+		return fmt.Errorf("preparing statement for direction events: %w", err)
+	}
+	prepareDirectionEventsStatement = stmt
+	return nil
+}
+
+func (w *SqlWrapper) InsertQuery() (*sql.Stmt, []any) {
+	return prepareDirectionEventsStatement, []any{
 		w.event.GetTime(),
 		w.event.GetName(),
 		w.gnssData.Latitude,

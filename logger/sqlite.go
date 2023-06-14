@@ -11,7 +11,7 @@ import (
 
 type Sqlite struct {
 	lock                     sync.Mutex
-	db                       *sql.DB
+	DB                       *sql.DB
 	file                     string
 	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
@@ -53,7 +53,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}()
 	}
 
-	s.db = db
+	s.DB = db
 
 	return nil
 }
@@ -61,14 +61,14 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 func (s *Sqlite) Purge(ttl time.Duration) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if s.db == nil {
+	if s.DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
 	t := time.Now().Add(ttl * -1)
 	fmt.Println("purging database older than:", t)
 	for _, purgeQueryFunc := range s.purgeQueryFuncList {
-		if res, err := s.db.Exec(purgeQueryFunc(), t); err != nil {
+		if res, err := s.DB.Exec(purgeQueryFunc(), t); err != nil {
 			return err
 		} else {
 			c, _ := res.RowsAffected()
@@ -83,13 +83,13 @@ func (s *Sqlite) Log(data Sqlable) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if s.db == nil {
+	if s.DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
-	insertQuery, params := data.InsertQuery()
+	stmt, params := data.InsertQuery()
 
-	_, err := s.db.Exec(insertQuery, params...)
+	_, err := stmt.Exec(params...)
 	if err != nil {
 		return fmt.Errorf("inserting data: %s", err.Error())
 	}
@@ -100,7 +100,7 @@ func (s *Sqlite) SingleRowQuery(sql string, handleRow func(row *sql.Rows) error,
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	rows, err := s.db.Query(sql, params...)
+	rows, err := s.DB.Query(sql, params...)
 	if err != nil {
 		return fmt.Errorf("querying last position: %s", err.Error())
 	}
@@ -124,7 +124,7 @@ func (s *Sqlite) Query(debugLogQuery bool, sql string, handleRow func(row *sql.R
 		fmt.Println("Running query:", sql, params)
 	}
 
-	rows, err := s.db.Query(sql, params...)
+	rows, err := s.DB.Query(sql, params...)
 	if err != nil {
 		return fmt.Errorf("querying last position: %s", err.Error())
 	}

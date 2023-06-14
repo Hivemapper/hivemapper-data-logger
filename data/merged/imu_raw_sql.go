@@ -1,6 +1,8 @@
 package merged
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 )
@@ -76,8 +78,19 @@ func NewImuRawSqlWrapper(acceleration *imu.Acceleration, gnssData *neom9n.Data) 
 	}
 }
 
-func (w *ImuRawSqlWrapper) InsertQuery() (string, []any) {
-	return ImuRawInsertQuery, []any{
+var imuRawPrepareStatement *sql.Stmt
+
+func InitImuRaw(db *sql.DB) error {
+	stmt, err := db.Prepare(ImuRawInsertQuery)
+	if err != nil {
+		return fmt.Errorf("preparing statement for inserting imu raw data: %w", err)
+	}
+	imuRawPrepareStatement = stmt
+	return nil
+}
+
+func (w *ImuRawSqlWrapper) InsertQuery() (*sql.Stmt, []any) {
+	return imuRawPrepareStatement, []any{
 		w.acceleration.Time,
 		w.acceleration.Y, //this is not a mistake
 		w.acceleration.Z, //this is not a mistake

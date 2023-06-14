@@ -22,7 +22,7 @@ package logger
 //	err = sqliteLogger.Log(df.Data)
 //	require.NoError(t, err)
 //
-//	res, err := sqliteLogger.db.Query(`SELECT count(*) as c FROM gnss`)
+//	res, err := sqliteLogger.DB.Query(`SELECT count(*) as c FROM gnss`)
 //	require.NoError(t, err)
 //	count := 0
 //	n := res.Next()
@@ -35,10 +35,10 @@ package logger
 //	err = sqliteLogger.Purge(30 * time.Minute)
 //	require.NoError(t, err)
 //
-//	res, err = sqliteLogger.db.Query("SELECT * FROM gnss")
+//	res, err = sqliteLogger.DB.Query("SELECT * FROM gnss")
 //	require.NoError(t, err)
 //
-//	res, err = sqliteLogger.db.Query(`SELECT count(*) as c FROM gnss`)
+//	res, err = sqliteLogger.DB.Query(`SELECT count(*) as c FROM gnss`)
 //	require.NoError(t, err)
 //	count = 0
 //	n = res.Next()

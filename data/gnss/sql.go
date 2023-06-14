@@ -45,18 +45,18 @@ const GnssCreateTable string = `
   );`
 
 const insertQuery string = `
-INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+	INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 `
 
 const purgeQuery string = `
-DELETE FROM gnss WHERE time < ?;
+	DELETE FROM gnss WHERE time < ?;
 `
 
 const lastPositionQuery string = `
-SELECT latitude, longitude, altitude
-FROM gnss
-WHERE fix = '3D' or fix = '2D'
-ORDER BY time DESC LIMIT 1;
+	SELECT latitude, longitude, altitude
+	FROM gnss
+	WHERE fix = '3D' or fix = '2D'
+	ORDER BY time DESC LIMIT 1;
 `
 
 type SqlWrapper struct {
@@ -67,8 +67,19 @@ func NewSqlWrapper(data *neom9n.Data) *SqlWrapper {
 	return &SqlWrapper{data: data}
 }
 
-func (s *SqlWrapper) InsertQuery() (string, []any) {
-	return insertQuery, []any{
+var gnssPrepareStatement *sql.Stmt
+
+func (s *SqlWrapper) InitGnss(db *sql.DB) error {
+	stmt, err := db.Prepare(insertQuery)
+	if err != nil {
+		return fmt.Errorf("preparing statement for inserting gnss data: %w", err)
+	}
+	gnssPrepareStatement = stmt
+	return nil
+}
+
+func (s *SqlWrapper) InsertQuery() (*sql.Stmt, []any) {
+	return gnssPrepareStatement, []any{
 		s.data.Timestamp,
 		s.data.SystemTime,
 		s.data.Fix,

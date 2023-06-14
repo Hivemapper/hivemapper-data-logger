@@ -1,7 +1,9 @@
 package logger
 
+import "database/sql"
+
 type Sqlable interface {
-	InsertQuery() (string, []any)
+	InsertQuery() (*sql.Stmt, []any)
 }
 
 type PurgeQueryFunc func() string
