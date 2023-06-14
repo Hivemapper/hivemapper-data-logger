@@ -8,7 +8,7 @@ import (
 const MergedCreateTable string = `
   CREATE TABLE IF NOT EXISTS direction_events (
   	id INTEGER NOT NULL PRIMARY KEY,
-	time DATETIME NOT NULL,
+	time TIMESTAMP NOT NULL,
 	name TEXT NOT NULL,
 	latitude REAL NOT NULL,
 	longitude REAL NOT NULL,

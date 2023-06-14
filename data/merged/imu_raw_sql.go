@@ -8,12 +8,12 @@ import (
 const ImuRawCreateTable string = `
 	CREATE TABLE IF NOT EXISTS imu_raw (
 		id INTEGER NOT NULL PRIMARY KEY,
-		imu_time DATETIME NOT NULL,
+		imu_time TIMESTAMP NOT NULL,
 		imu_acc_x REAL NOT NULL,
 		imu_acc_y REAL NOT NULL,
 		imu_acc_z REAL NOT NULL,
-		gnss_system_time DATETIME NOT NULL,
-		gnss_time DATETIME NOT NULL,
+		gnss_system_time TIMESTAMP NOT NULL,
+		gnss_time TIMESTAMP NOT NULL,
 		gnss_fix TEXT NOT NULL,
 		gnss_ttff INTEGER NOT NULL,
 		gnss_latitude REAL NOT NULL,

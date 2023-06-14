@@ -11,8 +11,8 @@ import (
 const GnssCreateTable string = `
   CREATE TABLE IF NOT EXISTS gnss (
   	id INTEGER NOT NULL PRIMARY KEY,
-  	time DATETIME NOT NULL,
-  	system_time DATETIME NOT NULL,
+  	time TIMESTAMP NOT NULL,
+  	system_time TIMESTAMP NOT NULL,
 	fix TEXT NOT NULL,
 	Eph INTEGER NOT NULL,
 	Sep INTEGER NOT NULL,
