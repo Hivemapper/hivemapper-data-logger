@@ -32,6 +32,7 @@ func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, pur
 func (s *Sqlite) Init(logTTL time.Duration) error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
+
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
 	}

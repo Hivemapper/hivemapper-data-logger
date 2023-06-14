@@ -78,12 +78,12 @@ func NewImuRawSqlWrapper(acceleration *imu.Acceleration, gnssData *neom9n.Data) 
 
 func (w *ImuRawSqlWrapper) InsertQuery() (string, string, []any) {
 	return insertRawQuery, insertRawFields, []any{
-		w.acceleration.Time,
+		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"),
 		w.acceleration.Y, //this is not a mistake
 		w.acceleration.Z, //this is not a mistake
 		w.acceleration.X, //this is not a mistake
-		w.gnssData.SystemTime,
-		w.gnssData.Timestamp,
+		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
+		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Fix,
 		w.gnssData.Ttff,
 		w.gnssData.Latitude,

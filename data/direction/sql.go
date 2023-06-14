@@ -44,7 +44,7 @@ func NewSqlWrapper(event data.Event, gnssData *neom9n.Data) *SqlWrapper {
 
 func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 	return insertDirectionEventsQuery, insertDirectionEventsFields, []any{
-		w.event.GetTime(),
+		w.event.GetTime().Format("2006-01-02 15:04:05.99999"),
 		w.event.GetName(),
 		w.gnssData.Latitude,
 		w.gnssData.Longitude,

@@ -80,8 +80,8 @@ func (s *SqlWrapper) InitGnss(db *sql.DB) error {
 
 func (s *SqlWrapper) InsertQuery() (*sql.Stmt, []any) {
 	return gnssPrepareStatement, []any{
-		s.data.Timestamp,
-		s.data.SystemTime,
+		s.data.Timestamp.Format("2006-01-02 15:04:05.99999"),
+		s.data.SystemTime.Format("2006-01-02 15:04:05.99999"),
 		s.data.Fix,
 		s.data.Eph,
 		s.data.Sep,
