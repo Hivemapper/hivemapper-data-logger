@@ -31,10 +31,9 @@ func (f *RawFeed) Run() error {
 		}
 		angularRate, err := f.imu.GetGyroscopeData()
 
-		fmt.Println("Sent raw imu event")
 		for _, handler := range f.handlers {
 			err := handler(
-				NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, time.Now()),
+				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, time.Now()),
 				angularRate,
 			)
 			if err != nil {
