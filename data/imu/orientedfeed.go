@@ -49,7 +49,6 @@ var counter = 0
 var lastOrientation = OrientationUnset
 
 func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles) error {
-
 	//todo: stop lock for orientation when confident
 
 	//g += 1

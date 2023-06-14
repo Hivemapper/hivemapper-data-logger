@@ -64,7 +64,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}
 		queries := map[string]*grrr{}
 		for {
-			start := time.Now()
+			//start := time.Now()
 			log := <-s.logs
 			query, fields, params := log.InsertQuery()
 
@@ -93,7 +93,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				panic(fmt.Errorf("inserting data: %s", err.Error()))
 			}
 			delete(queries, query)
-			fmt.Println("inserted data in:", time.Since(start), len(s.logs), cap(s.logs))
+			//fmt.Println("inserted data in:", time.Since(start), len(s.logs), cap(s.logs))
 		}
 	}()
 

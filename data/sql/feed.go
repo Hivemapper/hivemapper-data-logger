@@ -104,6 +104,8 @@ func (s *SqlImporterFeed) Run() {
 
 			ar := &iim42652.AngularRate{}
 			for _, handler := range s.imuRawFeedHandlers {
+				m := math.Sqrt(acceleration.X*acceleration.X + acceleration.Y*acceleration.Y + acceleration.Z*acceleration.Z)
+				acceleration.Magnitude = m
 				err := handler(acceleration, ar)
 				if err != nil {
 					return fmt.Errorf("failed to handle imu raw feed: %w", err)

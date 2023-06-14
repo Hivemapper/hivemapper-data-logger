@@ -5,12 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/streamingfast/hivemapper-data-logger/data"
-
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/spf13/cobra"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
@@ -104,10 +102,12 @@ func NewGeoJsonHandler() *GeoJsonHandler {
 }
 
 func (h *GeoJsonHandler) HandlerGnssData(data *neom9n.Data) error {
+	//fmt.Println("Got GnssData")
 	h.geometry = geojson.NewPointGeometry([]float64{data.Longitude, data.Latitude})
 	return nil
 }
 func (h *GeoJsonHandler) HandleDirectionEvent(e data.Event) error {
+	//fmt.Println("Got DirectionEvent")
 	feature := geojson.NewFeature(h.geometry)
 	feature.Type = e.GetName()
 	feature.SetProperty("event", e.GetName())

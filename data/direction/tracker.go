@@ -32,9 +32,9 @@ func (t *LeftTurnTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngle
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
+			t.continuousCount = 0
 			return NewLeftTurnEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
-		t.continuousCount = 0
 	}
 	return nil
 }
@@ -60,9 +60,9 @@ func (t *RightTurnTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngl
 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
+			t.continuousCount = 0
 			return NewRightTurnEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
-		t.continuousCount = 0
 	}
 	return nil
 }
@@ -92,10 +92,10 @@ func (t *AccelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltA
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
+			t.continuousCount = 0
+			t.speed = 0
 			return NewAccelerationEvent(t.speed, time.Since(t.start), acceleration.Time)
 		}
-		t.speed = 0
-		t.continuousCount = 0
 	}
 	return nil
 }
@@ -125,10 +125,10 @@ func (t *DecelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltA
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
+			t.speed = 0
+			t.continuousCount = 0
 			return NewDecelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time)
 		}
-		t.speed = 0
-		t.continuousCount = 0
 	}
 	return nil
 }
@@ -154,10 +154,10 @@ func (t *StopTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
+			t.continuousCount = 0
 			return NewStopEndEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
 
-		t.continuousCount = 0
 	}
 	return nil
 }
