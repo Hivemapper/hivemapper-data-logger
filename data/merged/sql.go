@@ -1,9 +1,6 @@
 package merged
 
 import (
-	"database/sql"
-	"fmt"
-
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 )
@@ -85,17 +82,6 @@ func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, o
 		orientation:  orientation,
 		gnssData:     gnssData,
 	}
-}
-
-var mergedPrepareStatement *sql.Stmt
-
-func InitMerged(db *sql.DB) error {
-	stmt, err := db.Prepare(insertMergedQuery)
-	if err != nil {
-		return fmt.Errorf("preparing statement for inserting merged data: %w", err)
-	}
-	mergedPrepareStatement = stmt
-	return nil
 }
 
 func (w *SqlWrapper) InsertQuery() (string, string, []any) {

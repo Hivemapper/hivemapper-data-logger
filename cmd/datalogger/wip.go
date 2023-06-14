@@ -144,21 +144,6 @@ func NewDataHandler(dbPath string, dbLogTTL time.Duration) (*DataHandler, error)
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 
-	err = merged.InitMerged(sqliteLogger.DB)
-	if err != nil {
-		return nil, fmt.Errorf("initializing merged database: %w", err)
-	}
-
-	err = merged.InitImuRaw(sqliteLogger.DB)
-	if err != nil {
-		return nil, fmt.Errorf("initializing imu raw database: %w", err)
-	}
-
-	err = direction.InitDirectionEvents(sqliteLogger.DB)
-	if err != nil {
-		return nil, fmt.Errorf("initializing directions event: %w", err)
-	}
-
 	return &DataHandler{
 		sqliteLogger: sqliteLogger,
 	}, err

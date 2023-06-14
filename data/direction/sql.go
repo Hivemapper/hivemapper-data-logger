@@ -1,9 +1,6 @@
 package direction
 
 import (
-	"database/sql"
-	"fmt"
-
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
@@ -43,17 +40,6 @@ func NewSqlWrapper(event data.Event, gnssData *neom9n.Data) *SqlWrapper {
 		event:    event,
 		gnssData: gnssData,
 	}
-}
-
-var prepareDirectionEventsStatement *sql.Stmt
-
-func InitDirectionEvents(db *sql.DB) error {
-	stmt, err := db.Prepare(insertDirectionEventsQuery)
-	if err != nil {
-		return fmt.Errorf("preparing statement for direction events: %w", err)
-	}
-	prepareDirectionEventsStatement = stmt
-	return nil
 }
 
 func (w *SqlWrapper) InsertQuery() (string, string, []any) {
