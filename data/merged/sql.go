@@ -3,6 +3,7 @@ package merged
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 )
@@ -55,9 +56,8 @@ const MergedCreateTable string = `
 	);
 `
 
-const insertQuery string = `
-	INSERT INTO merged VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-`
+const insertMergedQuery string = `INSERT INTO merged VALUES `
+const insertMergedFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const purgeQuery string = `
 	DELETE FROM merged WHERE imu_time < ?;
@@ -98,8 +98,8 @@ func InitMerged(db *sql.DB) error {
 	return nil
 }
 
-func (w *SqlWrapper) InsertQuery() (*sql.Stmt, []any) {
-	return mergedPrepareStatement, []any{
+func (w *SqlWrapper) InsertQuery() (string, string, []any) {
+	return insertMergedQuery, insertMergedFields, []any{
 		w.acceleration.Time,
 		w.acceleration.Magnitude,
 		w.acceleration.X,

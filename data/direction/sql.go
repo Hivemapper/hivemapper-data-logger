@@ -3,6 +3,7 @@ package direction
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )

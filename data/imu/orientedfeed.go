@@ -54,7 +54,7 @@ func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration 
 
 	//g += 1
 	newOrientation := computeOrientation(acceleration)
-	fmt.Println("Orientation:", newOrientation, "???", f.orientationCounter.Orientation(), counter)
+	//fmt.Println("Orientation:", newOrientation, "???", f.orientationCounter.Orientation(), counter)
 	if f.orientationCounter.Orientation() != OrientationUnset {
 
 		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)

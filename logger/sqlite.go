@@ -16,6 +16,8 @@ type Sqlite struct {
 	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
+
+	logs chan Sqlable
 }
 
 func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
@@ -23,6 +25,7 @@ func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, pur
 		file:                     file,
 		createTableQueryFuncList: createTableQueryFuncList,
 		purgeQueryFuncList:       purgeQueryFuncList,
+		logs:                     make(chan Sqlable, 200),
 	}
 }
 
@@ -53,6 +56,47 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}()
 	}
 
+	go func() {
+		type grrr struct {
+			count           int
+			cumulatedParams []any
+			cumulatedFields string
+		}
+		queries := map[string]*grrr{}
+		for {
+			start := time.Now()
+			log := <-s.logs
+			query, fields, params := log.InsertQuery()
+
+			g, found := queries[query]
+			if !found {
+				g = &grrr{}
+				queries[query] = g
+			}
+			g.count++
+			g.cumulatedFields += fields
+			g.cumulatedParams = append(g.cumulatedParams, params...)
+
+			if g.count < 100 {
+				continue
+			}
+
+			g.cumulatedFields = g.cumulatedFields[0 : len(g.cumulatedFields)-1] //remove last comma
+			stmt, err := db.Prepare(query + g.cumulatedFields)
+			if err != nil {
+				panic(fmt.Errorf("preparing statement for inserting data: %w", err))
+			}
+			s.lock.Lock()
+			_, err = stmt.Exec(g.cumulatedParams...)
+			s.lock.Unlock()
+			if err != nil {
+				panic(fmt.Errorf("inserting data: %s", err.Error()))
+			}
+			delete(queries, query)
+			fmt.Println("inserted data in:", time.Since(start), len(s.logs), cap(s.logs))
+		}
+	}()
+
 	s.DB = db
 
 	return nil
@@ -80,19 +124,9 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 }
 
 func (s *Sqlite) Log(data Sqlable) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
 
-	if s.DB == nil {
-		return fmt.Errorf("database not initialized")
-	}
+	s.logs <- data
 
-	stmt, params := data.InsertQuery()
-
-	_, err := stmt.Exec(params...)
-	if err != nil {
-		return fmt.Errorf("inserting data: %s", err.Error())
-	}
 	return nil
 }
 
