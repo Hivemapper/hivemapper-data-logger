@@ -86,7 +86,7 @@ func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, o
 
 func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 	return insertMergedQuery, insertMergedFields, []any{
-		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"),
+		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"), //FIXME: remove the format only there for python a marde
 		w.acceleration.Magnitude,
 		w.acceleration.X,
 		w.tiltAngles.X,
@@ -95,8 +95,8 @@ func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 		w.acceleration.Z,
 		w.tiltAngles.Z,
 		w.orientation,
-		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
-		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
+		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"), //FIXME: remove the format only there for python a marde
+		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),  //FIXME: remove the format only there for python a marde
 		w.gnssData.Fix,
 		w.gnssData.Ttff,
 		w.gnssData.Latitude,
