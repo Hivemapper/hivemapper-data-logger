@@ -48,6 +48,10 @@ func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {
 	}
 }
 
+func (a *Acceleration) String() string {
+	return fmt.Sprintf("Acceleration{x=%f, y=%f, z=%f, magnitude=%f, time=%s}", a.X, a.Y, a.Z, a.Magnitude, a.Time)
+}
+
 func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientation) *Acceleration {
 	return NewAcceleration(
 		fixX(acceleration, orientation),

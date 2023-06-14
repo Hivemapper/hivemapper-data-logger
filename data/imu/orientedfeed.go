@@ -50,14 +50,13 @@ var lastOrientation = OrientationUnset
 
 func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles) error {
 
-	// we assume a front orientation as a base orientation
-	f.orientationCounter = make(OrientationCounter)
 	//todo: stop lock for orientation when confident
 
 	//g += 1
 	newOrientation := computeOrientation(acceleration)
-
+	fmt.Println("Orientation:", newOrientation, "???", f.orientationCounter.Orientation(), counter)
 	if f.orientationCounter.Orientation() != OrientationUnset {
+
 		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)
 		a = FixAccelerationOrientation(a, f.orientationCounter.Orientation())
 		t := FixTiltOrientation(tiltAngles, f.orientationCounter.Orientation())
