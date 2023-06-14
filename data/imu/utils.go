@@ -60,5 +60,5 @@ func computeCorrectedGForce(acceleration *Acceleration, xTilt float64, yTilt flo
 	correctedGForceY := normalizedY - tiltYacc - (foo * distRatioY)
 
 	//fmt.Println("correctedGForceX", correctedGForceX, "correctedGForceY", correctedGForceY, "correctedGForceZ", correctedGForceZ)
-	return NewAcceleration(correctedGForceX, correctedGForceY, correctedGForceZ, m)
+	return NewAcceleration(correctedGForceX, correctedGForceY, correctedGForceZ, m, acceleration.Time)
 }

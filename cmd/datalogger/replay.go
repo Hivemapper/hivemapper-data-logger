@@ -5,16 +5,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/streamingfast/hivemapper-data-logger/data"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+
 	geojson "github.com/paulmach/go.geojson"
 	"github.com/spf13/cobra"
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/hivemapper-data-logger/data/merged"
 	"github.com/streamingfast/hivemapper-data-logger/data/sql"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
-	"github.com/streamingfast/shutter"
 )
 
 var ReplayCmd = &cobra.Command{
@@ -47,95 +48,38 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		fmt.Printf("Removed %s\n", dbOutputPath)
 	}
 
-	sh := shutter.New()
-	sqliteOutput := logger.NewSqlite(
-		dbOutputPath,
-		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery},
-		nil,
-	)
-	err := sqliteOutput.Init(0)
-	if err != nil {
-		return fmt.Errorf("initializing sqlite logger database: %w", err)
-	}
-
 	sqliteImporter := logger.NewSqlite(mustGetString(cmd, "db-import-path"), nil, nil)
-	err = sqliteImporter.Init(0)
+	err := sqliteImporter.Init(0)
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
-	sqlFeed := sql.NewSqlFeed(sqliteImporter)
-	sqlFeed.OnTerminated(sh.Shutdown)
 
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	tiltCorrectedImuEventFeed := imu.NewTiltCorrectedAccelerationFeed()
-	tiltCorrectedImuEventFeed.Start(sqlFeed.SubscribeImu("imu-orientation"))
+	dataHandler, err := NewDataHandler(
+		mustGetString(cmd, "db-output-path"),
+		mustGetDuration(cmd, "db-log-ttl"),
+	)
+	if err != nil {
+		return fmt.Errorf("creating data handler: %w", err)
+	}
 
-	orientatedEventFeed := imu.NewOrientedAccelerationFeed()
-	orientatedEventFeed.Start(tiltCorrectedImuEventFeed.Subscribe("orientation"))
+	geoJsonHandler := NewGeoJsonHandler()
 
-	directionEventFeed := direction.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(orientatedEventFeed.Subscribe("direction"), sqlFeed.SubscribeGnss("direction"))
-	mergedEventFeed := data.NewEventFeedMerger(
-		sqlFeed.SubscribeImu("merger"),
-		sqlFeed.SubscribeGnss("merger"),
-		orientatedEventFeed.Subscribe("merger"),
-		directionEventFeed.Subscribe("merger"),
+	directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, geoJsonHandler.HandleDirectionEvent)
+	orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
+	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
+
+	sqlFeed := sql.NewSqlImporterFeed(
+		sqliteImporter,
+		[]imu.RawFeedHandler{tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed},
+		[]gnss.GnssDataHandler{dataHandler.HandlerGnssData, directionEventFeed.HandleGnssData, geoJsonHandler.HandlerGnssData},
 	)
 
-	mergedEventFeed.Start()
-	mergedEventSub := mergedEventFeed.Subscribe("replay")
-	sqlFeed.Start()
+	sqlFeed.Run()
 
-	fmt.Println("Waiting for events...")
-
-	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.OrientedAccelerationEvent
-	var gnssEvent *gnss.GnssEvent
-
-	featureCollection := geojson.NewFeatureCollection()
-	var geometry *geojson.Geometry
-
-	for !sh.IsTerminating() && !sh.IsTerminated() {
-		select {
-		case <-sh.Terminating():
-			fmt.Println("Terminating")
-			break
-		case e := <-mergedEventSub.IncomingEvents:
-			switch e := e.(type) {
-			case *imu.RawImuEvent:
-				imuRawEvent = e
-			case *imu.OrientedAccelerationEvent:
-				correctedImuEvent = e
-			case *gnss.GnssEvent:
-				gnssEvent = e
-				geometry = geojson.NewPointGeometry([]float64{e.Data.Longitude, e.Data.Latitude})
-			}
-			if e.GetCategory() == "DIRECTION_CHANGE" {
-				err := sqliteOutput.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))
-				if err != nil {
-					return fmt.Errorf("logging to sqlite: %w", err)
-				}
-
-				feature := geojson.NewFeature(geometry)
-				feature.Type = e.GetName()
-				feature.SetProperty("event", e.GetName())
-				featureCollection.AddFeature(feature)
-			}
-		}
-		if imuRawEvent != nil && correctedImuEvent != nil {
-			ge := mustGnssEvent(gnssEvent)
-			w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
-			err = sqliteOutput.Log(w)
-			if err != nil {
-				return fmt.Errorf("logging to sqlite: %w", err)
-			}
-			imuRawEvent = nil
-			correctedImuEvent = nil
-		}
-	}
-	gj, err := featureCollection.MarshalJSON()
+	gj, err := geoJsonHandler.featureCollection.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("marshalling geojson: %w", err)
 	}
@@ -144,6 +88,30 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("writing geojson: %w", err)
 	}
+
+	return nil
+}
+
+type GeoJsonHandler struct {
+	geometry          *geojson.Geometry
+	featureCollection *geojson.FeatureCollection
+}
+
+func NewGeoJsonHandler() *GeoJsonHandler {
+	return &GeoJsonHandler{
+		featureCollection: geojson.NewFeatureCollection(),
+	}
+}
+
+func (h *GeoJsonHandler) HandlerGnssData(data *neom9n.Data) error {
+	h.geometry = geojson.NewPointGeometry([]float64{data.Longitude, data.Latitude})
+	return nil
+}
+func (h *GeoJsonHandler) HandleDirectionEvent(e data.Event) error {
+	feature := geojson.NewFeature(h.geometry)
+	feature.Type = e.GetName()
+	feature.SetProperty("event", e.GetName())
+	h.featureCollection.AddFeature(feature)
 
 	return nil
 }

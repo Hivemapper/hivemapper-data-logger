@@ -3,67 +3,68 @@ package direction
 import (
 	"time"
 
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 )
 
 type Tracker interface {
-	track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent)
+	track(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation, gnssData *neom9n.Data) data.Event
 }
 
 type LeftTurnTracker struct {
 	continuousCount int
 	start           time.Time
 	config          *imu.Config
-	emitFunc        emit
 }
 
-func (t *LeftTurnTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.Acceleration.X
-	y := e.Acceleration.Acceleration.Y
+func (t *LeftTurnTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, _ *neom9n.Data) data.Event {
+	x := acceleration.X
+	y := acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y < t.config.LeftTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
-			t.start = e.GetTime()
+			t.start = acceleration.Time
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewLeftTurnEventDetected())
+			return NewLeftTurnEventDetected(acceleration.Time)
 		}
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewLeftTurnEvent(Since(t.start, e.GetTime())))
+			return NewLeftTurnEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
 		t.continuousCount = 0
 	}
+	return nil
 }
 
 type RightTurnTracker struct {
 	continuousCount int
 	start           time.Time
 	config          *imu.Config
-	emitFunc        emit
 }
 
-func (t *RightTurnTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.Acceleration.X
-	y := e.Acceleration.Acceleration.Y
+func (t *RightTurnTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, _ *neom9n.Data) data.Event {
+	x := acceleration.X
+	y := acceleration.Y
 	magnitude := imu.ComputeTotalMagnitude(x, y)
 	if magnitude > t.config.TurnMagnitudeThreshold && y > t.config.RightTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
-			t.start = e.GetTime()
+			t.start = acceleration.Time
 		}
 		if t.continuousCount == t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewRightTurnEventDetected())
+			return NewRightTurnEventDetected(acceleration.Time)
 		}
 
 	} else {
 		if t.continuousCount > t.config.TurnContinuousCountWindow {
-			t.emitFunc(NewRightTurnEvent(Since(t.start, e.GetTime())))
+			return NewRightTurnEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
 		t.continuousCount = 0
 	}
+	return nil
 }
 
 type AccelerationTracker struct {
@@ -71,32 +72,32 @@ type AccelerationTracker struct {
 	speed           float64
 	start           time.Time
 	config          *imu.Config
-	emitFunc        emit
 }
 
-func (t *AccelerationTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.Acceleration.X
+func (t *AccelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, _ *neom9n.Data) data.Event {
+	x := acceleration.X
 	if x > t.config.GForceAcceleratorThreshold {
 		if t.continuousCount == 0 {
-			t.start = e.GetTime()
+			t.start = acceleration.Time
 			t.continuousCount++
-			return
+			return nil
 		}
 		t.continuousCount++
-		duration := Since(t.start, e.GetTime())
+		duration := Since(t.start, acceleration.Time)
 		t.speed += imu.ComputeSpeedVariation(duration.Seconds(), x)
 
 		if t.continuousCount == t.config.AccelerationContinuousCountWindow {
-			t.emitFunc(NewAccelerationDetectedEvent())
+			return NewAccelerationDetectedEvent(acceleration.Time)
 		}
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
-			t.emitFunc(NewAccelerationEvent(t.speed, time.Since(t.start)))
+			return NewAccelerationEvent(t.speed, time.Since(t.start), acceleration.Time)
 		}
 		t.speed = 0
 		t.continuousCount = 0
 	}
+	return nil
 }
 
 type DecelerationTracker struct {
@@ -104,58 +105,61 @@ type DecelerationTracker struct {
 	speed           float64
 	start           time.Time
 	config          *imu.Config
-	emitFunc        emit
 }
 
-func (t *DecelerationTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
-	x := e.Acceleration.Acceleration.X
+func (t *DecelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, _ *neom9n.Data) data.Event {
+	x := acceleration.X
 	if x < t.config.GForceDeceleratorThreshold {
 		if t.continuousCount == 0 {
-			t.start = e.GetTime()
+			t.start = acceleration.Time
 			t.continuousCount++
-			return
+			return nil
 		}
 		t.continuousCount++
-		duration := Since(t.start, e.GetTime())
+		duration := Since(t.start, acceleration.Time)
 		t.speed += imu.ComputeSpeedVariation(duration.Seconds(), x)
 
 		if t.continuousCount == t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(NewDecelerationDetectedEvent())
+			return NewDecelerationDetectedEvent(acceleration.Time)
 		}
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
-			t.emitFunc(NewDecelerationEvent(t.speed, Since(t.start, e.GetTime())))
+			return NewDecelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time)
 		}
 		t.speed = 0
 		t.continuousCount = 0
 	}
+	return nil
 }
 
 type StopTracker struct {
 	continuousCount int
 	start           time.Time
 	config          *imu.Config
-	emitFunc        emit
 }
 
-func (t *StopTracker) track(e *imu.OrientedAccelerationEvent, g *gnss.GnssEvent) {
-	if e.Acceleration.Magnitude > 0.96 && e.Acceleration.Magnitude < 1.04 && g.Data.Speed > 0.0 {
+func (t *StopTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, gnss *neom9n.Data) data.Event {
+	if gnss == nil {
+		return nil
+	}
+	if acceleration.Magnitude > 0.96 && acceleration.Magnitude < 1.04 && gnss.Speed > 1.5*3.6 {
 		t.continuousCount++
 
 		if t.continuousCount == 1 {
-			t.start = e.GetTime()
+			t.start = acceleration.Time
 		}
 		if t.continuousCount == t.config.StopEndContinuousCountWindow {
-			t.emitFunc(NewStopDetectedEvent())
+			return NewStopDetectedEvent(acceleration.Time)
 		}
 	} else {
 		if t.continuousCount > t.config.StopEndContinuousCountWindow {
-			t.emitFunc(NewStopEndEvent(Since(t.start, e.GetTime())))
+			return NewStopEndEvent(Since(t.start, acceleration.Time), acceleration.Time)
 		}
 
 		t.continuousCount = 0
 	}
+	return nil
 }
 
 func Since(since time.Time, t time.Time) time.Duration {

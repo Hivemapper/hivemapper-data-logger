@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	"github.com/bufbuild/connect-go"
 	uuid2 "github.com/google/uuid"
@@ -27,7 +32,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC"),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now()),
 		Response:  resp,
 	}
 }
@@ -41,29 +46,37 @@ type EventsServer struct {
 	sync.Mutex
 }
 
-func NewEventServer(mergerSub *data.Subscription) *EventsServer {
+func NewEventServer() *EventsServer {
 	es := &EventsServer{
 		subscriptions: make(subscriptions),
 	}
 
-	go func() {
-		for {
-			select {
-			case event := <-mergerSub.IncomingEvents:
-				err := es.SendEvent(event)
-				if err != nil {
-					panic("failed to send event")
-				}
-			}
-		}
-	}()
-
 	return es
 }
 
-func (es *EventsServer) SendEvent(event data.Event) error {
-	es.Lock()
-	defer es.Unlock()
+func (s *EventsServer) HandleOrientedAcceleration(corrected *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation) error {
+	panic("implement me")
+}
+
+func (s *EventsServer) HandlerGnssData(data *neom9n.Data) error {
+	panic("implement me")
+}
+
+func (s *EventsServer) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) error {
+	panic("implement me")
+}
+
+func (s *EventsServer) HandleDirectionEvent(event data.Event) error {
+	err := s.SendEvent(event)
+	if err != nil {
+		return fmt.Errorf("sending event %w", err)
+	}
+	return nil
+}
+
+func (s *EventsServer) SendEvent(event data.Event) error {
+	s.Lock()
+	defer s.Unlock()
 	bytes, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshalling %s %w", event.GetName(), err)
@@ -73,7 +86,7 @@ func (es *EventsServer) SendEvent(event data.Event) error {
 		Payload: bytes,
 	})
 
-	for _, sub := range es.subscriptions {
+	for _, sub := range s.subscriptions {
 		send := true
 		if len(sub.includes) > 0 {
 			for _, include := range sub.includes {
@@ -99,40 +112,40 @@ func (es *EventsServer) SendEvent(event data.Event) error {
 	return nil
 }
 
-func (es *EventsServer) Subscribe(name string, includes []string, excludes []string) *Subscription {
-	es.Lock()
-	defer es.Unlock()
+func (s *EventsServer) Subscribe(name string, includes []string, excludes []string) *Subscription {
+	s.Lock()
+	defer s.Unlock()
 
 	sub := &Subscription{
 		IncomingEvents: make(chan data.Event),
 		includes:       includes,
 		excludes:       excludes,
 	}
-	es.subscriptions[name] = sub
+	s.subscriptions[name] = sub
 	fmt.Println("subscribed", name)
 	return sub
 }
 
-func (es *EventsServer) Unsubscribe(name string) {
-	es.Lock()
-	defer es.Unlock()
+func (s *EventsServer) Unsubscribe(name string) {
+	s.Lock()
+	defer s.Unlock()
 
-	delete(es.subscriptions, name)
+	delete(s.subscriptions, name)
 }
 
-func (es *EventsServer) Events(
+func (s *EventsServer) Events(
 	ctx context.Context,
 	req *connect.Request[eventsv1.EventsRequest],
 	stream *connect.ServerStream[eventsv1.EventsResponse],
 ) error {
 	uuid := uuid2.NewString()
 	fmt.Println("request received", uuid, req.Msg.Includes, req.Msg.Excludes)
-	sub := es.Subscribe(uuid, req.Msg.Includes, req.Msg.Excludes)
+	sub := s.Subscribe(uuid, req.Msg.Includes, req.Msg.Excludes)
 
 	for {
 		select {
 		case <-ctx.Done():
-			es.Unsubscribe(uuid)
+			s.Unsubscribe(uuid)
 			if ctx.Err() != nil {
 				fmt.Println("context err:", ctx.Err())
 				return ctx.Err()
@@ -142,7 +155,7 @@ func (es *EventsServer) Events(
 			res := ev.(*GRPCEvent)
 			err := stream.Send(res.Response)
 			if err != nil {
-				es.Unsubscribe(uuid)
+				s.Unsubscribe(uuid)
 				return fmt.Errorf("streaming: %w", err)
 			}
 		}

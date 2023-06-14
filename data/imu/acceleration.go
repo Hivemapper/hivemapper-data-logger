@@ -3,6 +3,7 @@ package imu
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 type Orientation string
@@ -34,21 +35,17 @@ type Acceleration struct {
 	Y         float64
 	Z         float64
 	Magnitude float64
+	Time      time.Time
 }
 
-func NewAcceleration(x, y, z, m float64) *Acceleration {
+func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {
 	return &Acceleration{
 		X:         x,
 		Y:         y,
 		Z:         z,
 		Magnitude: m,
+		Time:      time,
 	}
-}
-
-type OrientedAcceleration struct {
-	*Acceleration
-	*TiltAngles
-	Orientation Orientation
 }
 
 func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientation) *Acceleration {
@@ -56,7 +53,7 @@ func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientat
 		fixX(acceleration, orientation),
 		fixY(acceleration, orientation),
 		acceleration.Z,
-		acceleration.Magnitude)
+		acceleration.Magnitude, acceleration.Time)
 }
 
 func FixTiltOrientation(tilt *TiltAngles, orientation Orientation) *TiltAngles {
@@ -65,14 +62,6 @@ func FixTiltOrientation(tilt *TiltAngles, orientation Orientation) *TiltAngles {
 		fixYAngle(tilt, orientation),
 		tilt.Z,
 	)
-}
-
-func NewOrientedAcceleration(acceleration *Acceleration, tilt *TiltAngles, orientation Orientation) *OrientedAcceleration {
-	return &OrientedAcceleration{
-		Acceleration: acceleration,
-		TiltAngles:   tilt,
-		Orientation:  orientation,
-	}
 }
 
 func fixX(acceleration *Acceleration, orientation Orientation) float64 {
@@ -139,16 +128,4 @@ func fixYAngle(tilt *TiltAngles, orientation Orientation) float64 {
 
 func invert(val float64) float64 {
 	return -val
-}
-
-type TiltCorrectedAcceleration struct {
-	*Acceleration
-	*TiltAngles
-}
-
-func NewTiltCorrectedAcceleration(acceleration *Acceleration, tilt *TiltAngles) *TiltCorrectedAcceleration {
-	return &TiltCorrectedAcceleration{
-		Acceleration: acceleration,
-		TiltAngles:   tilt,
-	}
 }

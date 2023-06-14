@@ -7,49 +7,27 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
-type TiltCorrectedAccelerationEvent struct {
-	*data.BaseEvent
-	Acceleration *TiltCorrectedAcceleration
-}
-
-func NewTiltCorrectedAccelerationEvent(acceleration *Acceleration, tilt *TiltAngles) *TiltCorrectedAccelerationEvent {
-	return &TiltCorrectedAccelerationEvent{
-		BaseEvent:    data.NewBaseEvent("IMU_TILT_CORRECTED_ACCELERATION_EVENT", "IMU"),
-		Acceleration: NewTiltCorrectedAcceleration(acceleration, tilt),
-	}
-}
-
-func (e *TiltCorrectedAccelerationEvent) String() string {
-	return fmt.Sprintf("TiltCorrectedAccelerationEvent")
-}
-
 type TiltCorrectedAccelerationFeed struct {
 	imu              *iim42652.IIM42652
-	subscriptions    data.Subscriptions
 	lastUpdate       interface{}
 	xAngleCalibrated *data.AverageFloat64
 	yAngleCalibrated *data.AverageFloat64
 	zAngleCalibrated *data.AverageFloat64
 	calibrated       bool
+	handlers         []TiltCorrectedAccelerationHandler
 }
 
-func NewTiltCorrectedAccelerationFeed() *TiltCorrectedAccelerationFeed {
+type TiltCorrectedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles) error
+
+func NewTiltCorrectedAccelerationFeed(handlers ...TiltCorrectedAccelerationHandler) *TiltCorrectedAccelerationFeed {
 	f := &TiltCorrectedAccelerationFeed{
-		subscriptions:    make(data.Subscriptions),
 		xAngleCalibrated: data.NewAverageFloat64WithCount("angleX", 100),
 		yAngleCalibrated: data.NewAverageFloat64WithCount("angleY", 100),
 		zAngleCalibrated: data.NewAverageFloat64WithCount("angleZ", 100),
+		handlers:         handlers,
 	}
 
 	return f
-}
-
-func (f *TiltCorrectedAccelerationFeed) Subscribe(name string) *data.Subscription {
-	sub := &data.Subscription{
-		IncomingEvents: make(chan data.Event),
-	}
-	f.subscriptions[name] = sub
-	return sub
 }
 
 var continuousCount = 0
@@ -82,35 +60,23 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bo
 		zAvg.Reset()
 	}
 
-	//fmt.Println("Calibrated:", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated, f.calibrated)
 	return f.calibrated
 }
 
-func (f *TiltCorrectedAccelerationFeed) Start(sub *data.Subscription) {
-	fmt.Println("Running imu corrected feed")
-	go func() {
-		for {
-			select {
-			case event := <-sub.IncomingEvents:
-				if len(f.subscriptions) == 0 {
-					continue
-				}
+func (f *TiltCorrectedAccelerationFeed) HandleRawFeed(acceleration *Acceleration, _ *iim42652.AngularRate) error {
+	if !f.calibrate(acceleration) {
+		return nil
+	}
 
-				e := event.(*RawImuEvent)
-				if !f.calibrate(e.Acceleration) {
-					continue
-				}
+	correctedAcceleration := computeCorrectedGForce(acceleration, f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
+	angles := NewTiltAngles(f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
 
-				correctedAcceleration := computeCorrectedGForce(e.Acceleration, f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
-
-				correctedEvent := NewTiltCorrectedAccelerationEvent(
-					correctedAcceleration,
-					NewTiltAngles(f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average),
-				)
-				for _, subscription := range f.subscriptions {
-					subscription.IncomingEvents <- correctedEvent
-				}
-			}
+	for _, handle := range f.handlers {
+		err := handle(correctedAcceleration, angles)
+		if err != nil {
+			return fmt.Errorf("calling handler: %w", err)
 		}
-	}()
+	}
+
+	return nil
 }

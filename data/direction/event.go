@@ -11,9 +11,9 @@ type RightTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewRightTurnEventDetected() *RightTurnEventDetected {
+func NewRightTurnEventDetected(t time.Time) *RightTurnEventDetected {
 	return &RightTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 
@@ -26,9 +26,9 @@ type RightTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewRightTurnEvent(duration time.Duration) *RightTurnEvent {
+func NewRightTurnEvent(duration time.Duration, t time.Time) *RightTurnEvent {
 	return &RightTurnEvent{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT", "DIRECTION_CHANGE", t),
 		Duration:  duration,
 	}
 }
@@ -40,9 +40,9 @@ type LeftTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewLeftTurnEventDetected() *LeftTurnEventDetected {
+func NewLeftTurnEventDetected(t time.Time) *LeftTurnEventDetected {
 	return &LeftTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 
@@ -55,9 +55,9 @@ type LeftTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewLeftTurnEvent(duration time.Duration) *LeftTurnEvent {
+func NewLeftTurnEvent(duration time.Duration, t time.Time) *LeftTurnEvent {
 	return &LeftTurnEvent{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT", "DIRECTION_CHANGE", t),
 		Duration:  duration,
 	}
 }
@@ -69,9 +69,9 @@ type AccelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewAccelerationDetectedEvent() *AccelerationDetectedEvent {
+func NewAccelerationDetectedEvent(t time.Time) *AccelerationDetectedEvent {
 	return &AccelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 func (e *AccelerationDetectedEvent) String() string {
@@ -84,9 +84,9 @@ type AccelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewAccelerationEvent(speed float64, duration time.Duration) *AccelerationEvent {
+func NewAccelerationEvent(speed float64, duration time.Duration, t time.Time) *AccelerationEvent {
 	return &AccelerationEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT", "DIRECTION_CHANGE", t),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -100,9 +100,9 @@ type DecelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewDecelerationDetectedEvent() *DecelerationDetectedEvent {
+func NewDecelerationDetectedEvent(t time.Time) *DecelerationDetectedEvent {
 	return &DecelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 
@@ -116,9 +116,9 @@ type DecelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewDecelerationEvent(speed float64, duration time.Duration) *DecelerationEvent {
+func NewDecelerationEvent(speed float64, duration time.Duration, t time.Time) *DecelerationEvent {
 	return &DecelerationEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT", "DIRECTION_CHANGE", t),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -133,9 +133,9 @@ type HeadingChangeEvent struct {
 	Heading float64 `json:"heading"`
 }
 
-func NewHeadingChangeEvent() *HeadingChangeEvent {
+func NewHeadingChangeEvent(t time.Time) *HeadingChangeEvent {
 	return &HeadingChangeEvent{
-		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 
@@ -147,9 +147,9 @@ type StopDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewStopDetectedEvent() *StopDetectedEvent {
+func NewStopDetectedEvent(t time.Time) *StopDetectedEvent {
 	return &StopDetectedEvent{
-		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT", "DIRECTION_CHANGE", t),
 	}
 }
 
@@ -162,9 +162,9 @@ type StopEndEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewStopEndEvent(duration time.Duration) *StopEndEvent {
+func NewStopEndEvent(duration time.Duration, t time.Time) *StopEndEvent {
 	return &StopEndEvent{
-		BaseEvent: data.NewBaseEvent("STOP_END_EVENT", "DIRECTION_CHANGE"),
+		BaseEvent: data.NewBaseEvent("STOP_END_EVENT", "DIRECTION_CHANGE", t),
 		Duration:  duration,
 	}
 }

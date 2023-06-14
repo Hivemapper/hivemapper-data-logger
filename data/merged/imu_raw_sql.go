@@ -5,18 +5,13 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 )
 
-const MergedCreateTable string = `
-	CREATE TABLE IF NOT EXISTS merged (
+const ImuRawCreateTable string = `
+	CREATE TABLE IF NOT EXISTS imu_raw (
 		id INTEGER NOT NULL PRIMARY KEY,
 		imu_time DATETIME NOT NULL,
-		imu_magnitude REAL NOT NULL,
 		imu_acc_x REAL NOT NULL,
-		imu_tilt_angle_x REAL NOT NULL,
 		imu_acc_y REAL NOT NULL,
-		imu_tilt_angle_y REAL NOT NULL,
 		imu_acc_z REAL NOT NULL,
-		imu_tilt_angle_z REAL NOT NULL,
-		cam_orientation TEXT NOT NULL,
 		gnss_system_time DATETIME NOT NULL,
 		gnss_time DATETIME NOT NULL,
 		gnss_fix TEXT NOT NULL,
@@ -53,49 +48,40 @@ const MergedCreateTable string = `
 	);
 `
 
-const insertQuery string = `
-	INSERT INTO merged VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+const ImuRawInsertQuery string = `
+	INSERT INTO imu_raw VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 `
 
-const purgeQuery string = `
-	DELETE FROM merged WHERE imu_time < ?;
+const imuRawPurgeQuery string = `
+	DELETE FROM imu_raw WHERE imu_time < ?;
 `
 
-func CreateTableQuery() string {
-	return MergedCreateTable
+func ImuRawCreateTableQuery() string {
+	return ImuRawCreateTable
 }
 
-func PurgeQuery() string {
-	return purgeQuery
+func ImuRawPurgeQuery() string {
+	return imuRawPurgeQuery
 }
 
-type SqlWrapper struct {
-	gnssData     *neom9n.Data
+type ImuRawSqlWrapper struct {
 	acceleration *imu.Acceleration
-	tiltAngles   *imu.TiltAngles
-	orientation  imu.Orientation
+	gnssData     *neom9n.Data
 }
 
-func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation, gnssData *neom9n.Data) *SqlWrapper {
-	return &SqlWrapper{
+func NewImuRawSqlWrapper(acceleration *imu.Acceleration, gnssData *neom9n.Data) *ImuRawSqlWrapper {
+	return &ImuRawSqlWrapper{
 		acceleration: acceleration,
-		tiltAngles:   tiltAngles,
-		orientation:  orientation,
 		gnssData:     gnssData,
 	}
 }
 
-func (w *SqlWrapper) InsertQuery() (string, []any) {
-	return insertQuery, []any{
+func (w *ImuRawSqlWrapper) InsertQuery() (string, []any) {
+	return ImuRawInsertQuery, []any{
 		w.acceleration.Time,
-		w.acceleration.Magnitude,
-		w.acceleration.X,
-		w.tiltAngles.X,
-		w.acceleration.Y,
-		w.tiltAngles.Y,
-		w.acceleration.Z,
-		w.tiltAngles.Z,
-		w.orientation,
+		w.acceleration.Y, //this is not a mistake
+		w.acceleration.Z, //this is not a mistake
+		w.acceleration.X, //this is not a mistake
 		w.gnssData.SystemTime,
 		w.gnssData.Timestamp,
 		w.gnssData.Fix,

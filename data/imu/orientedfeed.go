@@ -1,7 +1,7 @@
 package imu
 
 import (
-	"github.com/streamingfast/hivemapper-data-logger/data"
+	"fmt"
 )
 
 type OrientationCounter map[Orientation]int
@@ -30,78 +30,66 @@ func (c OrientationCounter) Orientation() Orientation {
 	return orientation
 }
 
-type OrientationFeed struct {
-	subscriptions data.Subscriptions
+type OrientedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles, orientation Orientation) error
+
+type OrientedAccelerationFeed struct {
+	orientationCounter OrientationCounter
+	handlers           []OrientedAccelerationHandler
 }
 
-func NewOrientedAccelerationFeed() *OrientationFeed {
-	return &OrientationFeed{
-		subscriptions: make(data.Subscriptions),
+func NewOrientedAccelerationFeed(handlers ...OrientedAccelerationHandler) *OrientedAccelerationFeed {
+	return &OrientedAccelerationFeed{
+		orientationCounter: make(OrientationCounter),
+		handlers:           handlers,
 	}
-}
-
-func (f *OrientationFeed) Subscribe(name string) *data.Subscription {
-	sub := &data.Subscription{
-		IncomingEvents: make(chan data.Event),
-	}
-	f.subscriptions[name] = sub
-	return sub
 }
 
 var g = 0
-
 var counter = 0
 var lastOrientation = OrientationUnset
 
-func (f *OrientationFeed) Start(subscription *data.Subscription) {
-	go func() {
+func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles) error {
 
-		// we assume a front orientation as a base orientation
-		orientationCounter := make(OrientationCounter)
-		//todo: stop lock for orientation when confident
+	// we assume a front orientation as a base orientation
+	f.orientationCounter = make(OrientationCounter)
+	//todo: stop lock for orientation when confident
 
-		for {
-			select {
-			case event := <-subscription.IncomingEvents:
-				g += 1
-				if len(f.subscriptions) == 0 {
-					continue
-				}
-				e := event.(*TiltCorrectedAccelerationEvent)
-				newOrientation := computeOrientation(e.Acceleration.Acceleration)
+	//g += 1
+	newOrientation := computeOrientation(acceleration)
 
-				if orientationCounter.Orientation() != OrientationUnset {
-					a := NewAcceleration(e.Acceleration.Acceleration.X, e.Acceleration.Acceleration.Y, e.Acceleration.Acceleration.Z, e.Acceleration.Magnitude)
-					a = FixAccelerationOrientation(a, orientationCounter.Orientation())
-					t := FixTiltOrientation(e.Acceleration.TiltAngles, orientationCounter.Orientation())
+	if f.orientationCounter.Orientation() != OrientationUnset {
+		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)
+		a = FixAccelerationOrientation(a, f.orientationCounter.Orientation())
+		t := FixTiltOrientation(tiltAngles, f.orientationCounter.Orientation())
 
-					orientationEvent := NewOrientatedAccelerationEvent(NewOrientedAcceleration(a, t, orientationCounter.Orientation()))
-					for _, sub := range f.subscriptions {
-						sub.IncomingEvents <- orientationEvent
-					}
-				}
-
-				if newOrientation == OrientationUnset {
-					lastOrientation = OrientationUnset
-					counter = 0
-					continue
-				}
-
-				if newOrientation != lastOrientation && lastOrientation != OrientationUnset {
-					lastOrientation = newOrientation
-					counter = 0
-					continue
-				}
-
-				counter++
-				if counter > 20 {
-					orientationCounter.Increment(newOrientation)
-				}
-
-				lastOrientation = newOrientation
+		for _, handler := range f.handlers {
+			err := handler(a, t, f.orientationCounter.Orientation())
+			if err != nil {
+				return fmt.Errorf("calling handler: %w", err)
 			}
 		}
-	}()
+	}
+
+	if newOrientation == OrientationUnset {
+		lastOrientation = OrientationUnset
+		counter = 0
+		return nil
+	}
+
+	if newOrientation != lastOrientation && lastOrientation != OrientationUnset {
+		lastOrientation = newOrientation
+		counter = 0
+		return nil
+	}
+
+	counter++
+	if counter > 20 {
+		f.orientationCounter.Increment(newOrientation)
+	}
+
+	lastOrientation = newOrientation
+
+	return nil
 }
 
 func computeOrientation(acceleration *Acceleration) Orientation {
@@ -124,19 +112,4 @@ func computeOrientation(acceleration *Acceleration) Orientation {
 	}
 
 	return OrientationUnset
-}
-
-// OrientedAccelerationEvent X, Y and Z are the real world orientation values
-// X forward and backwards, Y left and light and Z up and down
-type OrientedAccelerationEvent struct {
-	*data.BaseEvent
-	Acceleration *OrientedAcceleration
-}
-
-func NewOrientatedAccelerationEvent(acceleration *OrientedAcceleration) *OrientedAccelerationEvent {
-	orientationEvent := &OrientedAccelerationEvent{
-		BaseEvent:    data.NewBaseEvent("OrientedAcceleration", "IMU"),
-		Acceleration: acceleration,
-	}
-	return orientationEvent
 }

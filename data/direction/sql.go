@@ -1,8 +1,8 @@
-package imu
+package direction
 
 import (
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 )
 
 const MergedCreateTable string = `
@@ -10,9 +10,9 @@ const MergedCreateTable string = `
   	id INTEGER NOT NULL PRIMARY KEY,
 	time DATETIME NOT NULL,
 	name TEXT NOT NULL,
-	gnss_latitude REAL NOT NULL,
-	gnss_longitude REAL NOT NULL,
-	gnss_speed REAL NOT NULL
+	latitude REAL NOT NULL,
+	longitude REAL NOT NULL,
+	speed REAL NOT NULL
   );`
 
 const insertQuery string = `
@@ -32,14 +32,14 @@ func PurgeQuery() string {
 }
 
 type SqlWrapper struct {
-	event data.Event
-	gnss  *gnss.GnssEvent
+	event    data.Event
+	gnssData *neom9n.Data
 }
 
-func NewSqlWrapper(event data.Event, gnss *gnss.GnssEvent) *SqlWrapper {
+func NewSqlWrapper(event data.Event, gnssData *neom9n.Data) *SqlWrapper {
 	return &SqlWrapper{
-		event: event,
-		gnss:  gnss,
+		event:    event,
+		gnssData: gnssData,
 	}
 }
 
@@ -47,8 +47,8 @@ func (w *SqlWrapper) InsertQuery() (string, []any) {
 	return insertQuery, []any{
 		w.event.GetTime(),
 		w.event.GetName(),
-		w.gnss.Data.Latitude,
-		w.gnss.Data.Longitude,
-		w.gnss.Data.Speed,
+		w.gnssData.Latitude,
+		w.gnssData.Longitude,
+		w.gnssData.Speed,
 	}
 }

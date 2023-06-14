@@ -2,6 +2,7 @@ package imu
 
 import (
 	"testing"
+	"time"
 
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"github.com/stretchr/testify/require"
@@ -15,22 +16,22 @@ func Test_CameraMountOrientation(t *testing.T) {
 	}{
 		{
 			name:                "front camera orientation",
-			acceleration:        NewAcceleration(0.5, 0.0, 1.0, -99),
+			acceleration:        NewAcceleration(0.5, 0.0, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationFront,
 		},
 		{
 			name:                "right side camera orientation",
-			acceleration:        NewAcceleration(0.0, -0.5, 1.0, -99),
+			acceleration:        NewAcceleration(0.0, -0.5, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationRight,
 		},
 		{
 			name:                "left side camera orientation",
-			acceleration:        NewAcceleration(0.0, 0.5, 1.0, -99),
+			acceleration:        NewAcceleration(0.0, 0.5, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationLeft,
 		},
 		{
 			name:                "back camera orientation",
-			acceleration:        NewAcceleration(-0.5, 0.0, 1.0, -99),
+			acceleration:        NewAcceleration(-0.5, 0.0, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationBack,
 		},
 		//{
@@ -40,7 +41,7 @@ func Test_CameraMountOrientation(t *testing.T) {
 		//},
 		{
 			name:                "don't know for sure the position of the camera",
-			acceleration:        NewAcceleration(0.5, 0.5, 1.0, -99),
+			acceleration:        NewAcceleration(0.5, 0.5, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationUnset,
 		},
 	}

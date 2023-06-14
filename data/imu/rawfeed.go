@@ -4,73 +4,43 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
-type RawImuEvent struct {
-	*data.BaseEvent
-	Acceleration *Acceleration         `json:"acceleration"`
-	AngularRate  *iim42652.AngularRate `json:"angular_rate"`
-}
-
-func (e *RawImuEvent) String() string {
-	return fmt.Sprintf("RawImuEvent")
-}
-
-func NewRawImuEvent(acc *iim42652.Acceleration, angularRate *iim42652.AngularRate) *RawImuEvent {
-	return &RawImuEvent{
-		BaseEvent:    data.NewBaseEvent("IMU_RAW_ACCELERATION_EVENT", "IMU"),
-		Acceleration: NewAcceleration(acc.CamX(), acc.CamY(), acc.CamZ(), acc.TotalMagnitude),
-		AngularRate:  angularRate,
-	}
-}
-
 type RawFeed struct {
-	imu           *iim42652.IIM42652
-	subscriptions data.Subscriptions
+	imu      *iim42652.IIM42652
+	handlers []RawFeedHandler
 }
 
-func NewRawFeed(imu *iim42652.IIM42652) *RawFeed {
+func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 	return &RawFeed{
-		imu:           imu,
-		subscriptions: make(data.Subscriptions),
+		imu:      imu,
+		handlers: handlers,
 	}
 }
 
-func (f *RawFeed) Subscribe(name string) *data.Subscription {
-	sub := &data.Subscription{
-		IncomingEvents: make(chan data.Event),
-	}
-	f.subscriptions[name] = sub
-	return sub
-}
+type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate) error
 
-func (f *RawFeed) Start() {
-	fmt.Println("Starting imu raw feed")
-	go func() {
-		err := f.run()
-		if err != nil {
-			panic(fmt.Errorf("running pipeline: %w", err))
-		}
-	}()
-}
-
-func (f *RawFeed) run() error {
+func (f *RawFeed) Run() error {
+	fmt.Println("Run imu raw feed")
 	for {
 		time.Sleep(10 * time.Millisecond)
-		if len(f.subscriptions) == 0 {
-			continue
-		}
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
-			panic(fmt.Errorf("getting acceleration: %w", err))
+			return fmt.Errorf("getting acceleration: %w", err)
 		}
 		angularRate, err := f.imu.GetGyroscopeData()
 
-		event := NewRawImuEvent(acceleration, angularRate)
-		for _, subscription := range f.subscriptions {
-			subscription.IncomingEvents <- event
+		fmt.Println("Sent raw imu event")
+		for _, handler := range f.handlers {
+			err := handler(
+				NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, time.Now()),
+				angularRate,
+			)
+			if err != nil {
+				return fmt.Errorf("calling handler: %w", err)
+			}
 		}
 	}
+
 }

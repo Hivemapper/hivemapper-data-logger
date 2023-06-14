@@ -72,84 +72,41 @@ func wipRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 
-	gnssEventFeed := gnss.NewEventFeed()
-	gnssEventFeed.Start(gnssDevice)
+	//TODO: write gnss data to json file
+	listenAddr := mustGetString(cmd, "listen-addr")
+	eventServer := webconnect.NewEventServer()
 
-	jsonDestinationFolder := mustGetString(cmd, "gnss-json-destination-folder")
-	jsonSaveInterval := mustGetDuration(cmd, "gnss-json-save-interval")
-	jsonDestinationFolderMaxSize := mustGetInt64(cmd, "gnss-json-destination-folder-max-size")
-
-	jsonLogger := logger.NewJsonFile(jsonDestinationFolder, jsonDestinationFolderMaxSize, jsonSaveInterval)
-	gnssFileLoggerSubscription := gnssEventFeed.Subscribe("gnssFileLoggerSubscription")
-	err = jsonLogger.Init(gnssFileLoggerSubscription)
-	if err != nil {
-		return fmt.Errorf("initializing json logger database: %w", err)
-	}
-
-	sqliteLogger := logger.NewSqlite(
+	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
-		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, imu.CreateTableQuery},
-		[]logger.PurgeQueryFunc{merged.PurgeQuery, imu.PurgeQuery})
-	err = sqliteLogger.Init(mustGetDuration(cmd, "db-log-ttl"))
+		mustGetDuration(cmd, "db-log-ttl"),
+	)
 	if err != nil {
-		return fmt.Errorf("initializing sqlite logger database: %w", err)
+		return fmt.Errorf("creating data handler: %w", err)
 	}
 
-	rawImuEventFeed := imu.NewRawFeed(imuDevice)
-	rawImuEventFeed.Start()
+	directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
+	orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
+	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
 
-	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed()
-	tiltCorrectedAccelerationEventFeed.Start(rawImuEventFeed.Subscribe("tilt"))
-
-	orientedEventFeed := imu.NewOrientedAccelerationFeed()
-	orientedEventFeed.Start(tiltCorrectedAccelerationEventFeed.Subscribe("orientation"))
-
-	directionEventFeed := direction.NewDirectionEventFeed(conf)
-	directionEventFeed.Start(orientedEventFeed.Subscribe("direction"), gnssEventFeed.Subscribe("direction"))
-
-	mergedEventFeed := data.NewEventFeedMerger(gnssEventFeed.Subscribe("merger"), rawImuEventFeed.Subscribe("merger"), orientedEventFeed.Subscribe("merger"), directionEventFeed.Subscribe("merger"))
-	mergedEventFeed.Start()
-	mergedEventSub := mergedEventFeed.Subscribe("wip")
-
-	fmt.Println("Starting to listen for events from mergedEventSub")
-	var imuRawEvent *imu.RawImuEvent
-	var correctedImuEvent *imu.OrientedAccelerationEvent
-	var gnssEvent *gnss.GnssEvent
-
+	rawImuEventFeed := imu.NewRawFeed(imuDevice, tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed)
 	go func() {
-		for {
-			select {
-			case e := <-mergedEventSub.IncomingEvents:
-				switch e := e.(type) {
-				case *imu.RawImuEvent:
-					imuRawEvent = e
-				case *imu.OrientedAccelerationEvent:
-					correctedImuEvent = e
-				case *gnss.GnssEvent:
-					gnssEvent = e
-				}
-				if e.GetCategory() == "DIRECTION_CHANGE" {
-					err := sqliteLogger.Log(imu.NewSqlWrapper(e, mustGnssEvent(gnssEvent)))
-					if err != nil {
-						panic(fmt.Errorf("logging to sqlite: %w", err))
-					}
-				}
-			}
-			if imuRawEvent != nil && correctedImuEvent != nil {
-				ge := mustGnssEvent(gnssEvent)
-				w := merged.NewSqlWrapper(imuRawEvent, correctedImuEvent, ge)
-				err = sqliteLogger.Log(w)
-				if err != nil {
-					panic(fmt.Errorf("logging to sqlite: %w", err))
-				}
-				imuRawEvent = nil
-				correctedImuEvent = nil
-			}
+		err := rawImuEventFeed.Run()
+		if err != nil {
+			panic(fmt.Errorf("running raw imu event feed: %w", err))
 		}
 	}()
 
-	listenAddr := mustGetString(cmd, "listen-addr")
-	eventServer := webconnect.NewEventServer(mergedEventSub)
+	gnssEventFeed := gnss.NewGnssFeed(
+		[]gnss.GnssDataHandler{dataHandler.HandlerGnssData, directionEventFeed.HandleGnssData},
+		nil,
+	)
+	go func() {
+		err = gnssEventFeed.Run(gnssDevice)
+		if err != nil {
+			panic(fmt.Errorf("running gnss event feed: %w", err))
+		}
+	}()
+
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
 
@@ -172,15 +129,67 @@ func wipRun(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func mustGnssEvent(e *gnss.GnssEvent) *gnss.GnssEvent {
+type DataHandler struct {
+	sqliteLogger *logger.Sqlite
+	gnssData     *neom9n.Data
+}
+
+func NewDataHandler(dbPath string, dbLogTTL time.Duration) (*DataHandler, error) {
+	sqliteLogger := logger.NewSqlite(
+		dbPath,
+		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, merged.ImuRawCreateTableQuery, direction.CreateTableQuery},
+		[]logger.PurgeQueryFunc{merged.PurgeQuery, merged.ImuRawPurgeQuery, direction.PurgeQuery})
+	err := sqliteLogger.Init(dbLogTTL)
+	if err != nil {
+		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
+	}
+
+	return &DataHandler{
+		sqliteLogger: sqliteLogger,
+	}, err
+}
+
+func (h *DataHandler) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation) error {
+	gnssData := mustGnssEvent(h.gnssData)
+	err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, orientation, gnssData))
+	if err != nil {
+		return fmt.Errorf("logging merged data to sqlite: %w", err)
+	}
+
+	return nil
+}
+
+func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
+	h.gnssData = data
+	return nil
+}
+
+func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) error {
+	gnssData := mustGnssEvent(h.gnssData)
+	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(acceleration, gnssData))
+	if err != nil {
+		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
+	}
+	return nil
+}
+
+func (h *DataHandler) HandleDirectionEvent(event data.Event) error {
+	gnssData := mustGnssEvent(h.gnssData)
+	err := h.sqliteLogger.Log(direction.NewSqlWrapper(event, gnssData))
+	if err != nil {
+		return fmt.Errorf("logging direction data to sqlite: %w", err)
+	}
+	return nil
+}
+
+func mustGnssEvent(e *neom9n.Data) *neom9n.Data {
 	if e == nil {
-		return &gnss.GnssEvent{
-			Data: &neom9n.Data{
-				Dop:        &neom9n.Dop{},
-				RF:         &neom9n.RF{},
-				Satellites: &neom9n.Satellites{},
-			},
+		return &neom9n.Data{
+			Dop:        &neom9n.Dop{},
+			RF:         &neom9n.RF{},
+			Satellites: &neom9n.Satellites{},
 		}
 	}
+
 	return e
 }

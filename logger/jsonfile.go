@@ -39,7 +39,7 @@ func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Durat
 	}
 }
 
-func (j *JsonFile) Init(subscription *data.Subscription) error {
+func (j *JsonFile) Init() error {
 	fmt.Println("initializing json file logger")
 	latestLog := path.Join(j.destFolder, "latest.log")
 	if fileExists(latestLog) {
@@ -90,18 +90,6 @@ func (j *JsonFile) Init(subscription *data.Subscription) error {
 	if err != nil {
 		return fmt.Errorf("freeing up space: %w", err)
 	}
-
-	go func() {
-		for {
-			select {
-			case event := <-subscription.IncomingEvents:
-				err := j.Log(event)
-				if err != nil {
-					panic(fmt.Errorf("writing to file: %w", err))
-				}
-			}
-		}
-	}()
 
 	return nil
 }

@@ -24,11 +24,11 @@ type BaseEvent struct {
 	Category string    `json:"category"`
 }
 
-func NewBaseEvent(name string, category string) *BaseEvent {
+func NewBaseEvent(name string, category string, time time.Time) *BaseEvent {
 	return &BaseEvent{
 		Name:     name,
 		Category: category,
-		Time:     time.Now(),
+		Time:     time,
 	}
 }
 

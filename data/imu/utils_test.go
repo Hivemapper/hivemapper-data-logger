@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -175,7 +176,7 @@ func Test_ComputeCorrectedGForce(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			m := math.Sqrt(test.xAcceleration*test.xAcceleration + test.yAcceleration*test.yAcceleration + test.zAcceleration*test.zAcceleration)
 			correctedAcceleration := computeCorrectedGForce(
-				NewAcceleration(test.xAcceleration, test.yAcceleration, test.zAcceleration, m),
+				NewAcceleration(test.xAcceleration, test.yAcceleration, test.zAcceleration, m, time.Now()),
 				test.xAngle,
 				test.yAngle,
 				test.zAngle,
@@ -234,7 +235,7 @@ func Test_ComputeTiltAngles(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			m := math.Sqrt(test.xAxis*test.xAxis + test.yAxis*test.yAxis + test.zAxis*test.zAxis)
-			acceleration := NewAcceleration(test.xAxis, test.yAxis, test.zAxis, m)
+			acceleration := NewAcceleration(test.xAxis, test.yAxis, test.zAxis, m, time.Now())
 
 			x, y, z := computeTiltAngles(acceleration)
 
