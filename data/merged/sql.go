@@ -90,7 +90,7 @@ func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, o
 var mergedPrepareStatement *sql.Stmt
 
 func InitMerged(db *sql.DB) error {
-	stmt, err := db.Prepare(insertQuery)
+	stmt, err := db.Prepare(insertMergedQuery)
 	if err != nil {
 		return fmt.Errorf("preparing statement for inserting merged data: %w", err)
 	}

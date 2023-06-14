@@ -51,9 +51,9 @@ const ImuRawCreateTable string = `
 	);
 `
 
-const ImuRawInsertQuery string = `
-	INSERT INTO imu_raw VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-`
+const insertRawQuery string = `INSERT INTO imu_raw VALUES`
+
+const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const imuRawPurgeQuery string = `
 	DELETE FROM imu_raw WHERE imu_time < ?;
@@ -82,7 +82,7 @@ func NewImuRawSqlWrapper(acceleration *imu.Acceleration, gnssData *neom9n.Data) 
 var imuRawPrepareStatement *sql.Stmt
 
 func InitImuRaw(db *sql.DB) error {
-	stmt, err := db.Prepare(ImuRawInsertQuery)
+	stmt, err := db.Prepare(insertRawQuery)
 	if err != nil {
 		return fmt.Errorf("preparing statement for inserting imu raw data: %w", err)
 	}
@@ -90,8 +90,8 @@ func InitImuRaw(db *sql.DB) error {
 	return nil
 }
 
-func (w *ImuRawSqlWrapper) InsertQuery() (*sql.Stmt, []any) {
-	return imuRawPrepareStatement, []any{
+func (w *ImuRawSqlWrapper) InsertQuery() (string, string, []any) {
+	return insertRawQuery, insertRawFields, []any{
 		w.acceleration.Time,
 		w.acceleration.Y, //this is not a mistake
 		w.acceleration.Z, //this is not a mistake

@@ -18,9 +18,8 @@ const MergedCreateTable string = `
 	speed REAL NOT NULL
   );`
 
-const insertQuery string = `
-	INSERT INTO direction_events VALUES(NULL,?,?,?,?,?);
-`
+const insertDirectionEventsQuery string = `INSERT INTO direction_events VALUES `
+const insertDirectionEventsFields string = `(NULL,?,?,?,?,?),`
 
 const purgeQuery string = `
 DELETE FROM direction_events WHERE time < ?;
@@ -49,7 +48,7 @@ func NewSqlWrapper(event data.Event, gnssData *neom9n.Data) *SqlWrapper {
 var prepareDirectionEventsStatement *sql.Stmt
 
 func InitDirectionEvents(db *sql.DB) error {
-	stmt, err := db.Prepare(insertQuery)
+	stmt, err := db.Prepare(insertDirectionEventsQuery)
 	if err != nil {
 		return fmt.Errorf("preparing statement for direction events: %w", err)
 	}
@@ -57,8 +56,8 @@ func InitDirectionEvents(db *sql.DB) error {
 	return nil
 }
 
-func (w *SqlWrapper) InsertQuery() (*sql.Stmt, []any) {
-	return prepareDirectionEventsStatement, []any{
+func (w *SqlWrapper) InsertQuery() (string, string, []any) {
+	return insertDirectionEventsQuery, insertDirectionEventsFields, []any{
 		w.event.GetTime(),
 		w.event.GetName(),
 		w.gnssData.Latitude,
