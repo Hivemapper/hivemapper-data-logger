@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/streamingfast/imu-controller/device/iim42652"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,12 +20,12 @@ func Test_CameraMountOrientation(t *testing.T) {
 		},
 		{
 			name:                "right side camera orientation",
-			acceleration:        NewAcceleration(0.0, -0.5, 1.0, -99, time.Now()),
+			acceleration:        NewAcceleration(0.0, 0.5, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationRight,
 		},
 		{
 			name:                "left side camera orientation",
-			acceleration:        NewAcceleration(0.0, 0.5, 1.0, -99, time.Now()),
+			acceleration:        NewAcceleration(0.0, -0.5, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationLeft,
 		},
 		{
@@ -34,14 +33,24 @@ func Test_CameraMountOrientation(t *testing.T) {
 			acceleration:        NewAcceleration(-0.5, 0.0, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationBack,
 		},
-		//{
-		//	name:                "low back camera orientation",
-		//	acceleration:        NewAcceleration(-0.1, 0.0, 1.0, -99),
-		//	expectedOrientation: OrientationBack,
-		//},
 		{
-			name:                "don't know for sure the position of the camera",
-			acceleration:        NewAcceleration(0.5, 0.5, 1.0, -99, time.Now()),
+			name:                "a bit of front acceleration, but not enough to know the orientation",
+			acceleration:        NewAcceleration(0.05, 0.0, 1.0, -99, time.Now()),
+			expectedOrientation: OrientationUnset,
+		},
+		{
+			name:                "a bit of back acceleration, but not enough to know the orientation",
+			acceleration:        NewAcceleration(-0.05, 0.0, 1.0, -99, time.Now()),
+			expectedOrientation: OrientationUnset,
+		},
+		{
+			name:                "a bit of right side acceleration, but not enough to know the orientation",
+			acceleration:        NewAcceleration(0.0, 0.05, 1.0, -99, time.Now()),
+			expectedOrientation: OrientationUnset,
+		},
+		{
+			name:                "a bit of left side acceleration, but not enough to know the orientation",
+			acceleration:        NewAcceleration(0.0, -0.05, 1.0, -99, time.Now()),
 			expectedOrientation: OrientationUnset,
 		},
 	}
@@ -50,14 +59,5 @@ func Test_CameraMountOrientation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.expectedOrientation, computeOrientation(test.acceleration))
 		})
-	}
-}
-
-func newAcceleration(x, y, z float64) *iim42652.Acceleration {
-	// Z -> CamX()
-	// X -> CamY()
-	// Y -> CamY()
-	return &iim42652.Acceleration{
-		Z: x, X: y, Y: z,
 	}
 }
