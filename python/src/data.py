@@ -14,10 +14,30 @@ def create_connection(db_file: str):
     return conn
 
 
+def create_corrected_gps_data_table(conn):
+    create_table_sql = """
+        CREATE TABLE IF NOT EXISTS corrected_gps_data(
+            id INTEGER NOT NULL PRIMARY KEY,
+            lat REAL NOT NULL,
+            long REAL NOT NULL
+        );
+    """
+    try:
+        cursor = conn.cursor()
+        cursor.execute(create_table_sql)
+    except Error as e:
+        print("failed to create corrected gps data table", e)
+        raise e
+
+
+def save_corrected_gps_data(corrected_gps_data, conn):
+    return None
+
+
 # Accelerometer Data
 def fetch_accelerometer_data(conn):
     print('Fetching accelerometer data...')
-    select_query = "select cast(strftime('%s', imu_time) as decimal) as imu_time_ms, imu_acc_x, imu_acc_y, imu_acc_z from imu_raw;"
+    select_query = "SELECT CAST(STRFTIME('%s', imu_time) AS DECIMAL) AS imu_time_ms, imu_acc_x, imu_acc_y, imu_acc_z FROM imu_raw;"
     accel_columns = ["time", "x", "y", "z"]
     accel_df = pd.read_sql_query(select_query, conn)
     accel_df = accel_df.rename(columns={'imu_time_ms': 'time', 'imu_acc_x': 'x', 'imu_acc_y': 'y', 'imu_acc_z': 'z'})
@@ -42,7 +62,7 @@ def fetch_accelerometer_data(conn):
 # GPS Data
 def fetch_gps_data(conn):
     print("Fetching gps data...")
-    select_query = 'select gnss_system_time, gnss_latitude, gnss_longitude, gnss_altitude, gnss_speed, gnss_heading from imu_raw;'
+    select_query = "SELECT gnss_system_time, gnss_latitude, gnss_longitude, gnss_altitude, gnss_speed, gnss_heading FROM imu_raw;"
     gps_columns = ["time", "lat", "lon", "alt", "abs_vel", "heading"]
     gps_df = pd.read_sql_query(select_query, conn)
     gps_df = gps_df.rename(columns={'gnss_system_time': 'time', 'gnss_latitude': 'lat', 'gnss_longitude': 'lon', 'gnss_altitude': 'alt', 'gnss_speed': 'abs_vel', 'gnss_heading': 'heading'})
