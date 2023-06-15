@@ -47,14 +47,21 @@ def make_Q(G):
 
 def make_Uin(aR, aF, heading):
     pi = math.pi
-    # print("aR=",aR, "  aF=", aF,"  heading=",heading)
-    N1 = aF * math.cos((heading) * pi / 180.0)
-    N2 = aR * math.sin((heading + 180) * pi / 180.0)
-    E1 = aF * math.sin((heading) * pi / 180.0)
-    E2 = aR * math.cos((heading) * pi / 180.0)
-    N = N1 + N2
-    E = E1 + E2
-    return np.array([[E], [N]])
+    try:
+        val = 0.1 * math.cos(heading * pi / 180.0)
+        N1 = aF * math.cos(heading * pi / 180.0)
+        N2 = aR * math.sin((heading + 180) * pi / 180.0)
+        E1 = aF * math.sin(heading * pi / 180.0)
+        E2 = aR * math.cos(heading * pi / 180.0)
+        N = N1 + N2
+        E = E1 + E2
+        return np.array([[E], [N]])
+    except TypeError:
+        # print("heading=", heading)
+        print("aF=", aF)
+        raise "patate"
+
+
 
 
 def update_state(X_in, K, H, z):  # z: 2x1, H: 2x4, X_in: 4x1, K: 4x2
