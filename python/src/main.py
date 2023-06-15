@@ -7,10 +7,11 @@ from kalman_filtering_gps_acceleration import make_H, make_Uin, make_F, make_G, 
 
 
 def main(db_file):
+    print("Initializing kalman filtering...")
     # Initialize kalman filtering stuff
     running_kalman = True
-    sensorS_count = 0
-    sensorC_count = 0
+    sensorS_count = 1  # sensorS is for the time total time in seconds base from the first time we have (not 0 as its nan)
+    sensorC_count = 0  # sensorC is the time itself
     sensorS_active = True
     sensorC_active = True
     use_sensorS = False
@@ -31,8 +32,9 @@ def main(db_file):
     gps_df = fetch_gps_data(conn)
     accel_df = fetch_accelerometer_data(conn)
 
-    sensorS_time = [ele.total_seconds() for ele in (gps_df["time"] - gps_df["time"][0])]
-    sensorC_time = [ele for ele in list(accel_df["time"])]
+    # first item in the gps_dataframe is nan, we take the [1] as the _first_ item
+    sensorS_time = [element.total_seconds() for element in (gps_df["time"] - gps_df["time"][1])]
+    sensorC_time = [element for element in list(accel_df["time"])]
 
     # Convert lat/lon to ECEF (N,E)
     utmN, utmE = latlon_to_utm(gps_df["lat"].values.tolist(), gps_df["lon"].values.tolist())
@@ -40,7 +42,7 @@ def main(db_file):
     sensorS_data = [utmE, utmN, heading]
 
     # This data is in camera-based coordinate system
-    sensorC_data = [list(accel_df["a1"]), list(accel_df["a2"]), list(accel_df["a3"])]
+    sensorC_data = [list(accel_df["x"]), list(accel_df["y"]), list(accel_df["z"])]
     #################################################################
     X_in = np.zeros((4, 1))
 
@@ -66,6 +68,7 @@ def main(db_file):
         else:
             time_sensorC = 999999999999999.9
         # Choose which operation to perform (prediction or prediction+update)
+        # fixme: time_sensorC is a timestamp here and we are comparing it with time_sensorS which is seconds, should we compare with total_seconds()?
         if time_sensorS < time_sensorC:
             # print("Skip forward")
             # Just iterate forward. This step is based on the assumption that the Control (accelerometer) data is at a hig
@@ -146,4 +149,3 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         main(sys.argv[1])
     print("no database file provided")
-

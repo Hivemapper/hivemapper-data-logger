@@ -1,6 +1,7 @@
 import pandas as pd
 import sqlite3
 from sqlite3 import Error
+import numpy as np
 
 
 def create_connection(db_file: str):
@@ -15,29 +16,46 @@ def create_connection(db_file: str):
 
 # Accelerometer Data
 def fetch_accelerometer_data(conn):
+    print('Fetching accelerometer data...')
+    select_query = "select cast(strftime('%s', imu_time) as decimal) as imu_time_ms, imu_acc_x, imu_acc_y, imu_acc_z from imu_raw;"
     accel_columns = ["time", "x", "y", "z"]
-    accel_df = pd.read_sql_query("select imu_time, imu_acc_x, imu_acc_y, imu_acc_z from imu_raw;", conn)
-    accel_df = accel_df.rename(columns={'imu_time': 'time', 'imu_acc_x': 'x', 'imu_acc_y': 'y', 'imu_acc_z': 'z'})
-    dtypes = {k: float for k in accel_columns[1:4]}
-    accel_df["time"] = pd.to_datetime(accel_df["time"], errors="coerce", format='%Y:%m:%d %H:%M:%S')
+    accel_df = pd.read_sql_query(select_query, conn)
+    accel_df = accel_df.rename(columns={'imu_time_ms': 'time', 'imu_acc_x': 'x', 'imu_acc_y': 'y', 'imu_acc_z': 'z'})
+    dtypes = {k: float for k in accel_columns[:4]}
     accel_df = accel_df.astype(dtypes)
+
+    # Check if data is doubled up. This is happening in the exiftool extraction step. I am not sure how to remedy this
+    # halfway_A = (int(np.shape(accel_df)[0] / 2))
+    # print("Before: ", np.shape(accel_df))
+    # if accel_df["time"][0] == accel_df["time"][halfway_A]:
+    #     print("Accelerometer data doubled up. Removing half")
+    #     accel_df = accel_df[:][0:halfway_A]
+    #     print("After: ", np.shape(accel_df))
+
+    # median2 = accel_df["y"].median()
+    # median3 = accel_df["z"].median()
+    # accel_df = accel_df.sub([0, 0, median2, median3], axis='columns')
+
     return accel_df
 
 
 # GPS Data
 def fetch_gps_data(conn):
-    select_query = 'select gnss_system_time as gnss_system_date, gnss_latitude, gnss_longitude, gnss_altitude, gnss_speed, gnss_heading from imu_raw;'
-    cursor = conn.cursor()
-    cursor.execute(select_query)
-    records = cursor.fetchall()
+    print("Fetching gps data...")
+    select_query = 'select gnss_system_time, gnss_latitude, gnss_longitude, gnss_altitude, gnss_speed, gnss_heading from imu_raw;'
     gps_columns = ["time", "lat", "lon", "alt", "abs_vel", "heading"]
-    # gps_df = pd.read_sql_query(select_query, conn)
-    gps_df = pd.DataFrame(records)
+    gps_df = pd.read_sql_query(select_query, conn)
     gps_df = gps_df.rename(columns={'gnss_system_time': 'time', 'gnss_latitude': 'lat', 'gnss_longitude': 'lon', 'gnss_altitude': 'alt', 'gnss_speed': 'abs_vel', 'gnss_heading': 'heading'})
-    # gps_df["time"] = gps_df["time"].str.split(".00Z", n=1, expand=True)
-
     gps_df["time"] = pd.to_datetime(gps_df["time"], errors="coerce", format='%Y:%m:%d %H:%M:%S')
-
     dtypes = {k: float for k in gps_columns[1:6]}
     gps_df = gps_df.astype(dtypes)
+
+    # Check if data is doubled up. This is happening in the exiftool extraction step. I am not sure how to remedy this
+    # print("Before: ", np.shape(gps_df))
+    # halfway_G = (int(np.shape(gps_df)[0] / 2))
+    # if gps_df["time"][0] == gps_df["time"][halfway_G]:
+    #     print("GPS data doubled up. Removing half")
+    #     gps_df = gps_df[:][0:halfway_G]
+    #     print("After: ", np.shape(gps_df))
+
     return gps_df
