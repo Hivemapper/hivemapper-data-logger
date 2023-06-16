@@ -19,7 +19,7 @@ def create_corrected_gps_data_table(conn):
         CREATE TABLE IF NOT EXISTS corrected_gps_data(
             id INTEGER NOT NULL PRIMARY KEY,
             lat REAL NOT NULL,
-            long REAL NOT NULL
+            lon REAL NOT NULL
         );
     """
     try:
@@ -30,7 +30,10 @@ def create_corrected_gps_data_table(conn):
         raise e
 
 
-def save_corrected_gps_data(corrected_gps_data, conn):
+def save_corrected_gps_data(conn, lat_long_elements):
+    insert_query = "INSERT INTO corrected_gps_data(id, lat, lon) VALUES (NULL, ?, ?)"
+    lat_long_list_tuples = [element for element in lat_long_elements]
+    conn.executemany(insert_query, lat_long_list_tuples)
     return None
 
 

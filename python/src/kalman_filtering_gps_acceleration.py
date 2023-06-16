@@ -47,21 +47,13 @@ def make_Q(G):
 
 def make_Uin(aR, aF, heading):
     pi = math.pi
-    try:
-        val = 0.1 * math.cos(heading * pi / 180.0)
-        N1 = aF * math.cos(heading * pi / 180.0)
-        N2 = aR * math.sin((heading + 180) * pi / 180.0)
-        E1 = aF * math.sin(heading * pi / 180.0)
-        E2 = aR * math.cos(heading * pi / 180.0)
-        N = N1 + N2
-        E = E1 + E2
-        return np.array([[E], [N]])
-    except TypeError:
-        # print("heading=", heading)
-        print("aF=", aF)
-        raise "patate"
-
-
+    N1 = aF * math.cos(heading * pi / 180.0)
+    N2 = aR * math.sin((heading + 180) * pi / 180.0)
+    E1 = aF * math.sin(heading * pi / 180.0)
+    E2 = aR * math.cos(heading * pi / 180.0)
+    N = N1 + N2
+    E = E1 + E2
+    return np.array([[E], [N]])
 
 
 def update_state(X_in, K, H, z):  # z: 2x1, H: 2x4, X_in: 4x1, K: 4x2
@@ -87,8 +79,9 @@ def update_covariance(P_in, K, H, R):
 
 def predict_state(X_in, U_in, F, G):
     # X = F @ X_in
-    print("term1 = ", F @ X_in)
-    print("term2 = ", G @ U_in)
+    # TODO: uncomment this to see predicted terms
+    # print("term1 = ", F @ X_in)
+    # print("term2 = ", G @ U_in)
     X = F @ X_in + G @ U_in  # We use G and U_in since we assume a control input
     # print("F: \n",F)
     # print("G: \n",G)
@@ -108,9 +101,34 @@ def latlon_to_utm(lat, lon):
     utm_E = []
     for i in range(0, len(lat)):
         out = utm.from_latlon(lat[i], lon[i])
+        # todo -> need to fetch the initial zone numbers and keep them in track
+        #  utm.latlon_to_zone_number()
+        if i == 0:
+            print("zone number", utm.latlon_to_zone_number(lat[i], lon[i]))
+            print("zone letter", utm.latitude_to_zone_letter(lat[i]))
+
         utm_E.append(out[0])
         utm_N.append(out[1])
+
+    todo = utm_to_latlon(lon, lat)
+
     return [utm_E, utm_N]
+
+
+def utm_to_latlon(long_data, lat_data):
+    # long - 0 -> E
+    # lat -> 1 -> N
+    if len(long_data) != len(lat_data):
+        raise "longitude and latitude data mismatch"
+
+    latlon_data = []
+
+    for i in range(0, len(long_data)):
+        d = utm.to_latlon(long_data[i], lat_data[i], 18, 'T', strict=False)  # not sure about the zone number here...
+        # d = utm.to_latlon(long_data[i][0], lat_data[i][0], 18, 'T', strict=False)  # not sure about the zone number here...
+        latlon_data.append(d)
+
+    return latlon_data
 
 
 def find_heading(dE, dN):

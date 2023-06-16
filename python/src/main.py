@@ -3,9 +3,10 @@ import sys
 from matplotlib import pyplot as plt
 import utm
 
-from data import fetch_gps_data, create_connection, fetch_accelerometer_data
+from data import fetch_gps_data, create_connection, fetch_accelerometer_data, save_corrected_gps_data, \
+    create_corrected_gps_data_table
 from kalman_filtering_gps_acceleration import make_H, make_Uin, make_F, make_G, make_Q, predict_state, \
-    predict_covariance, make_R, make_K, update_state, update_covariance, find_heading, latlon_to_utm
+    predict_covariance, make_R, make_K, update_state, update_covariance, latlon_to_utm, utm_to_latlon
 
 
 def main(db_file):
@@ -132,7 +133,9 @@ def main(db_file):
     plt.ylabel("longitude")
     plt.show()
 
-    # todo: save data from the corrected gps lat and long to a database
+    lat_long_degrees = utm_to_latlon(corrected_gps_long, corrected_gps_lat)
+    create_corrected_gps_data_table(conn)
+    save_corrected_gps_data(conn, lat_long_degrees)
 
 
 if __name__ == '__main__':
