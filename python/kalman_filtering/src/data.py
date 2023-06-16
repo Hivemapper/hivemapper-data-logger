@@ -1,7 +1,7 @@
 import pandas as pd
 import sqlite3
 from sqlite3 import Error
-import numpy as np
+import geojson
 
 
 def create_connection(db_file: str):
@@ -30,10 +30,9 @@ def create_corrected_gps_data_table(conn):
         raise e
 
 
-def save_corrected_gps_data(conn, lat_long_elements):
+def save_corrected_gps_data(conn, lat_lon_tuples):
     insert_query = "INSERT INTO corrected_gps_data(id, lat, lon) VALUES (NULL, ?, ?)"
-    lat_long_list_tuples = [element for element in lat_long_elements]
-    conn.executemany(insert_query, lat_long_list_tuples)
+    conn.executemany(insert_query, lat_lon_tuples)
     return None
 
 
@@ -82,3 +81,17 @@ def fetch_gps_data(conn):
     #     print("After: ", np.shape(gps_df))
 
     return gps_df
+
+
+def write_geo_json(lat_lon_tuples):
+    features = []
+
+    for lat_lon in lat_lon_tuples:
+        features.append(geojson.Feature(geometry=geojson.Point(lat_lon)))
+
+    feature_collection = geojson.FeatureCollection(features)
+
+    with open('corrected.json', 'w') as f:
+        geojson.dump(feature_collection, f, sort_keys=True)
+
+    return None

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "kalman-filtering-acceleration"
+name = "kalman_filtering"
 version = "0.1.0"
 description = "Kalman filtering data on gps and accelerometer data points"
 authors = ["Your Name <you@example.com>"]

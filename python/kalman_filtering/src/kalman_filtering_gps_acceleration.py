@@ -97,12 +97,14 @@ def predict_covariance(P_in, F, Q):
 
 
 def latlon_to_utm(lat, lon):
-    utm_N = []
     utm_E = []
+    utm_N = []
+
+    if len(lat) != len(lon):
+        raise "longitude and latitude data mismatch"
+
     for i in range(0, len(lat)):
         out = utm.from_latlon(lat[i], lon[i])
-        # todo -> need to fetch the initial zone numbers and keep them in track
-        #  utm.latlon_to_zone_number()
         if i == 0:
             print("zone number", utm.latlon_to_zone_number(lat[i], lon[i]))
             print("zone letter", utm.latitude_to_zone_letter(lat[i]))
@@ -110,25 +112,20 @@ def latlon_to_utm(lat, lon):
         utm_E.append(out[0])
         utm_N.append(out[1])
 
-    todo = utm_to_latlon(lon, lat)
-
     return [utm_E, utm_N]
 
 
-def utm_to_latlon(long_data, lat_data):
-    # long - 0 -> E
-    # lat -> 1 -> N
-    if len(long_data) != len(lat_data):
+def utm_to_latlon(easting_list, northing_list):
+    if len(easting_list) != len(northing_list):
         raise "longitude and latitude data mismatch"
 
-    latlon_data = []
+    latlon_data_tuples = []
 
-    for i in range(0, len(long_data)):
-        d = utm.to_latlon(long_data[i], lat_data[i], 18, 'T', strict=False)  # not sure about the zone number here...
-        # d = utm.to_latlon(long_data[i][0], lat_data[i][0], 18, 'T', strict=False)  # not sure about the zone number here...
-        latlon_data.append(d)
+    for i in range(0, len(easting_list)):
+        d = utm.to_latlon(easting_list[i], northing_list[i], 18, 'T', strict=False)  # not sure about the zone number here...
+        latlon_data_tuples.append((d[1][0], d[0][0]))
 
-    return latlon_data
+    return latlon_data_tuples
 
 
 def find_heading(dE, dN):
