@@ -21,8 +21,6 @@ type LeftTurnTracker struct {
 
 func (t *LeftTurnTracker) track(acceleration *imu.Acceleration, _ *imu.TiltAngles, _ imu.Orientation, gnssData *neom9n.Data) data.Event {
 	y := acceleration.Y
-	//x := acceleration.X
-	//fmt.Printf("M: %.4f Y %.4f d: %.4f X %.4f d: %.4f\n", acceleration.Magnitude, y, math.Abs(y)-(y/acceleration.Magnitude), x, math.Abs(x)-(x/acceleration.Magnitude))
 	if y > t.config.LeftTurnThreshold {
 		t.continuousCount++
 		if t.continuousCount == 1 {
@@ -100,12 +98,13 @@ func (t *AccelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltA
 
 	} else {
 		if t.continuousCount > t.config.AccelerationContinuousCountWindow {
-			t.continuousCount = 0
+			a := NewAccelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time, gnssData)
 			t.speed = 0
-			return NewAccelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time, gnssData)
+			t.continuousCount = 0
+			return a
 		}
-		t.continuousCount = 0
 		t.speed = 0
+		t.continuousCount = 0
 	}
 	return nil
 }
@@ -138,10 +137,13 @@ func (t *DecelerationTracker) track(acceleration *imu.Acceleration, _ *imu.TiltA
 
 	} else {
 		if t.continuousCount > t.config.DecelerationContinuousCountWindow {
+			d := NewDecelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time, gnssData)
 			t.speed = 0
 			t.continuousCount = 0
-			return NewDecelerationEvent(t.speed, Since(t.start, acceleration.Time), acceleration.Time, gnssData)
+			return d
 		}
+		t.speed = 0
+		t.continuousCount = 0
 	}
 	return nil
 }
