@@ -30,6 +30,10 @@ func (c OrientationCounter) Orientation() Orientation {
 	return orientation
 }
 
+//func (c *OrientationCounter) String() string {
+//	return fmt.Sprintf("%v", c)
+//}
+
 type OrientedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles, orientation Orientation) error
 
 type OrientedAccelerationFeed struct {
@@ -47,15 +51,25 @@ func NewOrientedAccelerationFeed(handlers ...OrientedAccelerationHandler) *Orien
 var g = 0
 var counter = 0
 var lastOrientation = OrientationUnset
+var lastKnownOrientation = OrientationUnset
+var first = true
 
 func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles) error {
 	//todo: stop lock for orientation when confident
+	if first {
+		first = false
+		fmt.Println("First orientation event:", acceleration.Time)
 
+	}
 	//g += 1
 	newOrientation := computeOrientation(acceleration)
 	//fmt.Println("Orientation:", newOrientation, "???", f.orientationCounter.Orientation(), counter)
-	if f.orientationCounter.Orientation() != OrientationUnset {
+	if lastKnownOrientation != f.orientationCounter.Orientation() {
+		lastKnownOrientation = f.orientationCounter.Orientation()
+		fmt.Println("Orientation changed:", lastKnownOrientation, acceleration.Time, f.orientationCounter)
+	}
 
+	if f.orientationCounter.Orientation() != OrientationUnset {
 		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)
 		a = FixAccelerationOrientation(a, f.orientationCounter.Orientation())
 		t := FixTiltOrientation(tiltAngles, f.orientationCounter.Orientation())
@@ -66,6 +80,7 @@ func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration 
 				return fmt.Errorf("calling handler: %w", err)
 			}
 		}
+		return nil
 	}
 
 	if newOrientation == OrientationUnset {
@@ -93,21 +108,23 @@ func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration 
 func computeOrientation(acceleration *Acceleration) Orientation {
 	x := acceleration.X
 	y := acceleration.Y
-
-	movementThreshold := 0.1
+	//movementThreshold := 0.1
+	frontDetectionThreshold := 0.04
 	backDetectionThreshold := -0.1
 	rightDetectionThreshold := 0.1
 	leftDetectionThreshold := -0.1
 
-	if x > movementThreshold {
-		return OrientationFront
+	o := OrientationUnset
+	if x > frontDetectionThreshold {
+		o = OrientationFront
 	} else if y > rightDetectionThreshold {
-		return OrientationRight
+		o = OrientationRight
 	} else if y < leftDetectionThreshold {
-		return OrientationLeft
+		o = OrientationLeft
 	} else if x < backDetectionThreshold {
-		return OrientationBack
+		o = OrientationBack
 	}
-
-	return OrientationUnset
+	//fmt.Println("computeOrientation", acceleration.Time, x, y, o)
+	//fmt.Fprintf(os.Stderr, "%.5f,%.5f,%.5f, %.5f, %s\n", x, y, acceleration.Z, acceleration.Magnitude, o)
+	return o
 }

@@ -35,8 +35,15 @@ var xAvg = *data.NewAverageFloat64WithCount("", 30)
 var yAvg = *data.NewAverageFloat64WithCount("", 30)
 var zAvg = *data.NewAverageFloat64WithCount("", 30)
 
+var afirst = true
+
 func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bool {
 	magnitude := acceleration.Magnitude
+
+	if afirst {
+		afirst = false
+		fmt.Println("first tilt handling", acceleration.Time)
+	}
 
 	if magnitude > 0.96 && magnitude < 1.04 {
 		continuousCount++
@@ -49,7 +56,7 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bo
 			f.yAngleCalibrated.Add(yAvg.Average)
 			f.zAngleCalibrated.Add(zAvg.Average)
 			if !f.calibrated {
-				fmt.Println("calibrated", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated)
+				fmt.Println("calibrated", f.xAngleCalibrated, f.yAngleCalibrated, f.zAngleCalibrated, acceleration.Time)
 			}
 			f.calibrated = true
 		}

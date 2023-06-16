@@ -40,7 +40,7 @@ func (s *SqlImporterFeed) Run() {
 		}
 		return nil
 	}, nil)
-	fmt.Printf("found rows %d in merged table\n", numOfRows)
+	fmt.Printf("found rows %d\n", numOfRows)
 	if err != nil {
 		panic(fmt.Errorf("failed to fetch number of rows in table merged: %w", err))
 	}
@@ -51,7 +51,9 @@ func (s *SqlImporterFeed) Run() {
 	for i := 0; i < numOfIterations; i++ {
 		offset := LIMIT * i
 		err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
-			acceleration := &imu.Acceleration{}
+			id := 0
+			t := time.Time{}
+			acceleration := &iim42652.Acceleration{}
 			gnssData := &neom9n.Data{
 				SystemTime: time.Time{},
 				Timestamp:  time.Time{},
@@ -60,7 +62,8 @@ func (s *SqlImporterFeed) Run() {
 				RF:         &neom9n.RF{},
 			}
 			err := rows.Scan(
-				&acceleration.Time,
+				&id,
+				&t,
 				&acceleration.X,
 				&acceleration.Y,
 				&acceleration.Z,
@@ -104,9 +107,12 @@ func (s *SqlImporterFeed) Run() {
 
 			ar := &iim42652.AngularRate{}
 			for _, handler := range s.imuRawFeedHandlers {
-				m := math.Sqrt(acceleration.X*acceleration.X + acceleration.Y*acceleration.Y + acceleration.Z*acceleration.Z)
-				acceleration.Magnitude = m
-				err := handler(acceleration, ar)
+				x := acceleration.CamX()
+				y := acceleration.CamY()
+				z := acceleration.CamZ()
+				m := math.Sqrt(x*x + y*y + z*z)
+				a := imu.NewAcceleration(x, y, z, m, t)
+				err := handler(a, ar)
 				if err != nil {
 					return fmt.Errorf("failed to handle imu raw feed: %w", err)
 				}
@@ -135,6 +141,7 @@ func (s *SqlImporterFeed) Run() {
 func query(offset int) string {
 	return fmt.Sprintf(`
 		select 
+				id,
                imu_time,
 			   imu_acc_x,
 			   imu_acc_y,
@@ -172,7 +179,7 @@ func query(offset int) string {
 			   gnss_rf_ofs_i,
 			   gnss_rf_mag_i,
 			   gnss_rf_ofs_q
-		from merged order by id asc limit %d offset %d;
+		from imu_raw order by id asc limit %d offset %d;
 		`, LIMIT, offset,
 	)
 }

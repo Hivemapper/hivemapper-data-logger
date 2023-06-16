@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 )
 
 func round(v float64) float64 {
@@ -16,19 +18,22 @@ type Event interface {
 	String() string
 	GetName() string
 	GetCategory() string
+	GetGnssData() *neom9n.Data
 }
 
 type BaseEvent struct {
 	Time     time.Time `json:"time"`
 	Name     string    `json:"name"`
 	Category string    `json:"category"`
+	gnssData *neom9n.Data
 }
 
-func NewBaseEvent(name string, category string, time time.Time) *BaseEvent {
+func NewBaseEvent(name string, category string, time time.Time, gnssData *neom9n.Data) *BaseEvent {
 	return &BaseEvent{
 		Name:     name,
 		Category: category,
 		Time:     time,
+		gnssData: gnssData,
 	}
 }
 
@@ -46,6 +51,10 @@ func (e *BaseEvent) GetTime() time.Time {
 
 func (e *BaseEvent) GetName() string {
 	return e.Name
+}
+
+func (e *BaseEvent) GetGnssData() *neom9n.Data {
+	return e.gnssData
 }
 
 func (e *BaseEvent) GetCategory() string {

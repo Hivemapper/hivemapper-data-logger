@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
@@ -11,9 +12,9 @@ type RightTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewRightTurnEventDetected(t time.Time) *RightTurnEventDetected {
+func NewRightTurnEventDetected(t time.Time, gnssData *neom9n.Data) *RightTurnEventDetected {
 	return &RightTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 
@@ -26,9 +27,9 @@ type RightTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewRightTurnEvent(duration time.Duration, t time.Time) *RightTurnEvent {
+func NewRightTurnEvent(duration time.Duration, t time.Time, gnssData *neom9n.Data) *RightTurnEvent {
 	return &RightTurnEvent{
-		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("RIGHT_TURN_EVENT", "DIRECTION_CHANGE", t, gnssData),
 		Duration:  duration,
 	}
 }
@@ -40,9 +41,9 @@ type LeftTurnEventDetected struct {
 	*data.BaseEvent
 }
 
-func NewLeftTurnEventDetected(t time.Time) *LeftTurnEventDetected {
+func NewLeftTurnEventDetected(t time.Time, gnssData *neom9n.Data) *LeftTurnEventDetected {
 	return &LeftTurnEventDetected{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_DETECTED_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 
@@ -55,9 +56,9 @@ type LeftTurnEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewLeftTurnEvent(duration time.Duration, t time.Time) *LeftTurnEvent {
+func NewLeftTurnEvent(duration time.Duration, t time.Time, gnssData *neom9n.Data) *LeftTurnEvent {
 	return &LeftTurnEvent{
-		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("LEFT_TURN_EVENT", "DIRECTION_CHANGE", t, gnssData),
 		Duration:  duration,
 	}
 }
@@ -69,9 +70,9 @@ type AccelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewAccelerationDetectedEvent(t time.Time) *AccelerationDetectedEvent {
+func NewAccelerationDetectedEvent(t time.Time, gnssData *neom9n.Data) *AccelerationDetectedEvent {
 	return &AccelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 func (e *AccelerationDetectedEvent) String() string {
@@ -84,9 +85,9 @@ type AccelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewAccelerationEvent(speed float64, duration time.Duration, t time.Time) *AccelerationEvent {
+func NewAccelerationEvent(speed float64, duration time.Duration, t time.Time, gnssData *neom9n.Data) *AccelerationEvent {
 	return &AccelerationEvent{
-		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("ACCELERATION_EVENT", "DIRECTION_CHANGE", t, gnssData),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -100,9 +101,9 @@ type DecelerationDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewDecelerationDetectedEvent(t time.Time) *DecelerationDetectedEvent {
+func NewDecelerationDetectedEvent(t time.Time, gnssData *neom9n.Data) *DecelerationDetectedEvent {
 	return &DecelerationDetectedEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("DECELERATION_DETECTED_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 
@@ -116,9 +117,9 @@ type DecelerationEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewDecelerationEvent(speed float64, duration time.Duration, t time.Time) *DecelerationEvent {
+func NewDecelerationEvent(speed float64, duration time.Duration, t time.Time, gnssData *neom9n.Data) *DecelerationEvent {
 	return &DecelerationEvent{
-		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("DECELERATION_EVENT", "DIRECTION_CHANGE", t, gnssData),
 		Speed:     speed,
 		Duration:  duration,
 	}
@@ -133,9 +134,9 @@ type HeadingChangeEvent struct {
 	Heading float64 `json:"heading"`
 }
 
-func NewHeadingChangeEvent(t time.Time) *HeadingChangeEvent {
+func NewHeadingChangeEvent(t time.Time, gnssData *neom9n.Data) *HeadingChangeEvent {
 	return &HeadingChangeEvent{
-		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("HEADING_CHANGE_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 
@@ -147,9 +148,9 @@ type StopDetectedEvent struct {
 	*data.BaseEvent
 }
 
-func NewStopDetectedEvent(t time.Time) *StopDetectedEvent {
+func NewStopDetectedEvent(t time.Time, gnssData *neom9n.Data) *StopDetectedEvent {
 	return &StopDetectedEvent{
-		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("STOP_DETECTED_EVENT", "DIRECTION_CHANGE", t, gnssData),
 	}
 }
 
@@ -162,9 +163,9 @@ type StopEndEvent struct {
 	Duration time.Duration `json:"duration"`
 }
 
-func NewStopEndEvent(duration time.Duration, t time.Time) *StopEndEvent {
+func NewStopEndEvent(duration time.Duration, t time.Time, gnssData *neom9n.Data) *StopEndEvent {
 	return &StopEndEvent{
-		BaseEvent: data.NewBaseEvent("STOP_END_EVENT", "DIRECTION_CHANGE", t),
+		BaseEvent: data.NewBaseEvent("STOP_END_EVENT", "DIRECTION_CHANGE", t, gnssData),
 		Duration:  duration,
 	}
 }

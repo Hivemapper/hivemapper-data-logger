@@ -32,7 +32,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now()),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now(), nil),
 		Response:  resp,
 	}
 }
