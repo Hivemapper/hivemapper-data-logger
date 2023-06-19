@@ -3,7 +3,6 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"sync"
@@ -19,23 +18,17 @@ type FileInfo struct {
 }
 
 type JsonFile struct {
-	datas         []data.Event
-	lock          sync.Mutex
-	destFolder    string
-	maxFolderSize int64
-	currentSize   int64
-	maxSize       int64
-	files         []*FileInfo
-	saveInterval  time.Duration
+	datas        []data.Event
+	lock         sync.Mutex
+	destFolder   string
+	saveInterval time.Duration
 }
 
 func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Duration) *JsonFile {
 	fmt.Println("creating json file logger:", destFolder, "max folder size:", maxFolderSize, "save interval:", saveInterval.String())
 	return &JsonFile{
-		maxSize:       maxFolderSize,
-		saveInterval:  saveInterval,
-		destFolder:    destFolder,
-		maxFolderSize: maxFolderSize,
+		saveInterval: saveInterval,
+		destFolder:   destFolder,
 	}
 }
 
@@ -58,39 +51,6 @@ func (j *JsonFile) Init() error {
 		}
 	}
 
-	files, err := os.ReadDir(j.destFolder)
-	if err != nil {
-		panic(fmt.Errorf("listing destionation folder %s : %w", j.destFolder, err))
-	}
-
-	fmt.Println("adding files to list:", len(files))
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		i, err := f.Info()
-		if err != nil {
-			return fmt.Errorf("getting file info: %s , %w", f.Name(), err)
-		}
-
-		if f.Name() == "latest.log" {
-			continue
-		}
-
-		fi := &FileInfo{
-			path:             path.Join(j.destFolder, f.Name()),
-			size:             i.Size(),
-			modificationTime: i.ModTime(),
-		}
-		j.addFile(fi)
-	}
-
-	fmt.Println("initialized with file count:", len(j.files), "size:", j.currentSize)
-	err = j.freeUpSpace(0)
-	if err != nil {
-		return fmt.Errorf("freeing up space: %w", err)
-	}
-
 	return nil
 }
 
@@ -110,11 +70,6 @@ func (j *JsonFile) StartStoring() {
 	}()
 }
 
-func (j *JsonFile) addFile(f *FileInfo) {
-	j.files = append(j.files, f)
-	j.currentSize += f.size
-
-}
 func (j *JsonFile) Log(data data.Event) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
@@ -141,19 +96,6 @@ func (j *JsonFile) toFile() error {
 		return fmt.Errorf("writing to file: %w", err)
 	}
 
-	fi, err := os.Stat(filePath)
-	if err != nil {
-		return fmt.Errorf("getting file info: %w", err)
-	}
-	j.addFile(&FileInfo{
-		path:             filePath,
-		size:             fi.Size(),
-		modificationTime: fi.ModTime(),
-	})
-	err = j.freeUpSpace(fi.Size())
-	if err != nil {
-		return fmt.Errorf("freeing up space: %w", err)
-	}
 	return nil
 }
 
@@ -177,35 +119,6 @@ func writeToFile(filePath string, data any) error {
 	err = os.WriteFile(filePath, jsonData, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("writing file '%s': %w", filePath, err)
-	}
-
-	return nil
-}
-
-func (j *JsonFile) freeUpSpace(nextFileSize int64) error {
-	fmt.Println("free up space: current size:", j.currentSize, "next file size:", nextFileSize, "max size:", j.maxSize)
-	if j.currentSize+nextFileSize > j.maxSize {
-		tenPercent := j.maxSize - (j.maxSize * 90 / 100)
-		spaceToReclaim := j.currentSize - j.maxSize + tenPercent
-		spaceReclaimed := int64(0)
-		for spaceToReclaim > 0 {
-			fi := j.files[0]
-			j.files = j.files[1:]
-
-			if fileExists(fi.path) {
-				err := os.Remove(fi.path)
-				if err != nil {
-					return fmt.Errorf("removing file: %s, %w", fi.path, err)
-				}
-			} else {
-				log.Println("free space: skipping file that does not exist anymore: ", fi.path)
-			}
-
-			j.currentSize -= fi.size
-			spaceToReclaim -= fi.size
-			spaceReclaimed += fi.size
-		}
-		fmt.Println("reclaimed space:", spaceReclaimed, "new size:", j.currentSize, nextFileSize, "max size:", j.maxSize)
 	}
 
 	return nil
