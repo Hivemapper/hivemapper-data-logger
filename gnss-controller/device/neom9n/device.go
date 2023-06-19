@@ -6,11 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/tarm/serial"
-
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/streamingfast/gnss-controller/message"
 	"github.com/streamingfast/gnss-controller/message/handlers"
+	"github.com/tarm/serial"
 )
 
 type Neom9n struct {
@@ -80,14 +79,13 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 
 	_ = n.decoder.Decode(n.stream)
 
-	n.delConfig(1079115777)
-	n.delConfig(807469057)
-	n.delConfig(269549605)
-	n.delConfig(546374490)
-	n.delConfig(546373639)
+	n.delConfig(1079115777, "CFG-UART1-BAUDRATE")
+	n.delConfig(807469057, "CFG-RATE-MEAS")
+	n.delConfig(269549605, "CFG-NAVSPG-ACKAIDING")
+	n.delConfig(546374490, "CFG-MSGOUT-UBX_MON_RF_UART1")
+	n.delConfig(546373639, "CFG-MSGOUT-UBX_NAV_PVT_UART1")
 
 	n.setConfig(1079115777, uint32(921600), "CFG-UART1-BAUDRATE") // CFG-UART1-BAUDRATE 0x40520001 The baud rate that should be configured on the UART1
-	time.Sleep(100 * time.Millisecond)
 
 	n.decoder.Shutdown(nil)
 
@@ -103,8 +101,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(546374490, []byte{0x01}, "CFG-MSGOUT-UBX_MON_RF_UART1")  // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
 	n.setConfig(546373639, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
 
-	//n.setConfig(807469057, uint16(0), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
-	//n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")             // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
+	n.setConfig(807469057, uint16(128), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
+	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
@@ -122,7 +120,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 	n.output <- &ubx.CfgValSet{
 		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
 		CfgData: []*ubx.CfgData{
 			{
 				Key:   key,
@@ -131,23 +129,25 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 		},
 	}
 	fmt.Println("Set config:", description)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 }
 
 func (n *Neom9n) getConfig(key uint32) {
 	n.output <- &ubx.CfgValGetReq{
 		Version: 0x00,
-		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
 		Key:     key,
 	}
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 }
-func (n *Neom9n) delConfig(key uint32) {
+func (n *Neom9n) delConfig(key uint32, description string) {
 	n.output <- &ubx.CfgValDel{
-		Layers: ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash),
+		Layers: ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
 		Key:    key,
 	}
-	time.Sleep(500 * time.Millisecond)
+
+	fmt.Println("Deleted config:", description)
+	time.Sleep(100 * time.Millisecond)
 }
 
 func (n *Neom9n) Run(dataFeed *DataFeed, timeSetCallback func(now time.Time)) error {

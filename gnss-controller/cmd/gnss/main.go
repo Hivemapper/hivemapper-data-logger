@@ -27,5 +27,4 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("running gnss device: %w", err))
 	}
-
 }
