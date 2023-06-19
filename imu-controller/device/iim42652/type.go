@@ -67,6 +67,8 @@ var (
 
 	// RegisterGyroscopeDataX1 GYRO_DATA_X1 (0x25), GYRO_DATA_X0 (0x26), GYRO_DATA_Y1 (0x27), GYRO_DATA_Y0 (0x28), GYRO_DATA_Z1 (0x29), GYRO_DATA_Z0 (0x2A)
 	RegisterGyroscopeDataX1 = &Register{Bank0, 0x25}
+
+	RegisterTemperatureData = &Register{Bank0, 0x1D}
 )
 
 const (
