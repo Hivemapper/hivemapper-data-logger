@@ -21,35 +21,35 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-var WipCmd = &cobra.Command{
-	Use:   "wip",
+var LogCmd = &cobra.Command{
+	Use:   "log",
 	Short: "Start the data logger",
-	RunE:  wipRun,
+	RunE:  logRun,
 }
 
 func init() {
 	// Imu
-	WipCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
+	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 
 	// Gnss
-	WipCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
-	WipCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
-	WipCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
-	WipCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
-	WipCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
-	WipCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
+	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
+	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
+	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
+	LogCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
+	LogCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
+	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 
 	// Sqlite database
-	WipCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
-	WipCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
+	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
+	LogCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 
 	// Connect-go
-	WipCmd.Flags().String("listen-addr", ":9000", "address to listen on")
+	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
 
-	RootCmd.AddCommand(WipCmd)
+	RootCmd.AddCommand(LogCmd)
 }
 
-func wipRun(cmd *cobra.Command, args []string) error {
+func logRun(cmd *cobra.Command, args []string) error {
 	imuDevice := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
 	err := imuDevice.Init()
 	if err != nil {
