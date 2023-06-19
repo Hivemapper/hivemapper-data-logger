@@ -17,7 +17,7 @@ type TiltCorrectedAccelerationFeed struct {
 	handlers         []TiltCorrectedAccelerationHandler
 }
 
-type TiltCorrectedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles) error
+type TiltCorrectedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles, temperature iim42652.Temperature) error
 
 func NewTiltCorrectedAccelerationFeed(handlers ...TiltCorrectedAccelerationHandler) *TiltCorrectedAccelerationFeed {
 	f := &TiltCorrectedAccelerationFeed{
@@ -70,7 +70,7 @@ func (f *TiltCorrectedAccelerationFeed) calibrate(acceleration *Acceleration) bo
 	return f.calibrated
 }
 
-func (f *TiltCorrectedAccelerationFeed) HandleRawFeed(acceleration *Acceleration, _ *iim42652.AngularRate) error {
+func (f *TiltCorrectedAccelerationFeed) HandleRawFeed(acceleration *Acceleration, _ *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	if !f.calibrate(acceleration) {
 		return nil
 	}
@@ -79,7 +79,7 @@ func (f *TiltCorrectedAccelerationFeed) HandleRawFeed(acceleration *Acceleration
 	angles := NewTiltAngles(f.xAngleCalibrated.Average, f.yAngleCalibrated.Average, f.zAngleCalibrated.Average)
 
 	for _, handle := range f.handlers {
-		err := handle(correctedAcceleration, angles)
+		err := handle(correctedAcceleration, angles, temperature)
 		if err != nil {
 			return fmt.Errorf("calling handler: %w", err)
 		}

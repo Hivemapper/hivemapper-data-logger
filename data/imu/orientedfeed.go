@@ -2,6 +2,7 @@ package imu
 
 import (
 	"fmt"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type OrientationCounter map[Orientation]int
@@ -34,7 +35,7 @@ func (c OrientationCounter) Orientation() Orientation {
 //	return fmt.Sprintf("%v", c)
 //}
 
-type OrientedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles, orientation Orientation) error
+type OrientedAccelerationHandler func(corrected *Acceleration, tiltAngles *TiltAngles, temperature iim42652.Temperature, orientation Orientation) error
 
 type OrientedAccelerationFeed struct {
 	orientationCounter OrientationCounter
@@ -54,7 +55,7 @@ var lastOrientation = OrientationUnset
 var lastKnownOrientation = OrientationUnset
 var first = true
 
-func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles) error {
+func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration *Acceleration, tiltAngles *TiltAngles, temperature iim42652.Temperature) error {
 	//todo: stop lock for orientation when confident
 	if first {
 		first = false
@@ -70,12 +71,12 @@ func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration 
 	}
 
 	if f.orientationCounter.Orientation() != OrientationUnset {
-		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Temperature, acceleration.Time)
+		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)
 		a = FixAccelerationOrientation(a, f.orientationCounter.Orientation())
 		t := FixTiltOrientation(tiltAngles, f.orientationCounter.Orientation())
 
 		for _, handler := range f.handlers {
-			err := handler(a, t, f.orientationCounter.Orientation())
+			err := handler(a, t, temperature, f.orientationCounter.Orientation())
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)
 			}

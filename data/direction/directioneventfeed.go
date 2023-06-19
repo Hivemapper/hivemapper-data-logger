@@ -2,6 +2,7 @@ package direction
 
 import (
 	"fmt"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	"github.com/rosshemsley/kalman"
 	"github.com/rosshemsley/kalman/models"
@@ -141,8 +142,7 @@ func (f *FilteredAcceleration) Update(acceleration *imu.Acceleration) (*imu.Acce
 	return f.Acceleration, nil
 }
 
-func (f *DirectionEventFeed) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation) error {
-
+func (f *DirectionEventFeed) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, _ iim42652.Temperature, orientation imu.Orientation) error {
 	if !f.filteredAcceleration.initialized {
 		f.filteredAcceleration.init(acceleration)
 	}

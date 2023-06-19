@@ -58,37 +58,37 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	}
 
 	go func() {
-		type grrr struct {
+		type Accumulator struct {
 			count           int
 			cumulatedParams []any
 			cumulatedFields string
 		}
-		queries := map[string]*grrr{}
+		queries := map[string]*Accumulator{}
 		for {
 			//start := time.Now()
 			log := <-s.logs
 			query, fields, params := log.InsertQuery()
 
-			g, found := queries[query]
+			accumulator, found := queries[query]
 			if !found {
-				g = &grrr{}
-				queries[query] = g
+				accumulator = &Accumulator{}
+				queries[query] = accumulator
 			}
-			g.count++
-			g.cumulatedFields += fields
-			g.cumulatedParams = append(g.cumulatedParams, params...)
+			accumulator.count++
+			accumulator.cumulatedFields += fields
+			accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 
-			if g.count < 100 {
+			if accumulator.count < 100 {
 				continue
 			}
 
-			g.cumulatedFields = g.cumulatedFields[0 : len(g.cumulatedFields)-1] //remove last comma
-			stmt, err := db.Prepare(query + g.cumulatedFields)
+			accumulator.cumulatedFields = accumulator.cumulatedFields[0 : len(accumulator.cumulatedFields)-1] //remove last comma
+			stmt, err := db.Prepare(query + accumulator.cumulatedFields)
 			if err != nil {
 				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
 			s.lock.Lock()
-			_, err = stmt.Exec(g.cumulatedParams...)
+			_, err = stmt.Exec(accumulator.cumulatedParams...)
 			s.lock.Unlock()
 			if err != nil {
 				panic(fmt.Errorf("inserting Data: %s", err.Error()))

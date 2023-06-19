@@ -3,6 +3,8 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 	"os"
 	"path"
 	"sync"
@@ -18,6 +20,50 @@ func NewDataWrapper(time time.Time, data any) *DataWrapper {
 	return &DataWrapper{
 		Time: time,
 		Data: data,
+	}
+}
+
+type Accel struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
+func NewAccel(x, y, z float64) *Accel {
+	return &Accel{
+		X: x,
+		Y: y,
+		Z: z,
+	}
+}
+
+type Gyro struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
+func NewGyro(x, y, z float64) *Gyro {
+	return &Gyro{
+		X: x,
+		Y: y,
+		Z: z,
+	}
+}
+
+type ImuDataWrapper struct {
+	Accel *Accel    `json:"accel"`
+	Gyro  *Gyro     `json:"gyro"`
+	Temp  float64   `json:"temp"`
+	Time  time.Time `json:"time"`
+}
+
+func NewImuDataWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) *ImuDataWrapper {
+	return &ImuDataWrapper{
+		Accel: NewAccel(acceleration.X, acceleration.Y, acceleration.Z),
+		Gyro:  NewGyro(angularRate.X, angularRate.Y, angularRate.Z),
+		Time:  acceleration.Time,
+		Temp:  *temperature,
 	}
 }
 
@@ -54,6 +100,8 @@ func (j *JsonFile) Init() error {
 			return fmt.Errorf("creating destination folder %s : %w", j.destFolder, err)
 		}
 	}
+
+	j.StartStoring()
 
 	return nil
 }

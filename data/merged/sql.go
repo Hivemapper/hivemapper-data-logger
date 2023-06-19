@@ -3,6 +3,7 @@ package merged
 import (
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 const MergedCreateTable string = `
@@ -73,14 +74,16 @@ type SqlWrapper struct {
 	gnssData     *neom9n.Data
 	acceleration *imu.Acceleration
 	tiltAngles   *imu.TiltAngles
+	temperature  iim42652.Temperature
 	orientation  imu.Orientation
 }
 
-func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation, gnssData *neom9n.Data) *SqlWrapper {
+func NewSqlWrapper(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, gnssData *neom9n.Data, temperature iim42652.Temperature, orientation imu.Orientation) *SqlWrapper {
 	return &SqlWrapper{
 		acceleration: acceleration,
 		tiltAngles:   tiltAngles,
 		orientation:  orientation,
+		temperature:  temperature,
 		gnssData:     gnssData,
 	}
 }
@@ -95,7 +98,7 @@ func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 		w.tiltAngles.Y,
 		w.acceleration.Z,
 		w.tiltAngles.Z,
-		w.acceleration.Temperature,
+		*w.temperature,
 		w.orientation,
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"), //FIXME: remove the format only there for python a marde
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),  //FIXME: remove the format only there for python a marde

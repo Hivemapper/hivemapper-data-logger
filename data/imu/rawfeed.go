@@ -19,7 +19,7 @@ func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 	}
 }
 
-type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate) error
+type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error
 
 func (f *RawFeed) Run() error {
 	fmt.Println("Run imu raw feed")
@@ -29,10 +29,12 @@ func (f *RawFeed) Run() error {
 		if err != nil {
 			return fmt.Errorf("getting acceleration: %w", err)
 		}
+
 		angularRate, err := f.imu.GetGyroscopeData()
 		if err != nil {
 			return fmt.Errorf("getting angular rate: %w", err)
 		}
+
 		temperature, err := f.imu.GetTemperature()
 		if err != nil {
 			return fmt.Errorf("getting temperature: %w", err)
@@ -40,8 +42,9 @@ func (f *RawFeed) Run() error {
 
 		for _, handler := range f.handlers {
 			err := handler(
-				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, *temperature, time.Now()),
+				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, time.Now()),
 				angularRate,
+				temperature,
 			)
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)

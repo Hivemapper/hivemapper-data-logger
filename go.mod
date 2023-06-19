@@ -16,9 +16,9 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/streamingfast/gnss-controller v0.1.20-0.20230619120854-6d530f144662
-	github.com/streamingfast/imu-controller v0.0.0-20230619141929-abe7cd0a2e17
+	github.com/streamingfast/imu-controller v0.0.0-20230619184722-46c29558d612
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/net v0.5.0
 	google.golang.org/protobuf v1.30.0
 	modernc.org/sqlite v1.22.1
 )
@@ -35,11 +35,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/streamingfast/shutter v1.5.0 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
-	golang.org/x/mod v0.3.0 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	gonum.org/v1/gonum v0.0.0-20190606121551-14af50e936aa // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect

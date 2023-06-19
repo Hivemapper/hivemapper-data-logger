@@ -3,6 +3,7 @@ package merged
 import (
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 const ImuRawCreateTable string = `
@@ -67,12 +68,14 @@ func ImuRawPurgeQuery() string {
 
 type ImuRawSqlWrapper struct {
 	acceleration *imu.Acceleration
+	temperature  iim42652.Temperature
 	gnssData     *neom9n.Data
 }
 
-func NewImuRawSqlWrapper(acceleration *imu.Acceleration, gnssData *neom9n.Data) *ImuRawSqlWrapper {
+func NewImuRawSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, gnssData *neom9n.Data) *ImuRawSqlWrapper {
 	return &ImuRawSqlWrapper{
 		acceleration: acceleration,
+		temperature:  temperature,
 		gnssData:     gnssData,
 	}
 }
@@ -83,7 +86,7 @@ func (w *ImuRawSqlWrapper) InsertQuery() (string, string, []any) {
 		w.acceleration.Y, //this is not a mistake
 		w.acceleration.Z, //this is not a mistake
 		w.acceleration.X, //this is not a mistake
-		w.acceleration.Temperature,
+		*w.temperature,
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Fix,

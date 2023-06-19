@@ -53,7 +53,7 @@ func (s *SqlImporterFeed) Run() {
 		err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
 			id := 0
 			t := time.Time{}
-			temperature := new(float64)
+			temperature := iim42652.NewTemperature(0.0)
 			acceleration := &iim42652.Acceleration{}
 			gnssData := &neom9n.Data{
 				SystemTime: time.Time{},
@@ -113,8 +113,8 @@ func (s *SqlImporterFeed) Run() {
 				y := acceleration.CamY()
 				z := acceleration.CamZ()
 				m := math.Sqrt(x*x + y*y + z*z)
-				a := imu.NewAcceleration(x, y, z, m, *temperature, t)
-				err := handler(a, ar)
+				a := imu.NewAcceleration(x, y, z, m, t)
+				err := handler(a, ar, temperature)
 				if err != nil {
 					return fmt.Errorf("failed to handle imu raw feed: %w", err)
 				}
@@ -136,8 +136,8 @@ func (s *SqlImporterFeed) Run() {
 			panic(fmt.Errorf("failed to query database: %w", err))
 		}
 	}
-	fmt.Println("Finished sql feed")
 
+	fmt.Println("Finished sql feed")
 }
 
 func query(offset int) string {
@@ -182,7 +182,7 @@ func query(offset int) string {
 			   gnss_rf_ofs_i,
 			   gnss_rf_mag_i,
 			   gnss_rf_ofs_q
-		from imu_raw order by id asc limit %d offset %d;
+		from imu_raw order by id limit %d offset %d;
 		`, LIMIT, offset,
 	)
 }

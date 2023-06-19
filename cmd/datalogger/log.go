@@ -30,6 +30,8 @@ var LogCmd = &cobra.Command{
 func init() {
 	// Imu
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
+	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
+	LogCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
 
 	// Gnss
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
@@ -80,6 +82,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetDuration(cmd, "db-log-ttl"),
 		mustGetString(cmd, "gnss-json-destination-folder"),
 		mustGetDuration(cmd, "gnss-json-save-interval"),
+		mustGetString(cmd, "imu-json-destination-folder"),
+		mustGetDuration(cmd, "imu-json-save-interval"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
@@ -140,7 +144,7 @@ type DataHandler struct {
 	gnssData       *neom9n.Data
 }
 
-func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder string, gnssSaveInterval time.Duration) (*DataHandler, error) {
+func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder string, gnssSaveInterval time.Duration, imuJsonDestFolder string, imuSaveInterval time.Duration) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, merged.ImuRawCreateTableQuery, direction.CreateTableQuery},
@@ -156,15 +160,22 @@ func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder st
 		return nil, fmt.Errorf("initializing gnss json logger: %w", err)
 	}
 
+	imuJsonLogger := logger.NewJsonFile(imuJsonDestFolder, imuSaveInterval)
+	err = imuJsonLogger.Init()
+	if err != nil {
+		return nil, fmt.Errorf("initializing imu json logger: %w", err)
+	}
+
 	return &DataHandler{
 		sqliteLogger:   sqliteLogger,
 		gnssJsonLogger: gnssJsonLogger,
+		imuJsonLogger:  imuJsonLogger,
 	}, err
 }
 
-func (h *DataHandler) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, orientation imu.Orientation) error {
+func (h *DataHandler) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, temperature iim42652.Temperature, orientation imu.Orientation) error {
 	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, orientation, gnssData))
+	err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, gnssData, temperature, orientation))
 	if err != nil {
 		return fmt.Errorf("logging merged data to sqlite: %w", err)
 	}
@@ -180,11 +191,16 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	return nil
 }
 
-func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) error {
+func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(acceleration, gnssData))
+	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData))
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
+	}
+	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
+	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
+	if err != nil {
+		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
 	return nil
 }
@@ -206,6 +222,5 @@ func mustGnssEvent(e *neom9n.Data) *neom9n.Data {
 			Satellites: &neom9n.Satellites{},
 		}
 	}
-
 	return e
 }

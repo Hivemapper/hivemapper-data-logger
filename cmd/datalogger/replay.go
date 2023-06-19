@@ -27,16 +27,18 @@ var ReplayCmd = &cobra.Command{
 func init() {
 	//IMU
 	ReplayCmd.Flags().String("imu-config-file", "imu-logger.json", "imu logger config file")
+	ReplayCmd.Flags().String("imu-json-destination-folder", "imu", "json destination folder")
+	ReplayCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
 
 	//GNSS
-	ReplayCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
+	ReplayCmd.Flags().String("gnss-json-destination-folder", "gps", "json destination folder")
 	ReplayCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
 
 	//DB
-	ReplayCmd.Flags().String("db-import-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
-	ReplayCmd.Flags().String("db-output-path", "/mnt/data/output.db", "path to sqliteLogger database")
+	ReplayCmd.Flags().String("db-import-path", "gnss.v1.1.0.db", "path to sqliteLogger database")
+	ReplayCmd.Flags().String("db-output-path", "output.db", "path to sqliteLogger database")
 	ReplayCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
-	ReplayCmd.Flags().BoolP("clean", "c", false, "purges output db where db-output-path is located before running rerun command")
+	ReplayCmd.Flags().BoolP("clean", "c", false, "purges output db where db-output-path is located before running replay command")
 
 	RootCmd.AddCommand(ReplayCmd)
 }
@@ -71,6 +73,8 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		mustGetDuration(cmd, "db-log-ttl"),
 		mustGetString(cmd, "gnss-json-destination-folder"),
 		mustGetDuration(cmd, "gnss-json-save-interval"),
+		mustGetString(cmd, "imu-json-destination-folder"),
+		mustGetDuration(cmd, "imu-json-save-interval"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
