@@ -34,11 +34,12 @@ type Data struct {
 	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
 	RF                 *RF         `json:"rf,omitempty"`
-	startTime          time.Time
-	SpeedAccuracy      float64
-	HeadingAccuracy    float64
-	HorizontalAccuracy float64
-	VerticalAccuracy   float64
+	SpeedAccuracy      float64     `json:"speed_accuracy"`
+	HeadingAccuracy    float64     `json:"heading_accuracy"`
+	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
+	VerticalAccuracy   float64     `json:"vertical_accuracy"`
+
+	startTime time.Time
 }
 
 func (d *Data) GetStartTime() time.Time {
