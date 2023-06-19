@@ -2,7 +2,15 @@ package iim42652
 
 import "fmt"
 
-func (i *IIM42652) GetTemperature() (*float64, error) {
+type Temperature *float64
+
+func NewTemperature(t float64) Temperature {
+	temp := new(float64)
+	*temp = t
+	return temp
+}
+
+func (i *IIM42652) GetTemperature() (Temperature, error) {
 	i.registerLock.Lock()
 	defer i.registerLock.Unlock()
 

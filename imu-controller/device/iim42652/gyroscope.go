@@ -2,7 +2,6 @@ package iim42652
 
 import (
 	"fmt"
-	"math"
 )
 
 type GyroScale float64
@@ -27,22 +26,19 @@ type AngularRate struct {
 	Z    float64
 }
 
-func (r *AngularRate) String() string {
-	return fmt.Sprintf("AngularRate: camX:%.5f, camY:%.5f, camZ: %.5f", r.CamX(), r.CamY(), r.CamZ())
-}
 func NewGyroscope(x, y, z int16, gyroScale GyroScale) *AngularRate {
-	r := func(v float64) float64 {
-		return math.Round(v*10) / 10
-	}
-
 	return &AngularRate{
 		RawX: x,
 		RawY: y,
 		RawZ: z,
-		X:    r(float64(x) * float64(gyroScale)),
-		Y:    r(float64(y) * float64(gyroScale)),
-		Z:    r(float64(z) * float64(gyroScale)),
+		X:    float64(x) * float64(gyroScale),
+		Y:    float64(y) * float64(gyroScale),
+		Z:    float64(z) * float64(gyroScale),
 	}
+}
+
+func (a *AngularRate) String() string {
+	return fmt.Sprintf("AngularRate: camX:%.5f, camY:%.5f, camZ: %.5f", a.CamX(), a.CamY(), a.CamZ())
 }
 
 func (a *AngularRate) CamX() float64 {
