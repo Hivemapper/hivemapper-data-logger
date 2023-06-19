@@ -45,11 +45,16 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	dbOutputPath := mustGetString(cmd, "db-output-path")
 	clean := mustGetBool(cmd, "clean")
 	if clean {
-		err := os.Remove(dbOutputPath)
-		if err != nil {
-			return fmt.Errorf("failed to remove %s: %w", dbOutputPath, err)
+		_, err := os.Stat(dbOutputPath)
+		if os.IsNotExist(err) {
+			fmt.Println("No output db found, nothing to clean")
+		} else {
+			err := os.Remove(dbOutputPath)
+			if err != nil {
+				return fmt.Errorf("failed to remove %s: %w", dbOutputPath, err)
+			}
+			fmt.Printf("Removed %s\n", dbOutputPath)
 		}
-		fmt.Printf("Removed %s\n", dbOutputPath)
 	}
 
 	sqliteImporter := logger.NewSqlite(mustGetString(cmd, "db-import-path"), nil, nil)

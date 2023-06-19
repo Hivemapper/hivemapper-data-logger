@@ -53,6 +53,7 @@ func (s *SqlImporterFeed) Run() {
 		err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
 			id := 0
 			t := time.Time{}
+			temperature := new(float64)
 			acceleration := &iim42652.Acceleration{}
 			gnssData := &neom9n.Data{
 				SystemTime: time.Time{},
@@ -67,6 +68,7 @@ func (s *SqlImporterFeed) Run() {
 				&acceleration.X,
 				&acceleration.Y,
 				&acceleration.Z,
+				&temperature,
 				&gnssData.SystemTime,
 				&gnssData.Timestamp,
 				&gnssData.Fix,
@@ -111,7 +113,7 @@ func (s *SqlImporterFeed) Run() {
 				y := acceleration.CamY()
 				z := acceleration.CamZ()
 				m := math.Sqrt(x*x + y*y + z*z)
-				a := imu.NewAcceleration(x, y, z, m, 0.0, t) // TODO: Do we want to store the temperature?
+				a := imu.NewAcceleration(x, y, z, m, *temperature, t)
 				err := handler(a, ar)
 				if err != nil {
 					return fmt.Errorf("failed to handle imu raw feed: %w", err)
@@ -146,6 +148,7 @@ func query(offset int) string {
 			   imu_acc_x,
 			   imu_acc_y,
 			   imu_acc_z,
+			   imu_temperature,
 			   gnss_system_time,
 			   gnss_time,
 			   gnss_fix,
