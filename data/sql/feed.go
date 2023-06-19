@@ -111,7 +111,7 @@ func (s *SqlImporterFeed) Run() {
 				y := acceleration.CamY()
 				z := acceleration.CamZ()
 				m := math.Sqrt(x*x + y*y + z*z)
-				a := imu.NewAcceleration(x, y, z, m, t)
+				a := imu.NewAcceleration(x, y, z, m, 0.0, t) // TODO: Do we want to store the temperature?
 				err := handler(a, ar)
 				if err != nil {
 					return fmt.Errorf("failed to handle imu raw feed: %w", err)
@@ -141,7 +141,7 @@ func (s *SqlImporterFeed) Run() {
 func query(offset int) string {
 	return fmt.Sprintf(`
 		select 
-				id,
+			   id,
                imu_time,
 			   imu_acc_x,
 			   imu_acc_y,

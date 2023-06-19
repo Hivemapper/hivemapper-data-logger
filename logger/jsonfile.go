@@ -7,25 +7,29 @@ import (
 	"path"
 	"sync"
 	"time"
-
-	"github.com/streamingfast/hivemapper-data-logger/data"
 )
 
-type FileInfo struct {
-	path             string
-	size             int64
-	modificationTime time.Time
+type DataWrapper struct {
+	Time time.Time `json:"time"`
+	Data any       `json:"Data"`
+}
+
+func NewDataWrapper(time time.Time, data any) *DataWrapper {
+	return &DataWrapper{
+		Time: time,
+		Data: data,
+	}
 }
 
 type JsonFile struct {
-	datas        []data.Event
+	datas        []*DataWrapper
 	lock         sync.Mutex
 	destFolder   string
 	saveInterval time.Duration
 }
 
-func NewJsonFile(destFolder string, maxFolderSize int64, saveInterval time.Duration) *JsonFile {
-	fmt.Println("creating json file logger:", destFolder, "max folder size:", maxFolderSize, "save interval:", saveInterval.String())
+func NewJsonFile(destFolder string, saveInterval time.Duration) *JsonFile {
+	fmt.Println("creating json file logger:", destFolder, "save interval:", saveInterval.String())
 	return &JsonFile{
 		saveInterval: saveInterval,
 		destFolder:   destFolder,
@@ -59,7 +63,7 @@ func (j *JsonFile) StartStoring() {
 		for {
 			fmt.Println("saving to file with entry count:", len(j.datas))
 			if len(j.datas) > 0 {
-				err := j.toFile()
+				err := j.toFile(j.datas[0].Time)
 				if err != nil {
 					panic(fmt.Errorf("writing to file: %w", err))
 				}
@@ -70,10 +74,10 @@ func (j *JsonFile) StartStoring() {
 	}()
 }
 
-func (j *JsonFile) Log(data data.Event) error {
+func (j *JsonFile) Log(time time.Time, data any) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
-	j.datas = append(j.datas, data)
+	j.datas = append(j.datas, NewDataWrapper(time, data))
 	err := writeToFile(path.Join(j.destFolder, "latest.log"), data)
 	if err != nil {
 		return fmt.Errorf("writing latest file: %w", err)
@@ -81,14 +85,14 @@ func (j *JsonFile) Log(data data.Event) error {
 	return nil
 }
 
-func (j *JsonFile) toFile() error {
+func (j *JsonFile) toFile(time time.Time) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
 	if len(j.datas) == 0 {
 		return nil
 	}
 
-	fileName := fmt.Sprintf("%s.json", j.datas[0].GetTime().Format("2006-01-02T15:04:05.000Z"))
+	fileName := fmt.Sprintf("%s.json", time.Format("2006-01-02T15:04:05.000Z"))
 	filePath := path.Join(j.destFolder, fileName)
 
 	err := writeAllToFile(filePath, j.datas)
@@ -99,10 +103,10 @@ func (j *JsonFile) toFile() error {
 	return nil
 }
 
-func writeAllToFile(filePath string, data []data.Event) error {
-	jsonData, err := json.Marshal(data)
+func writeAllToFile(filePath string, dw []*DataWrapper) error {
+	jsonData, err := json.Marshal(dw)
 	if err != nil {
-		return fmt.Errorf("marshaling data: %w", err)
+		return fmt.Errorf("marshaling Data: %w", err)
 	}
 	err = os.WriteFile(filePath, jsonData, os.ModePerm)
 	if err != nil {
@@ -111,10 +115,11 @@ func writeAllToFile(filePath string, data []data.Event) error {
 
 	return nil
 }
+
 func writeToFile(filePath string, data any) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("marshaling data: %w", err)
+		return fmt.Errorf("marshaling Data: %w", err)
 	}
 	err = os.WriteFile(filePath, jsonData, os.ModePerm)
 	if err != nil {

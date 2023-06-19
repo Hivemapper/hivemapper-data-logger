@@ -16,6 +16,7 @@ const MergedCreateTable string = `
 		imu_tilt_angle_y REAL NOT NULL,
 		imu_acc_z REAL NOT NULL,
 		imu_tilt_angle_z REAL NOT NULL,
+		imu_temperature REAL NOT NULL,
 		cam_orientation TEXT NOT NULL,
 		gnss_system_time TIMESTAMP NOT NULL,
 		gnss_time TIMESTAMP NOT NULL,
@@ -54,7 +55,7 @@ const MergedCreateTable string = `
 `
 
 const insertMergedQuery string = `INSERT INTO merged VALUES `
-const insertMergedFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertMergedFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const purgeQuery string = `
 	DELETE FROM merged WHERE imu_time < ?;
@@ -94,6 +95,7 @@ func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 		w.tiltAngles.Y,
 		w.acceleration.Z,
 		w.tiltAngles.Z,
+		w.acceleration.Temperature,
 		w.orientation,
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"), //FIXME: remove the format only there for python a marde
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),  //FIXME: remove the format only there for python a marde

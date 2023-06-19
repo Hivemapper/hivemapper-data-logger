@@ -70,7 +70,7 @@ func (f *OrientedAccelerationFeed) HandleTiltCorrectedAcceleration(acceleration 
 	}
 
 	if f.orientationCounter.Orientation() != OrientationUnset {
-		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Time)
+		a := NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.Magnitude, acceleration.Temperature, acceleration.Time)
 		a = FixAccelerationOrientation(a, f.orientationCounter.Orientation())
 		t := FixTiltOrientation(tiltAngles, f.orientationCounter.Orientation())
 

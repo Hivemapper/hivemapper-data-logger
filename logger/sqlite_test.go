@@ -6,7 +6,7 @@ package logger
 //	_ = os.Remove(dbPath)
 //
 //	sqliteLogger := NewSqlite(dbPath)
-//	err := sqliteLogger.Init(0, &data.Subscription{})
+//	err := sqliteLogger.Init(0, &Data.Subscription{})
 //	require.NoError(t, err)
 //
 //	sqliteLogger.StartStoring()

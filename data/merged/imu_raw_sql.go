@@ -12,6 +12,7 @@ const ImuRawCreateTable string = `
 		imu_acc_x REAL NOT NULL,
 		imu_acc_y REAL NOT NULL,
 		imu_acc_z REAL NOT NULL,
+		imu_temperature REAL NOT NULL,
 		gnss_system_time TIMESTAMP NOT NULL,
 		gnss_time TIMESTAMP NOT NULL,
 		gnss_fix TEXT NOT NULL,
@@ -50,7 +51,7 @@ const ImuRawCreateTable string = `
 
 const insertRawQuery string = `INSERT INTO imu_raw VALUES`
 
-const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const imuRawPurgeQuery string = `
 	DELETE FROM imu_raw WHERE imu_time < ?;
@@ -82,6 +83,7 @@ func (w *ImuRawSqlWrapper) InsertQuery() (string, string, []any) {
 		w.acceleration.Y, //this is not a mistake
 		w.acceleration.Z, //this is not a mistake
 		w.acceleration.X, //this is not a mistake
+		w.acceleration.Temperature,
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Fix,

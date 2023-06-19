@@ -25,9 +25,15 @@ This project is used for the dashcams, so you need to build for a specific archi
 GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
 ```
 
+## Pre-run on the camera
+Before running the logger on the camera you need to stop all processes running on the camera
+```bash
+/opt/dashcam/bin/stop_all.sh
+```
+
 ## Run on the camera
 ```bash
-./datalogger wip --db-output-path=/path/to/output.db
+./datalogger log --db-output-path=/path/to/output.db
 # db-output-path is the location to where we want the imu and gnss events to be saved
 ```
 

@@ -28,6 +28,10 @@ func init() {
 	//IMU
 	ReplayCmd.Flags().String("imu-config-file", "imu-logger.json", "imu logger config file")
 
+	//GNSS
+	ReplayCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
+	ReplayCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
+
 	//DB
 	ReplayCmd.Flags().String("db-import-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	ReplayCmd.Flags().String("db-output-path", "/mnt/data/output.db", "path to sqliteLogger database")
@@ -60,6 +64,8 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
 		mustGetDuration(cmd, "db-log-ttl"),
+		mustGetString(cmd, "gnss-json-destination-folder"),
+		mustGetDuration(cmd, "gnss-json-save-interval"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

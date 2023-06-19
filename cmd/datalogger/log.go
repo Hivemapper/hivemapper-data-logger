@@ -35,7 +35,6 @@ func init() {
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
 	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
 	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
-	LogCmd.Flags().Int64("gnss-json-destination-folder-max-size", int64(30000*1024), "json destination folder maximum size") // 30MB
 	LogCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 
@@ -49,7 +48,7 @@ func init() {
 	RootCmd.AddCommand(LogCmd)
 }
 
-func logRun(cmd *cobra.Command, args []string) error {
+func logRun(cmd *cobra.Command, _ []string) error {
 	imuDevice := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
 	err := imuDevice.Init()
 	if err != nil {
@@ -79,6 +78,8 @@ func logRun(cmd *cobra.Command, args []string) error {
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
 		mustGetDuration(cmd, "db-log-ttl"),
+		mustGetString(cmd, "gnss-json-destination-folder"),
+		mustGetDuration(cmd, "gnss-json-save-interval"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
@@ -97,7 +98,10 @@ func logRun(cmd *cobra.Command, args []string) error {
 	}()
 
 	gnssEventFeed := gnss.NewGnssFeed(
-		[]gnss.GnssDataHandler{dataHandler.HandlerGnssData, directionEventFeed.HandleGnssData},
+		[]gnss.GnssDataHandler{
+			dataHandler.HandlerGnssData,
+			directionEventFeed.HandleGnssData,
+		},
 		nil,
 	)
 	go func() {
@@ -130,11 +134,13 @@ func logRun(cmd *cobra.Command, args []string) error {
 }
 
 type DataHandler struct {
-	sqliteLogger *logger.Sqlite
-	gnssData     *neom9n.Data
+	sqliteLogger   *logger.Sqlite
+	gnssJsonLogger *logger.JsonFile
+	imuJsonLogger  *logger.JsonFile
+	gnssData       *neom9n.Data
 }
 
-func NewDataHandler(dbPath string, dbLogTTL time.Duration) (*DataHandler, error) {
+func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder string, gnssSaveInterval time.Duration) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, merged.ImuRawCreateTableQuery, direction.CreateTableQuery},
@@ -144,8 +150,15 @@ func NewDataHandler(dbPath string, dbLogTTL time.Duration) (*DataHandler, error)
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 
+	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
+	err = gnssJsonLogger.Init()
+	if err != nil {
+		return nil, fmt.Errorf("initializing gnss json logger: %w", err)
+	}
+
 	return &DataHandler{
-		sqliteLogger: sqliteLogger,
+		sqliteLogger:   sqliteLogger,
+		gnssJsonLogger: gnssJsonLogger,
 	}, err
 }
 
@@ -155,12 +168,15 @@ func (h *DataHandler) HandleOrientedAcceleration(acceleration *imu.Acceleration,
 	if err != nil {
 		return fmt.Errorf("logging merged data to sqlite: %w", err)
 	}
-
 	return nil
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	h.gnssData = data
+	err := h.gnssJsonLogger.Log(data.Timestamp, data)
+	if err != nil {
+		return fmt.Errorf("logging gnss data to json: %w", err)
+	}
 	return nil
 }
 

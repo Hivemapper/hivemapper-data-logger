@@ -30,10 +30,17 @@ func (f *RawFeed) Run() error {
 			return fmt.Errorf("getting acceleration: %w", err)
 		}
 		angularRate, err := f.imu.GetGyroscopeData()
+		if err != nil {
+			return fmt.Errorf("getting angular rate: %w", err)
+		}
+		temperature, err := f.imu.GetTemperature()
+		if err != nil {
+			return fmt.Errorf("getting temperature: %w", err)
+		}
 
 		for _, handler := range f.handlers {
 			err := handler(
-				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, time.Now()),
+				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, *temperature, time.Now()),
 				angularRate,
 			)
 			if err != nil {

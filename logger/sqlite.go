@@ -85,16 +85,16 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			g.cumulatedFields = g.cumulatedFields[0 : len(g.cumulatedFields)-1] //remove last comma
 			stmt, err := db.Prepare(query + g.cumulatedFields)
 			if err != nil {
-				panic(fmt.Errorf("preparing statement for inserting data: %w", err))
+				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
 			s.lock.Lock()
 			_, err = stmt.Exec(g.cumulatedParams...)
 			s.lock.Unlock()
 			if err != nil {
-				panic(fmt.Errorf("inserting data: %s", err.Error()))
+				panic(fmt.Errorf("inserting Data: %s", err.Error()))
 			}
 			delete(queries, query)
-			//fmt.Println("inserted data in:", time.Since(start), len(s.logs), cap(s.logs))
+			//fmt.Println("inserted Data in:", time.Since(start), len(s.logs), cap(s.logs))
 		}
 	}()
 
@@ -125,9 +125,7 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 }
 
 func (s *Sqlite) Log(data Sqlable) error {
-
 	s.logs <- data
-
 	return nil
 }
 

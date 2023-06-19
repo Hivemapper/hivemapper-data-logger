@@ -31,20 +31,22 @@ func NewTiltAngles(x, y, z float64) *TiltAngles {
 }
 
 type Acceleration struct {
-	X         float64
-	Y         float64
-	Z         float64
-	Magnitude float64
-	Time      time.Time
+	X           float64
+	Y           float64
+	Z           float64
+	Magnitude   float64
+	Temperature float64
+	Time        time.Time
 }
 
-func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {
+func NewAcceleration(x, y, z, m, temperature float64, time time.Time) *Acceleration {
 	return &Acceleration{
-		X:         x,
-		Y:         y,
-		Z:         z,
-		Magnitude: m,
-		Time:      time,
+		X:           x,
+		Y:           y,
+		Z:           z,
+		Magnitude:   m,
+		Temperature: temperature,
+		Time:        time,
 	}
 }
 
@@ -57,7 +59,9 @@ func FixAccelerationOrientation(acceleration *Acceleration, orientation Orientat
 		fixX(acceleration, orientation),
 		fixY(acceleration, orientation),
 		acceleration.Z,
-		acceleration.Magnitude, acceleration.Time)
+		acceleration.Magnitude,
+		acceleration.Temperature,
+		acceleration.Time)
 }
 
 func FixTiltOrientation(tilt *TiltAngles, orientation Orientation) *TiltAngles {
