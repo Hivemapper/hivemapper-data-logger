@@ -133,6 +133,7 @@ func (f *FilteredAcceleration) Update(acceleration *imu.Acceleration) (*imu.Acce
 	if err != nil {
 		return nil, fmt.Errorf("updating z filter: %w", err)
 	}
+
 	f.Acceleration.Time = acceleration.Time
 	f.Acceleration.X = f.xModel.Value(f.xFilter.State())
 	f.Acceleration.Y = f.yModel.Value(f.yFilter.State())
