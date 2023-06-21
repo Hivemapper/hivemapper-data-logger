@@ -125,8 +125,9 @@ func (j *JsonFile) StartStoring() {
 func (j *JsonFile) Log(time time.Time, data any) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
-	j.datas = append(j.datas, NewDataWrapper(time, data))
-	err := writeToFile(path.Join(j.destFolder, "latest.log"), data)
+	dw := NewDataWrapper(time, data)
+	j.datas = append(j.datas, dw)
+	err := writeToFile(path.Join(j.destFolder, "latest.log"), dw)
 	if err != nil {
 		return fmt.Errorf("writing latest file: %w", err)
 	}
@@ -152,7 +153,11 @@ func (j *JsonFile) toFile(time time.Time) error {
 }
 
 func writeAllToFile(filePath string, dw []*DataWrapper) error {
-	jsonData, err := json.Marshal(dw)
+	datas := make([]any, len(dw))
+	for _, data := range dw {
+		datas = append(datas, data.Data)
+	}
+	jsonData, err := json.Marshal(datas)
 	if err != nil {
 		return fmt.Errorf("marshaling Data: %w", err)
 	}
@@ -164,8 +169,8 @@ func writeAllToFile(filePath string, dw []*DataWrapper) error {
 	return nil
 }
 
-func writeToFile(filePath string, data any) error {
-	jsonData, err := json.Marshal(data)
+func writeToFile(filePath string, wrapper *DataWrapper) error {
+	jsonData, err := json.Marshal(wrapper.Data)
 	if err != nil {
 		return fmt.Errorf("marshaling Data: %w", err)
 	}
