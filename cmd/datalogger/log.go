@@ -37,12 +37,13 @@ func init() {
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
 	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
 	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
-	LogCmd.Flags().String("gnss-serial-config-name", "/dev/ttyAMA1", "Config serial location")
+	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 
 	// Sqlite database
 	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	LogCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
+	LogCmd.Flags().String("imu-dev-path", "/dev/spidev0.0", "Config serial location")
 
 	// Connect-go
 	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
@@ -51,7 +52,7 @@ func init() {
 }
 
 func logRun(cmd *cobra.Command, _ []string) error {
-	imuDevice := iim42652.NewSpi("/dev/spidev0.0", iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
+	imuDevice := iim42652.NewSpi(mustGetString(cmd, "imu-dev-path"), iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
 	err := imuDevice.Init()
 	if err != nil {
 		return fmt.Errorf("initializing IMU: %w", err)
@@ -65,7 +66,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	serialConfigName := mustGetString(cmd, "gnss-serial-config-name")
+	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
 	err = gnssDevice.Init(nil)

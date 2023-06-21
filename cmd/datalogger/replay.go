@@ -144,6 +144,8 @@ func (h *GeoJsonHandler) HandleGnss(data *neom9n.Data) error {
 		feature.SetProperty("horizontalAccuracy", data.HorizontalAccuracy)
 		feature.SetProperty("satellites", data.Satellites)
 		feature.SetProperty("eph", data.Eph)
+		feature.SetProperty("heading", data.Heading)
+		feature.SetProperty("headingAccuracy", data.HeadingAccuracy)
 
 		h.locationCollection.AddFeature(feature)
 	}
