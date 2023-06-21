@@ -74,8 +74,12 @@ func (d *Data) Clone() Data {
 			Seen: d.Satellites.Seen,
 			Used: d.Satellites.Used,
 		},
-		Sep: d.Sep,
-		Eph: d.Eph,
+		Sep:                d.Sep,
+		Eph:                d.Eph,
+		SpeedAccuracy:      d.SpeedAccuracy,
+		HeadingAccuracy:    d.HeadingAccuracy,
+		HorizontalAccuracy: d.HorizontalAccuracy,
+		VerticalAccuracy:   d.VerticalAccuracy,
 	}
 
 	if d.RF != nil {
@@ -208,7 +212,8 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Dop.YDop = float64(m.NDOP) * 0.01
 
 		// we receive NavDop at the end so we handleData here
-		df.HandleData(data)
+		clone := data.Clone()
+		df.HandleData(&clone)
 	case *ubx.NavSat:
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
