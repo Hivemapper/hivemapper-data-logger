@@ -13,7 +13,7 @@ import (
 
 type DataWrapper struct {
 	Time time.Time `json:"time"`
-	Data any       `json:"Data"`
+	Data any       `json:"data"`
 }
 
 func NewDataWrapper(time time.Time, data any) *DataWrapper {
