@@ -29,7 +29,7 @@ func NewSqlImporterFeed(sqlite *logger.Sqlite, imuRawFeedHandlers []imu.RawFeedH
 	}
 }
 
-func (s *SqlImporterFeed) Run() {
+func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Starting sql feed")
 
 	numOfRows := 0
@@ -40,9 +40,10 @@ func (s *SqlImporterFeed) Run() {
 		}
 		return nil
 	}, nil)
+
 	fmt.Printf("found rows %d\n", numOfRows)
 	if err != nil {
-		panic(fmt.Errorf("failed to fetch number of rows in table merged: %w", err))
+		return fmt.Errorf("failed to fetch number of rows in table merged: %w", err)
 	}
 
 	numOfIterations := int(math.Floor(float64(numOfRows/LIMIT)) + 1)
@@ -109,9 +110,9 @@ func (s *SqlImporterFeed) Run() {
 
 			ar := &iim42652.AngularRate{}
 			for _, handler := range s.imuRawFeedHandlers {
-				x := acceleration.CamX()
-				y := acceleration.CamY()
-				z := acceleration.CamZ()
+				x := axisMap.X(acceleration)
+				y := axisMap.Y(acceleration)
+				z := axisMap.Z(acceleration)
 				m := math.Sqrt(x*x + y*y + z*z)
 				a := imu.NewAcceleration(x, y, z, m, t)
 				err := handler(a, ar, temperature)
@@ -133,11 +134,12 @@ func (s *SqlImporterFeed) Run() {
 		}, nil)
 
 		if err != nil {
-			panic(fmt.Errorf("failed to query database: %w", err))
+			return fmt.Errorf("failed to query database: %w", err)
 		}
 	}
 
 	fmt.Println("Finished sql feed")
+	return nil
 }
 
 func query(offset int) string {

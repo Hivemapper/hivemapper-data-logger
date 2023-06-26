@@ -21,7 +21,7 @@ func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 
 type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error
 
-func (f *RawFeed) Run() error {
+func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
 	for {
 		time.Sleep(10 * time.Millisecond)
@@ -42,7 +42,7 @@ func (f *RawFeed) Run() error {
 
 		for _, handler := range f.handlers {
 			err := handler(
-				NewAcceleration(acceleration.CamX(), acceleration.CamY(), acceleration.CamZ(), acceleration.TotalMagnitude, time.Now()),
+				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now()),
 				angularRate,
 				temperature,
 			)
