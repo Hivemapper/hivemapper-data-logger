@@ -227,7 +227,6 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	fmt.Println("raw imu data - acceleration", acceleration)
 	gnssData := mustGnssEvent(h.gnssData)
 	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData))
 	if err != nil {
