@@ -22,10 +22,10 @@ type Event interface {
 }
 
 type BaseEvent struct {
-	Time     time.Time `json:"time"`
-	Name     string    `json:"name"`
-	Category string    `json:"category"`
-	gnssData *neom9n.Data
+	Time     time.Time    `json:"time"`
+	Name     string       `json:"name"`
+	Category string       `json:"category"`
+	GnssData *neom9n.Data `json:"gnss_data"`
 }
 
 func NewBaseEvent(name string, category string, time time.Time, gnssData *neom9n.Data) *BaseEvent {
@@ -33,7 +33,7 @@ func NewBaseEvent(name string, category string, time time.Time, gnssData *neom9n
 		Name:     name,
 		Category: category,
 		Time:     time,
-		gnssData: gnssData,
+		GnssData: gnssData,
 	}
 }
 
@@ -54,27 +54,9 @@ func (e *BaseEvent) GetName() string {
 }
 
 func (e *BaseEvent) GetGnssData() *neom9n.Data {
-	return e.gnssData
+	return e.GnssData
 }
 
 func (e *BaseEvent) GetCategory() string {
 	return e.Category
-}
-
-type Angles struct {
-	xAngle float64
-	yAngle float64
-	zAngle float64
-}
-
-func NewAngles(x, y, z float64) *Angles {
-	return &Angles{
-		xAngle: x,
-		yAngle: y,
-		zAngle: z,
-	}
-}
-
-func (a *Angles) String() string {
-	return fmt.Sprintf("xAngle: %.10f yAngle: %.10f zAngle: %.10f", round(a.xAngle), round(a.yAngle), round(a.zAngle))
 }

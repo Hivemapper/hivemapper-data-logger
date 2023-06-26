@@ -128,6 +128,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		[]gnss.GnssDataHandler{
 			dataHandler.HandlerGnssData,
 			directionEventFeed.HandleGnssData,
+			eventServer.HandleGnssData,
 		},
 		nil,
 	)

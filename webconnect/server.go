@@ -58,8 +58,13 @@ func (s *EventsServer) HandleOrientedAcceleration(corrected *imu.Acceleration, t
 	panic("implement me")
 }
 
-func (s *EventsServer) HandlerGnssData(data *neom9n.Data) error {
-	panic("implement me")
+func (s *EventsServer) HandleGnssData(gnssData *neom9n.Data) error {
+	event := data.NewBaseEvent("GNSS_EVENT", "GNSS", time.Now(), gnssData)
+	err := s.SendEvent(event)
+	if err != nil {
+		return fmt.Errorf("sending event %w", err)
+	}
+	return nil
 }
 
 func (s *EventsServer) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) error {
