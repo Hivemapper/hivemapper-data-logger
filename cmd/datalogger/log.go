@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -32,6 +34,8 @@ func init() {
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
 	LogCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
+	LogCmd.Flags().String("imu-axis-map", "CamX:Z,CamY:X,CamZ:Y", "axis mapping of camera x,y,z values to real world x,y,z values. Default value is HDC mappings")
+	LogCmd.Flags().String("imu-inverted", "X:false,Y:false,Z:false", "axis inverted mapping of x,y,z values")
 
 	// Gnss
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
@@ -52,8 +56,26 @@ func init() {
 }
 
 func logRun(cmd *cobra.Command, _ []string) error {
-	imuDevice := iim42652.NewSpi(mustGetString(cmd, "imu-dev-path"), iim42652.AccelerationSensitivityG16, iim42652.GyroScalesG2000, true)
-	err := imuDevice.Init()
+	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
+	if err != nil {
+		return fmt.Errorf("parsing axis map: %w", err)
+	}
+
+	invX, invY, invZ, err := parseInvertedMappings(mustGetString(cmd, "imu-inverted"))
+	if err != nil {
+		return fmt.Errorf("parsing inverted mappings: %w", err)
+	}
+
+	axisMap.SetInvertedAxes(invX, invY, invZ)
+
+	imuDevice := iim42652.NewSpi(
+		mustGetString(cmd, "imu-dev-path"),
+		iim42652.AccelerationSensitivityG16,
+		iim42652.GyroScalesG2000,
+		true,
+	)
+
+	err = imuDevice.Init()
 	if err != nil {
 		return fmt.Errorf("initializing IMU: %w", err)
 	}
@@ -96,7 +118,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	rawImuEventFeed := imu.NewRawFeed(imuDevice, tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed)
 	go func() {
-		err := rawImuEventFeed.Run()
+		err := rawImuEventFeed.Run(axisMap)
 		if err != nil {
 			panic(fmt.Errorf("running raw imu event feed: %w", err))
 		}
@@ -145,7 +167,14 @@ type DataHandler struct {
 	gnssData       *neom9n.Data
 }
 
-func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder string, gnssSaveInterval time.Duration, imuJsonDestFolder string, imuSaveInterval time.Duration) (*DataHandler, error) {
+func NewDataHandler(
+	dbPath string,
+	dbLogTTL time.Duration,
+	gnssJsonDestFolder string,
+	gnssSaveInterval time.Duration,
+	imuJsonDestFolder string,
+	imuSaveInterval time.Duration,
+) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, merged.ImuRawCreateTableQuery, direction.CreateTableQuery},
@@ -174,7 +203,12 @@ func NewDataHandler(dbPath string, dbLogTTL time.Duration, gnssJsonDestFolder st
 	}, err
 }
 
-func (h *DataHandler) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, temperature iim42652.Temperature, orientation imu.Orientation) error {
+func (h *DataHandler) HandleOrientedAcceleration(
+	acceleration *imu.Acceleration,
+	tiltAngles *imu.TiltAngles,
+	temperature iim42652.Temperature,
+	orientation imu.Orientation,
+) error {
 	gnssData := mustGnssEvent(h.gnssData)
 	err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, gnssData, temperature, orientation))
 	if err != nil {
@@ -193,6 +227,7 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
+	fmt.Println("raw imu data - acceleration", acceleration)
 	gnssData := mustGnssEvent(h.gnssData)
 	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData))
 	if err != nil {
@@ -224,4 +259,86 @@ func mustGnssEvent(e *neom9n.Data) *neom9n.Data {
 		}
 	}
 	return e
+}
+
+func parseAxisMap(axisMapping string) (*iim42652.AxisMap, error) {
+	if !strings.Contains(axisMapping, ",") {
+		return nil, fmt.Errorf("axis mapping must contain ','")
+	}
+
+	if !strings.Contains(axisMapping, ":") {
+		return nil, fmt.Errorf("axis mapping must contain ':'")
+	}
+
+	axes := strings.Split(axisMapping, ",")
+	if len(axes) != 3 {
+		return nil, fmt.Errorf("axis mapping must contain 3 axes")
+	}
+
+	xAxis := axes[0]
+	if len(strings.Split(xAxis, ":")) != 2 {
+		return nil, fmt.Errorf("x axis mapping must contain 2 parts separated by ':'")
+	}
+
+	yAxis := axes[1]
+	if len(strings.Split(yAxis, ":")) != 2 {
+		return nil, fmt.Errorf("y axis mapping must contain 2 parts separated by ':'")
+	}
+	zAxis := axes[2]
+	if len(strings.Split(zAxis, ":")) != 2 {
+		return nil, fmt.Errorf("z axis mapping must contain 2 parts separated by ':'")
+	}
+
+	return iim42652.NewAxisMap(
+		strings.Split(xAxis, ":")[1],
+		strings.Split(yAxis, ":")[1],
+		strings.Split(zAxis, ":")[1],
+	), nil
+}
+
+func parseInvertedMappings(invertedMapping string) (bool, bool, bool, error) {
+	if !strings.Contains(invertedMapping, ",") {
+		return false, false, false, fmt.Errorf("inverted mapping must contain ','")
+	}
+
+	if !strings.Contains(invertedMapping, ":") {
+		return false, false, false, fmt.Errorf("inverted mapping must contain ':'")
+	}
+
+	axes := strings.Split(invertedMapping, ",")
+	if len(axes) != 3 {
+		return false, false, false, fmt.Errorf("inverted mapping must contain 3 axes")
+	}
+
+	xAxis := axes[0]
+	if len(strings.Split(xAxis, ":")) != 2 {
+		return false, false, false, fmt.Errorf("x inverted mapping must contain 2 parts separated by ':'")
+	}
+
+	yAxis := axes[1]
+	if len(strings.Split(yAxis, ":")) != 2 {
+		return false, false, false, fmt.Errorf("y inverted mapping must contain 2 parts separated by ':'")
+	}
+
+	zAxis := axes[2]
+	if len(strings.Split(zAxis, ":")) != 2 {
+		return false, false, false, fmt.Errorf("z inverted mapping must contain 2 parts separated by ':'")
+	}
+
+	invX, err := strconv.ParseBool(strings.Split(xAxis, ":")[1])
+	if err != nil {
+		return false, false, false, fmt.Errorf("parsing x inverted mapping: %w", err)
+	}
+
+	invY, err := strconv.ParseBool(strings.Split(yAxis, ":")[1])
+	if err != nil {
+		return false, false, false, fmt.Errorf("parsing y inverted mapping: %w", err)
+	}
+
+	invZ, err := strconv.ParseBool(strings.Split(zAxis, ":")[1])
+	if err != nil {
+		return false, false, false, fmt.Errorf("parsing z inverted mapping: %w", err)
+	}
+
+	return invX, invY, invZ, nil
 }

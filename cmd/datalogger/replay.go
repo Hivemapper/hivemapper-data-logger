@@ -29,6 +29,8 @@ func init() {
 	ReplayCmd.Flags().String("imu-config-file", "imu-logger.json", "imu logger config file")
 	ReplayCmd.Flags().String("imu-json-destination-folder", "imu", "json destination folder")
 	ReplayCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
+	ReplayCmd.Flags().String("imu-axis-map", "CamX:Z,CamY:X,CamZ:Y", "axis mapping of camera x,y,z values to real world x,y,z values. Default value are HDC mappings")
+	ReplayCmd.Flags().String("imu-inverted", "X:false,Y:false,Z:false", "axis inverted mapping of x,y,z values")
 
 	//GNSS
 	ReplayCmd.Flags().String("gnss-json-destination-folder", "gps", "json destination folder")
@@ -44,6 +46,18 @@ func init() {
 }
 
 func replayE(cmd *cobra.Command, _ []string) error {
+	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
+	if err != nil {
+		return fmt.Errorf("parsing axis map: %w", err)
+	}
+
+	invX, invY, invZ, err := parseInvertedMappings(mustGetString(cmd, "imu-inverted"))
+	if err != nil {
+		return fmt.Errorf("parsing inverted mappings: %w", err)
+	}
+
+	axisMap.SetInvertedAxes(invX, invY, invZ)
+
 	dbOutputPath := mustGetString(cmd, "db-output-path")
 	clean := mustGetBool(cmd, "clean")
 	if clean {
@@ -60,7 +74,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	}
 
 	sqliteImporter := logger.NewSqlite(mustGetString(cmd, "db-import-path"), nil, nil)
-	err := sqliteImporter.Init(0)
+	err = sqliteImporter.Init(0)
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
@@ -92,7 +106,10 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		[]gnss.GnssDataHandler{dataHandler.HandlerGnssData, directionEventFeed.HandleGnssData, geoJsonHandler.HandleGnss},
 	)
 
-	sqlFeed.Run()
+	err = sqlFeed.Run(axisMap)
+	if err != nil {
+		return fmt.Errorf("running sql feed: %w", err)
+	}
 
 	gj, err := geoJsonHandler.featureCollection.MarshalJSON()
 	if err != nil {

@@ -5,7 +5,6 @@ go 1.20
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230612141255-f8202e5f6890
 
 //replace github.com/streamingfast/gnss-controller => ../gnss-controller
-
 //replace github.com/streamingfast/imu-controller => ../imu-controller
 
 require (
@@ -16,7 +15,7 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/streamingfast/gnss-controller v0.1.20-0.20230621182813-f4940c0a6996
-	github.com/streamingfast/imu-controller v0.0.0-20230619184722-46c29558d612
+	github.com/streamingfast/imu-controller v0.0.0-20230626153723-274a49c06e63
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.5.0
 	google.golang.org/protobuf v1.30.0
