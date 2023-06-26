@@ -218,6 +218,7 @@ func (i *IIM42652) Debugln(a ...any) {
 		fmt.Println(a...)
 	}
 }
+
 func (i *IIM42652) Debugf(format string, a ...any) {
 	if i.debug {
 		fmt.Printf(format, a...)

@@ -92,7 +92,6 @@ func (a *Acceleration) CamZ() float64 {
 //		1. Read interrupt register (Register 0x37h in Bank 0) for SMD_INT
 
 func (i *IIM42652) SetupSignificantMotionDetection() error {
-
 	if err := i.WriteRegister(RegisterAccelConfig, 0x09); err != nil {
 		return fmt.Errorf("writing to RegisterAccelConfig %q: %w", RegisterAccelConfig, err)
 	}
