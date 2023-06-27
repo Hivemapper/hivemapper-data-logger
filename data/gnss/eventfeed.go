@@ -2,10 +2,10 @@ package gnss
 
 import (
 	"fmt"
-	"github.com/rosshemsley/kalman"
-	"github.com/rosshemsley/kalman/models"
 	"time"
 
+	"github.com/rosshemsley/kalman"
+	"github.com/rosshemsley/kalman/models"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 )
 
@@ -83,7 +83,10 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 	filteredLon := d.Longitude
 	filteredLat := d.Latitude
 
-	//if d.Fix == "2D" || d.Fix == "3D" {
+	if d.Fix == "none" {
+		return
+	}
+
 	err := f.gnssFilteredData.lonFilter.Update(d.Timestamp, f.gnssFilteredData.lonModel.NewMeasurement(d.Longitude))
 	if err != nil {
 		panic("updating lon filter: " + err.Error())

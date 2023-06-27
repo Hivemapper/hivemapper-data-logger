@@ -2,6 +2,7 @@ package direction
 
 import (
 	"fmt"
+
 	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	"github.com/rosshemsley/kalman"
@@ -116,7 +117,8 @@ func (f *FilteredAcceleration) init(acceleration *imu.Acceleration) {
 func (f *FilteredAcceleration) Update(acceleration *imu.Acceleration) (*imu.Acceleration, error) {
 	err := f.xFilter.Update(acceleration.Time, f.xModel.NewMeasurement(acceleration.X))
 	if err != nil {
-		return nil, fmt.Errorf("updating x filter: %w", err)
+
+		return nil, fmt.Errorf("updating x filter at %q: %w, ", acceleration.Time, err)
 	}
 
 	err = f.yFilter.Update(acceleration.Time, f.yModel.NewMeasurement(acceleration.Y))
@@ -145,6 +147,7 @@ func (f *FilteredAcceleration) Update(acceleration *imu.Acceleration) (*imu.Acce
 
 func (f *DirectionEventFeed) HandleOrientedAcceleration(acceleration *imu.Acceleration, tiltAngles *imu.TiltAngles, _ iim42652.Temperature, orientation imu.Orientation) error {
 	if !f.filteredAcceleration.initialized {
+		fmt.Println("initializing filtered acceleration", acceleration.Time)
 		f.filteredAcceleration.init(acceleration)
 	}
 

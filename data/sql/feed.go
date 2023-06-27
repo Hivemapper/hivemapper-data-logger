@@ -184,7 +184,7 @@ func query(offset int) string {
 			   gnss_rf_ofs_i,
 			   gnss_rf_mag_i,
 			   gnss_rf_ofs_q
-		from imu_raw order by id limit %d offset %d;
+		from imu_raw order by imu_time asc limit %d offset %d;
 		`, LIMIT, offset,
 	)
 }
