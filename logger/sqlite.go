@@ -1,8 +1,11 @@
 package logger
 
 import (
+	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -65,7 +68,6 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}
 		queries := map[string]*Accumulator{}
 		for {
-			//start := time.Now()
 			log := <-s.logs
 			query, fields, params := log.InsertQuery()
 
@@ -94,13 +96,55 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				panic(fmt.Errorf("inserting Data: %s", err.Error()))
 			}
 			delete(queries, query)
-			//fmt.Println("inserted Data in:", time.Since(start), len(s.logs), cap(s.logs))
 		}
 	}()
 
 	s.DB = db
 
 	return nil
+}
+
+func (s *Sqlite) Clone() (string, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	cloneFilename := fmt.Sprintf("%s_clone.db.gz", s.file)
+
+	sourceFileStat, err := os.Stat(s.file)
+	if err != nil {
+		return "", fmt.Errorf("database does not exist: %w", err)
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return "", fmt.Errorf("%s is not a regular file", s.file)
+	}
+
+	source, err := os.Open(s.file)
+	if err != nil {
+		return "", fmt.Errorf("opening database: %w", err)
+	}
+	defer source.Close()
+
+	gzippedFile, err := os.Create(cloneFilename)
+	if err != nil {
+		panic(err)
+	}
+	defer gzippedFile.Close()
+
+	gzipWriter := gzip.NewWriter(gzippedFile)
+	defer gzipWriter.Close()
+
+	_, err = io.Copy(gzipWriter, source)
+	if err != nil {
+		return "", fmt.Errorf("copying zipped database: %w", err)
+	}
+
+	err = gzipWriter.Flush()
+	if err != nil {
+		return "", fmt.Errorf("flushing gzip writer: %w", err)
+	}
+
+	return cloneFilename, nil
 }
 
 func (s *Sqlite) Purge(ttl time.Duration) error {

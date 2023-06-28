@@ -5,11 +5,12 @@ go 1.20
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230612141255-f8202e5f6890
 
 //replace github.com/streamingfast/gnss-controller => ../gnss-controller
-replace github.com/streamingfast/imu-controller => ../imu-controller
+//replace github.com/streamingfast/imu-controller => ../imu-controller
 
 require (
 	github.com/bufbuild/connect-go v1.8.0
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/mux v1.8.0
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
 	github.com/rs/cors v1.9.0

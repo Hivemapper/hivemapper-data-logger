@@ -2,11 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
+	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
@@ -15,12 +11,17 @@ import (
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/hivemapper-data-logger/data/merged"
+	"github.com/streamingfast/hivemapper-data-logger/download"
 	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
 	"github.com/streamingfast/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var LogCmd = &cobra.Command{
@@ -51,6 +52,9 @@ func init() {
 
 	// Connect-go
 	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
+
+	// Http server
+	LogCmd.Flags().String("http-listen-addr", ":9001", "http server address to listen on")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -96,7 +100,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 
-	//TODO: write gnss data to json file
 	listenAddr := mustGetString(cmd, "listen-addr")
 	eventServer := webconnect.NewEventServer()
 
@@ -151,11 +154,24 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	mux.Handle(path, handler)
 
-	fmt.Printf("Starting server on %s ...\n", listenAddr)
-	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
+	go func() {
+		fmt.Printf("Starting GRPC server on %s ...\n", listenAddr)
+		err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
+		if err != nil {
+			panic(fmt.Sprintf("running server: %s", err.Error()))
+		}
+	}()
 
+	httpListenAddr := mustGetString(cmd, "http-listen-addr")
+
+	router := gmux.NewRouter().StrictSlash(true)
+	down := download.NewDownload(dataHandler.sqliteLogger)
+	router.HandleFunc("/debug/download", down.GetDatabaseFiles)
+
+	fmt.Printf("Starting http server on %s ...\n", httpListenAddr)
+	err = http.ListenAndServe(httpListenAddr, router)
 	if err != nil {
-		return fmt.Errorf("running server: %w", err)
+		return fmt.Errorf("running http server: %w", err)
 	}
 
 	return nil
