@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
@@ -164,12 +165,16 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	httpListenAddr := mustGetString(cmd, "http-listen-addr")
 
+	origins := handlers.AllowedOrigins([]string{"*"})
+	headers := handlers.AllowedHeaders([]string{"Content-Type"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	router := gmux.NewRouter().StrictSlash(true)
+
 	down := download.NewDownload(dataHandler.sqliteLogger)
 	router.HandleFunc("/debug/download", down.GetDatabaseFiles)
 
+	err = http.ListenAndServe(httpListenAddr, handlers.CORS(origins, headers, methods)(router))
 	fmt.Printf("Starting http server on %s ...\n", httpListenAddr)
-	err = http.ListenAndServe(httpListenAddr, router)
 	if err != nil {
 		return fmt.Errorf("running http server: %w", err)
 	}

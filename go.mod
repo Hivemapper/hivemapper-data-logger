@@ -10,6 +10,7 @@ replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20
 require (
 	github.com/bufbuild/connect-go v1.8.0
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/paulmach/go.geojson v1.4.0
 	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
@@ -28,6 +29,7 @@ require (
 	github.com/daedaleanai/ublox v0.0.0-00010101000000-000000000000 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
