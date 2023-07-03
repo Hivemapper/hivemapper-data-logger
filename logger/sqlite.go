@@ -4,6 +4,9 @@ import (
 	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 	"io"
 	"os"
 	"sync"
@@ -145,6 +148,92 @@ func (s *Sqlite) Clone() (string, error) {
 	}
 
 	return cloneFilename, nil
+}
+
+func (s *Sqlite) FetchRawImuData(from string, to string) ([]*JsonDataWrapper, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	rows, err := s.DB.Query("SELECT * FROM imu_raw WHERE imu_time > ? AND imu_time < ?", from, to)
+	if err != nil {
+		return nil, fmt.Errorf("querying last position: %s", err.Error())
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("querying last position: %s", err.Error())
+	}
+	defer rows.Close()
+
+	var jsonData []*JsonDataWrapper
+
+	for rows.Next() {
+		id := 0
+		t := time.Time{}
+		temperature := iim42652.NewTemperature(0.0)
+		acceleration := &iim42652.Acceleration{}
+		gnssData := &neom9n.Data{
+			SystemTime: time.Time{},
+			Timestamp:  time.Time{},
+			Dop:        &neom9n.Dop{},
+			Satellites: &neom9n.Satellites{},
+			RF:         &neom9n.RF{},
+		}
+		err := rows.Scan(
+			&id,
+			&t,
+			&acceleration.X,
+			&acceleration.Y,
+			&acceleration.Z,
+			&temperature,
+			&gnssData.SystemTime,
+			&gnssData.Timestamp,
+			&gnssData.Fix,
+			&gnssData.Ttff,
+			&gnssData.Latitude,
+			&gnssData.Longitude,
+			&gnssData.Altitude,
+			&gnssData.Speed,
+			&gnssData.Heading,
+			&gnssData.Satellites.Seen,
+			&gnssData.Satellites.Used,
+			&gnssData.Eph,
+			&gnssData.HorizontalAccuracy,
+			&gnssData.VerticalAccuracy,
+			&gnssData.HeadingAccuracy,
+			&gnssData.SpeedAccuracy,
+			&gnssData.Dop.HDop,
+			&gnssData.Dop.VDop,
+			&gnssData.Dop.XDop,
+			&gnssData.Dop.YDop,
+			&gnssData.Dop.TDop,
+			&gnssData.Dop.PDop,
+			&gnssData.Dop.GDop,
+			&gnssData.RF.JammingState,
+			&gnssData.RF.AntStatus,
+			&gnssData.RF.AntPower,
+			&gnssData.RF.PostStatus,
+			&gnssData.RF.NoisePerMS,
+			&gnssData.RF.AgcCnt,
+			&gnssData.RF.JamInd,
+			&gnssData.RF.OfsI,
+			&gnssData.RF.MagI,
+			&gnssData.RF.OfsQ,
+		)
+
+		jsonDataWrapper := NewJsonDataWrapper(
+			imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, t),
+			temperature,
+			gnssData,
+		)
+
+		jsonData = append(jsonData, jsonDataWrapper)
+
+		if err != nil {
+			return nil, fmt.Errorf("scanning last position: %s", err.Error())
+		}
+	}
+
+	return jsonData, nil
 }
 
 func (s *Sqlite) Purge(ttl time.Duration) error {

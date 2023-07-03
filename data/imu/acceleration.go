@@ -31,11 +31,11 @@ func NewTiltAngles(x, y, z float64) *TiltAngles {
 }
 
 type Acceleration struct {
-	X         float64
-	Y         float64
-	Z         float64
-	Magnitude float64
-	Time      time.Time
+	X         float64   `json:"x"`
+	Y         float64   `json:"y"`
+	Z         float64   `json:"z"`
+	Magnitude float64   `json:"magnitude"`
+	Time      time.Time `json:"time"`
 }
 
 func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {

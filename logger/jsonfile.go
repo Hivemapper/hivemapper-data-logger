@@ -3,6 +3,7 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"os"
@@ -10,6 +11,20 @@ import (
 	"sync"
 	"time"
 )
+
+type JsonDataWrapper struct {
+	Acceleration *imu.Acceleration    `json:"acceleration"`
+	Temperature  iim42652.Temperature `json:"temperature"`
+	GnssData     *neom9n.Data         `json:"gnss_data"`
+}
+
+func NewJsonDataWrapper(accel *imu.Acceleration, temp iim42652.Temperature, gnssData *neom9n.Data) *JsonDataWrapper {
+	return &JsonDataWrapper{
+		Acceleration: accel,
+		Temperature:  temp,
+		GnssData:     gnssData,
+	}
+}
 
 type DataWrapper struct {
 	Time time.Time `json:"time"`

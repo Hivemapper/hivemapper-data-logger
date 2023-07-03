@@ -1,6 +1,9 @@
 package download
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"github.com/streamingfast/hivemapper-data-logger/logger"
 	"io"
@@ -17,7 +20,50 @@ func NewDownload(sqliteLogger *logger.Sqlite) *Download {
 	return &Download{sqliteLogger: sqliteLogger}
 }
 
-func (d *Download) GetDatabaseFiles(w http.ResponseWriter, r *http.Request) {
+func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
+	from := r.URL.Query().Get("from")
+	if from == "" {
+		fmt.Fprintf(w, "error: missing 'from' query parameter\n")
+		return
+	}
+
+	to := r.URL.Query().Get("to")
+	if to == "" {
+		fmt.Fprintf(w, "error: missing 'to' query parameter\n")
+		return
+	}
+
+	jsonData, err := d.sqliteLogger.FetchRawImuData(from, to)
+	if err != nil {
+		fmt.Fprintf(w, "fetching raw imu data: %s", err)
+		return
+	}
+
+	data, err := json.Marshal(jsonData)
+	if err != nil {
+		fmt.Fprintf(w, "marshalling json: %s", err)
+		return
+	}
+	fmt.Println("Done marshalling json", len(data))
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+
+	_, err = gz.Write(data)
+	if err != nil {
+		fmt.Fprintf(w, "compressing data: %s", err)
+		return
+	}
+	gz.Close()
+
+	w.Header().Set("Content-Type", "application/x-gzip")
+	//w.Header().Set("Content-Encoding", "gzip")
+	w.Write(buf.Bytes())
+
+	return
+}
+
+func (d *Download) GetDatabaseFiles(w http.ResponseWriter, _ *http.Request) {
 	fmt.Println("Cloning and compressing the database...")
 	filename, err := d.sqliteLogger.Clone()
 	if err != nil {
