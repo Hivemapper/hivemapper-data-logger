@@ -40,6 +40,7 @@ func init() {
 	LogCmd.Flags().String("imu-inverted", "X:false,Y:false,Z:false", "axis inverted mapping of x,y,z values")
 
 	// Gnss
+	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
 	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
 	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
@@ -95,7 +96,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath)
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"))
 	err = gnssDevice.Init(nil)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)

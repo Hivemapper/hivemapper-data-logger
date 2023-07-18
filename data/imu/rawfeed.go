@@ -51,5 +51,4 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			}
 		}
 	}
-
 }
