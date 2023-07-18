@@ -58,10 +58,10 @@ func (i *IIM42652) Init() error {
 	}
 	i.connection = c
 
-	err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
-	if err != nil {
-		return fmt.Errorf("setting up power: %w", err)
-	}
+	//err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
+	//if err != nil {
+	//	return fmt.Errorf("setting up power: %w", err)
+	//}
 
 	if err := i.SetupSignificantMotionDetection(); err != nil {
 		return fmt.Errorf("setting up significant motion detection: %w", err)
