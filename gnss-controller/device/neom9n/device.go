@@ -23,13 +23,13 @@ type Neom9n struct {
 	decoderDone        chan error
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now(),
 		config: &serial.Config{
 			Name: serialConfigName, // /dev/ttyAMA1
 			//Baud: 921600,
-			Baud:     38400,
+			Baud:     initialBaudRate,
 			Parity:   serial.ParityNone,
 			StopBits: serial.Stop1,
 		},
