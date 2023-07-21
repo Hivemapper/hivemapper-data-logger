@@ -33,7 +33,29 @@ func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := d.sqliteLogger.FetchRawImuData(from, to)
+	includeImu := true
+	includeGnss := true
+
+	includeImuParam := r.URL.Query().Get("includeImu")
+	includeGnssParam := r.URL.Query().Get("includeGnss")
+
+	fmt.Println("includeImuParam", includeImuParam)
+	fmt.Println("includeGnssParam", includeGnssParam)
+
+	if includeImuParam == "false" && includeGnssParam == "false" {
+		fmt.Fprintf(w, "no data requested\n")
+		return
+	}
+
+	if includeImuParam == "false" {
+		includeImu = false
+	}
+
+	if includeGnssParam == "false" {
+		includeGnss = false
+	}
+
+	jsonData, err := d.sqliteLogger.FetchRawImuData(from, to, includeImu, includeGnss)
 	if err != nil {
 		fmt.Fprintf(w, "fetching raw imu data: %s", err)
 		return
@@ -57,9 +79,7 @@ func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
 	gz.Close()
 
 	w.Header().Set("Content-Type", "application/x-gzip")
-	//w.Header().Set("Content-Encoding", "gzip")
 	w.Write(buf.Bytes())
-
 	return
 }
 

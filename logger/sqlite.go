@@ -150,7 +150,7 @@ func (s *Sqlite) Clone() (string, error) {
 	return cloneFilename, nil
 }
 
-func (s *Sqlite) FetchRawImuData(from string, to string) ([]*JsonDataWrapper, error) {
+func (s *Sqlite) FetchRawImuData(from string, to string, includeImu bool, includeGnss bool) ([]*JsonDataWrapper, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -220,11 +220,16 @@ func (s *Sqlite) FetchRawImuData(from string, to string) ([]*JsonDataWrapper, er
 			&gnssData.RF.OfsQ,
 		)
 
-		jsonDataWrapper := NewJsonDataWrapper(
-			imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, t),
-			temperature,
-			gnssData,
-		)
+		jsonDataWrapper := NewJsonDataWrapper(nil, nil, nil)
+
+		if includeImu {
+			jsonDataWrapper.Acceleration = imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, t)
+			jsonDataWrapper.Temperature = temperature
+		}
+
+		if includeGnss {
+			jsonDataWrapper.GnssData = gnssData
+		}
 
 		jsonData = append(jsonData, jsonDataWrapper)
 
