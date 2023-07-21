@@ -39,9 +39,6 @@ func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
 	includeImuParam := r.URL.Query().Get("includeImu")
 	includeGnssParam := r.URL.Query().Get("includeGnss")
 
-	fmt.Println("includeImuParam", includeImuParam)
-	fmt.Println("includeGnssParam", includeGnssParam)
-
 	if includeImuParam == "false" && includeGnssParam == "false" {
 		fmt.Fprintf(w, "no data requested\n")
 		return
