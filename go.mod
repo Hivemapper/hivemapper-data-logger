@@ -9,6 +9,7 @@ replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20
 
 require (
 	github.com/bufbuild/connect-go v1.8.0
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0

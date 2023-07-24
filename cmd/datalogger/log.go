@@ -2,12 +2,18 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/streamingfast/hivemapper-data-logger/data/camera"
 	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
@@ -19,10 +25,6 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var LogCmd = &cobra.Command{
@@ -51,6 +53,9 @@ func init() {
 	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	LogCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 	LogCmd.Flags().String("imu-dev-path", "/dev/spidev0.0", "Config serial location")
+
+	//Image feed
+	LogCmd.Flags().String("images-folder", "/mnt/data/pic", "")
 
 	// Connect-go
 	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
@@ -121,6 +126,14 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
 	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
 
+	imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
+	go func() {
+		err := imagesFeed.Run()
+		if err != nil {
+			panic(fmt.Errorf("running image feed: %w", err))
+		}
+	}()
+
 	rawImuEventFeed := imu.NewRawFeed(imuDevice, tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed)
 	go func() {
 		err := rawImuEventFeed.Run(axisMap)
@@ -185,10 +198,11 @@ func logRun(cmd *cobra.Command, _ []string) error {
 }
 
 type DataHandler struct {
-	sqliteLogger   *logger.Sqlite
-	gnssJsonLogger *logger.JsonFile
-	imuJsonLogger  *logger.JsonFile
-	gnssData       *neom9n.Data
+	sqliteLogger      *logger.Sqlite
+	gnssJsonLogger    *logger.JsonFile
+	imuJsonLogger     *logger.JsonFile
+	gnssData          *neom9n.Data
+	lastImageFileName string
 }
 
 func NewDataHandler(
@@ -227,6 +241,11 @@ func NewDataHandler(
 	}, err
 }
 
+func (h *DataHandler) HandleImage(imageFileName string) error {
+	h.lastImageFileName = imageFileName
+	return nil
+}
+
 func (h *DataHandler) HandleOrientedAcceleration(
 	acceleration *imu.Acceleration,
 	tiltAngles *imu.TiltAngles,
@@ -252,7 +271,7 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData))
+	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData, h.lastImageFileName))
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
 	}

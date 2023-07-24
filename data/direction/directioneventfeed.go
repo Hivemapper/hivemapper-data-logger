@@ -3,14 +3,12 @@ package direction
 import (
 	"fmt"
 
-	"github.com/streamingfast/imu-controller/device/iim42652"
-
 	"github.com/rosshemsley/kalman"
 	"github.com/rosshemsley/kalman/models"
-
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type DirectionEventHandler func(event data.Event) error
