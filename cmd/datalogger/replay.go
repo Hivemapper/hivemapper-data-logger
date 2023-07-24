@@ -86,6 +86,13 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
+	//todo: init data handler
+	//todo: clear all folders
+	//todo: copy database file
+	//todo: make replay accessible from debugger
+	//todo: from debugger stop file purger && restart odc-api ...
+	//todo: emit and empty image for each imu event when filename change ...
+
 	//dataHandler, err := NewDataHandler(
 	//	mustGetString(cmd, "db-output-path"),
 	//	mustGetDuration(cmd, "db-log-ttl"),
