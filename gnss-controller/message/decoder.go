@@ -34,6 +34,9 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 				done <- d.Err()
 				break
 			}
+
+			//todo: create a cmd to generate a new keypair and store it in the device (for testing purpose). To not loose the public key!
+
 			//todo: cumulate all bytes between 2 UBX-SEC-ECSIGN messages excluding UBX-SEC-ECSIGN messages(to be validated)
 			//todo: get signature from last  UBX-SEC-ECSIGN messages
 			//todo: compute hash of all bytes between 2 UBX-SEC-ECSIGN messages
