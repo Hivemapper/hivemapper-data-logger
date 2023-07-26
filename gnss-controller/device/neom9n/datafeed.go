@@ -40,6 +40,7 @@ type Data struct {
 	VerticalAccuracy   float64     `json:"vertical_accuracy"`
 
 	startTime time.Time
+	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
 }
 
 func (d *Data) GetStartTime() time.Time {

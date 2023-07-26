@@ -34,6 +34,11 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 				done <- d.Err()
 				break
 			}
+			//todo: cumulate all bytes between 2 UBX-SEC-ECSIGN messages excluding UBX-SEC-ECSIGN messages(to be validated)
+			//todo: get signature from last  UBX-SEC-ECSIGN messages
+			//todo: compute hash of all bytes between 2 UBX-SEC-ECSIGN messages
+			//todo: refactor ubxDecoder.Decode() func to return all bytes with the message so we can compute the hash
+			//todo: signature and computed hash need to be sent with the new data (in the datafeed)
 			msg, err := ubxDecoder.Decode()
 			if err != nil {
 				if err == io.EOF {

@@ -100,6 +100,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(269549605, []byte{0x01}, "CFG-NAVSPG-ACKAIDING")         // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 	n.setConfig(546374490, []byte{0x01}, "CFG-MSGOUT-UBX_MON_RF_UART1")  // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
 	n.setConfig(546373639, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
+	//todo: request UBX-SEC-ECSIGN message output
+	//todo: find CFG-MSGOUT-UBX_SEC_ECSIGN_UART1
 
 	n.setConfig(807469057, uint16(128), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
