@@ -36,6 +36,8 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 			}
 
 			//todo: create a cmd to generate a new keypair and store it in the device (for testing purpose). To not loose the public key!
+			//Asymmetric signature (private and public keys):
+			//need to found if we can get back the public keys (I don't think so)
 
 			//todo: cumulate all bytes between 2 UBX-SEC-ECSIGN messages excluding UBX-SEC-ECSIGN messages(to be validated)
 			//todo: get signature from last  UBX-SEC-ECSIGN messages
