@@ -45,3 +45,14 @@ datalogger replay --clean --db-import-path=/path/to/databse --db-output-path=/tm
 # db-import-path will take the .db file which was produced by the datalogger log command
 # db-output-path is the location to where the rerun db will be saved
 ```
+
+### Debugging data-logger service on the cam
+Once the service is up on the cam, you can check the status with
+```bash
+systemctl status data-logger
+```
+
+You can also check the logs for the service itself (for a more detailed view)
+```bash
+journalctl -u data-logger -f -n 200 # follow and show the latest 200 lines
+```
