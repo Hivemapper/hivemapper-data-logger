@@ -169,8 +169,8 @@ func (j *JsonFile) toFile(time time.Time) error {
 
 func writeAllToFile(filePath string, dw []*DataWrapper) error {
 	datas := make([]any, len(dw))
-	for _, data := range dw {
-		datas = append(datas, data.Data)
+	for i, data := range dw {
+		datas[i] = data.Data
 	}
 	jsonData, err := json.Marshal(datas)
 	if err != nil {

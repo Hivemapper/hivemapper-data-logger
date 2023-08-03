@@ -46,14 +46,13 @@ const ImuRawCreateTable string = `
 		gnss_rf_jam_ind INTEGER NOT NULL,
 		gnss_rf_ofs_i INTEGER NOT NULL,
 		gnss_rf_mag_i INTEGER NOT NULL,
-		gnss_rf_ofs_q INTEGER NOT NULL,
-		image_file_name TEXT NOT NULL,
+		gnss_rf_ofs_q INTEGER NOT NULL
 	);
 `
 
 const insertRawQuery string = `INSERT INTO imu_raw VALUES`
 
-const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const imuRawPurgeQuery string = `
 	DELETE FROM imu_raw WHERE imu_time < ?;
@@ -68,18 +67,18 @@ func ImuRawPurgeQuery() string {
 }
 
 type ImuRawSqlWrapper struct {
-	acceleration      *imu.Acceleration
-	temperature       iim42652.Temperature
-	gnssData          *neom9n.Data
-	lastImageFilename string
+	acceleration *imu.Acceleration
+	temperature  iim42652.Temperature
+	gnssData     *neom9n.Data
+	//lastImageFilename string
 }
 
-func NewImuRawSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, gnssData *neom9n.Data, lastImageFilename string) *ImuRawSqlWrapper {
+func NewImuRawSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, gnssData *neom9n.Data /*lastImageFilename string*/) *ImuRawSqlWrapper {
 	return &ImuRawSqlWrapper{
-		acceleration:      acceleration,
-		temperature:       temperature,
-		gnssData:          gnssData,
-		lastImageFilename: lastImageFilename,
+		acceleration: acceleration,
+		temperature:  temperature,
+		gnssData:     gnssData,
+		//lastImageFilename: lastImageFilename,
 	}
 }
 
@@ -123,6 +122,6 @@ func (w *ImuRawSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.RF.OfsI,
 		w.gnssData.RF.MagI,
 		w.gnssData.RF.OfsQ,
-		w.lastImageFilename,
+		//w.lastImageFilename,
 	}
 }

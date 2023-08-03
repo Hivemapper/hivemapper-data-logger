@@ -42,17 +42,34 @@ func (g *GnssFilteredData) init(d *neom9n.Data) {
 	g.Data = d
 }
 
+type Option func(*GnssFeed)
+
 type GnssFeed struct {
 	dataHandlers     []GnssDataHandler
 	timeHandlers     []TimeHandler
 	gnssFilteredData *GnssFilteredData
+
+	gnssFixCheck bool
 }
 
-func NewGnssFeed(dataHandlers []GnssDataHandler, timeHandlers []TimeHandler) *GnssFeed {
-	return &GnssFeed{
+func NewGnssFeed(dataHandlers []GnssDataHandler, timeHandlers []TimeHandler, opts ...Option) *GnssFeed {
+	g := &GnssFeed{
 		dataHandlers:     dataHandlers,
 		timeHandlers:     timeHandlers,
 		gnssFilteredData: NewGnssFilteredData(),
+		gnssFixCheck:     true,
+	}
+
+	for _, opt := range opts {
+		opt(g)
+	}
+
+	return g
+}
+
+func WithGnssFixCheck(gnssFixCheck bool) func(*GnssFeed) {
+	return func(f *GnssFeed) {
+		f.gnssFixCheck = gnssFixCheck
 	}
 }
 
@@ -83,7 +100,7 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 	filteredLon := d.Longitude
 	filteredLat := d.Latitude
 
-	if d.Fix == "none" {
+	if f.gnssFixCheck && d.Fix == "none" {
 		return
 	}
 
@@ -98,7 +115,6 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	filteredLon = f.gnssFilteredData.lonModel.Value(f.gnssFilteredData.lonFilter.State())
 	filteredLat = f.gnssFilteredData.latModel.Value(f.gnssFilteredData.latFilter.State())
-	//}
 
 	d.Longitude = filteredLon
 	d.Latitude = filteredLat

@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/hivemapper-data-logger/data/camera"
 	"github.com/streamingfast/hivemapper-data-logger/data/direction"
 	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
@@ -48,6 +47,7 @@ func init() {
 	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
 	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
+	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 
 	// Sqlite database
 	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
@@ -126,13 +126,14 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
 	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
 
-	imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
-	go func() {
-		err := imagesFeed.Run()
-		if err != nil {
-			panic(fmt.Errorf("running image feed: %w", err))
-		}
-	}()
+	// TODO: implement replay image feed
+	//imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
+	//go func() {
+	//	err := imagesFeed.Run()
+	//	if err != nil {
+	//		panic(fmt.Errorf("running image feed: %w", err))
+	//	}
+	//}()
 
 	rawImuEventFeed := imu.NewRawFeed(imuDevice, tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed)
 	go func() {
@@ -149,7 +150,9 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			eventServer.HandleGnssData,
 		},
 		nil,
+		gnss.WithGnssFixCheck(mustGetBool(cmd, "gnss-fix-check")),
 	)
+
 	go func() {
 		err = gnssEventFeed.Run(gnssDevice)
 		if err != nil {
@@ -271,7 +274,7 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData, h.lastImageFileName))
+	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData /*h.lastImageFileName*/))
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
 	}
