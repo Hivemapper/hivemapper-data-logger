@@ -16,13 +16,20 @@ type JsonDataWrapper struct {
 	Acceleration *imu.Acceleration    `json:"acceleration"`
 	Temperature  iim42652.Temperature `json:"temperature"`
 	GnssData     *neom9n.Data         `json:"gnss_data"`
+	Gyro         *Gyro                `json:"gyro"`
 }
 
-func NewJsonDataWrapper(accel *imu.Acceleration, temp iim42652.Temperature, gnssData *neom9n.Data) *JsonDataWrapper {
+func NewJsonDataWrapper(
+	accel *imu.Acceleration,
+	temp iim42652.Temperature,
+	gnssData *neom9n.Data,
+	gyro *Gyro,
+) *JsonDataWrapper {
 	return &JsonDataWrapper{
 		Acceleration: accel,
 		Temperature:  temp,
 		GnssData:     gnssData,
+		Gyro:         gyro,
 	}
 }
 

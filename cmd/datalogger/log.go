@@ -188,7 +188,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	router := gmux.NewRouter().StrictSlash(true)
 
 	down := download.NewDownload(dataHandler.sqliteLogger)
-	router.HandleFunc("/imu", down.GetRawImuData)
+	router.HandleFunc("/rawData", down.GetRawData)
 	router.HandleFunc("/debug/download", down.GetDatabaseFiles)
 
 	err = http.ListenAndServe(httpListenAddr, handlers.CORS(origins, headers, methods)(router))

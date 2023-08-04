@@ -150,11 +150,11 @@ func (s *Sqlite) Clone() (string, error) {
 	return cloneFilename, nil
 }
 
-func (s *Sqlite) FetchRawImuData(from string, to string, includeImu bool, includeGnss bool) ([]*JsonDataWrapper, error) {
+func (s *Sqlite) FetchRawMergedData(from string, to string, includeImu bool, includeGnss bool) ([]*JsonDataWrapper, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	rows, err := s.DB.Query("SELECT * FROM imu_raw WHERE imu_time > ? AND imu_time < ?", from, to)
+	rows, err := s.DB.Query("SELECT * FROM merged WHERE imu_time > ? AND imu_time < ?", from, to)
 	if err != nil {
 		return nil, fmt.Errorf("querying last position: %s", err.Error())
 	}
@@ -168,7 +168,7 @@ func (s *Sqlite) FetchRawImuData(from string, to string, includeImu bool, includ
 
 	for rows.Next() {
 		id := 0
-		t := time.Time{}
+		imuTime := time.Time{}
 		temperature := iim42652.NewTemperature(0.0)
 		acceleration := &iim42652.Acceleration{}
 		gnssData := &neom9n.Data{
@@ -178,13 +178,24 @@ func (s *Sqlite) FetchRawImuData(from string, to string, includeImu bool, includ
 			Satellites: &neom9n.Satellites{},
 			RF:         &neom9n.RF{},
 		}
+		gyro := &Gyro{
+			X: 0,
+			Y: 0,
+			Z: 0,
+		}
+		var _camOrientation *imu.Orientation // read the data, but do not use it in the json writer, not useful as of now
 		err := rows.Scan(
 			&id,
-			&t,
+			&imuTime,
+			&acceleration.TotalMagnitude,
 			&acceleration.X,
+			&gyro.X,
 			&acceleration.Y,
+			&gyro.Y,
 			&acceleration.Z,
+			&gyro.Z,
 			&temperature,
+			&_camOrientation,
 			&gnssData.SystemTime,
 			&gnssData.Timestamp,
 			&gnssData.Fix,
@@ -220,10 +231,10 @@ func (s *Sqlite) FetchRawImuData(from string, to string, includeImu bool, includ
 			&gnssData.RF.OfsQ,
 		)
 
-		jsonDataWrapper := NewJsonDataWrapper(nil, nil, nil)
+		jsonDataWrapper := NewJsonDataWrapper(nil, nil, nil, gyro)
 
 		if includeImu {
-			jsonDataWrapper.Acceleration = imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, t)
+			jsonDataWrapper.Acceleration = imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, imuTime)
 			jsonDataWrapper.Temperature = temperature
 		}
 

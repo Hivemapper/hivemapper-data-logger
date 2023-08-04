@@ -20,7 +20,7 @@ func NewDownload(sqliteLogger *logger.Sqlite) *Download {
 	return &Download{sqliteLogger: sqliteLogger}
 }
 
-func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
+func (d *Download) GetRawData(w http.ResponseWriter, r *http.Request) {
 	from := r.URL.Query().Get("from")
 	if from == "" {
 		fmt.Fprintf(w, "error: missing 'from' query parameter\n")
@@ -52,9 +52,9 @@ func (d *Download) GetRawImuData(w http.ResponseWriter, r *http.Request) {
 		includeGnss = false
 	}
 
-	jsonData, err := d.sqliteLogger.FetchRawImuData(from, to, includeImu, includeGnss)
+	jsonData, err := d.sqliteLogger.FetchRawMergedData(from, to, includeImu, includeGnss)
 	if err != nil {
-		fmt.Fprintf(w, "fetching raw imu data: %s", err)
+		fmt.Fprintf(w, "fetching raw merged data: %s", err)
 		return
 	}
 
