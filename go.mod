@@ -18,7 +18,7 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/streamingfast/gnss-controller v0.1.20-0.20230804021855-65451bbfaca5
-	github.com/streamingfast/imu-controller v0.0.0-20230718160924-3ee08904f336
+	github.com/streamingfast/imu-controller v0.0.0-20230805142536-5b0b96213d14
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.0
 	golang.org/x/net v0.5.0

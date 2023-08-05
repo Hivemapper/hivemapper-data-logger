@@ -39,6 +39,7 @@ func init() {
 	LogCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
 	LogCmd.Flags().String("imu-axis-map", "CamX:Z,CamY:X,CamZ:Y", "axis mapping of camera x,y,z values to real world x,y,z values. Default value is HDC mappings")
 	LogCmd.Flags().String("imu-inverted", "X:false,Y:false,Z:false", "axis inverted mapping of x,y,z values")
+	LogCmd.Flags().Bool("imu-setup-power", true, "setup power for spi driver")
 
 	// Gnss
 	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
@@ -84,6 +85,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		iim42652.AccelerationSensitivityG16,
 		iim42652.GyroScalesG2000,
 		true,
+		mustGetBool(cmd, "imu-setup-power"),
 	)
 
 	err = imuDevice.Init()
