@@ -18,17 +18,20 @@ type IIM42652 struct {
 	connection              spi.Conn
 	currentBank             Bank
 	registerLock            sync.Mutex
-	debug                   bool
 	accelerationSensitivity AccelerationSensitivity
 	gyroScale               GyroScale
+
+	debug      bool
+	setupPower bool
 }
 
-func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, gyroScale GyroScale, debug bool) *IIM42652 {
+func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, gyroScale GyroScale, debug bool, setupPower bool) *IIM42652 {
 	return &IIM42652{
-		debug:                   debug,
 		deviceName:              device,
 		accelerationSensitivity: accelerationSensitivity,
 		gyroScale:               gyroScale,
+		debug:                   debug,
+		setupPower:              setupPower,
 	}
 }
 
@@ -58,10 +61,12 @@ func (i *IIM42652) Init() error {
 	}
 	i.connection = c
 
-	//err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
-	//if err != nil {
-	//	return fmt.Errorf("setting up power: %w", err)
-	//}
+	if i.setupPower {
+		err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
+		if err != nil {
+			return fmt.Errorf("setting up power: %w", err)
+		}
+	}
 
 	if err := i.SetupSignificantMotionDetection(); err != nil {
 		return fmt.Errorf("setting up significant motion detection: %w", err)
