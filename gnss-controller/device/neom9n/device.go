@@ -100,6 +100,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(269549605, []byte{0x01}, "CFG-NAVSPG-ACKAIDING")         // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 	n.setConfig(546374490, []byte{0x01}, "CFG-MSGOUT-UBX_MON_RF_UART1")  // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
 	n.setConfig(546373639, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
+	n.setConfig(546373819, []byte{0x01}, "CFG-MSGOUT-NMEA_ID_GGA_UART1")
+	n.setConfig(546374149, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
 	//todo: request UBX-SEC-ECSIGN message output
 	//todo: find CFG-MSGOUT-UBX_SEC_ECSIGN_UART1
 
@@ -189,6 +191,8 @@ func (n *Neom9n) Run(dataFeed *DataFeed, timeSetCallback func(now time.Time)) er
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.NneaGGA, dataFeed)
 
 	if now == (time.Time{}) {
 		fmt.Println("Waiting for time")

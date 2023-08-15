@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/daedaleanai/ublox/nmea"
+
 	"github.com/daedaleanai/ublox/ubx"
 )
 
@@ -40,6 +42,9 @@ type Data struct {
 	VerticalAccuracy   float64     `json:"vertical_accuracy"`
 
 	startTime time.Time
+	GGA       string        `json:"gga"`
+	RxmMeasx  *ubx.RxmMeasx `json:"rxm_measx"`
+
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
 }
 
@@ -81,6 +86,7 @@ func (d *Data) Clone() Data {
 		HeadingAccuracy:    d.HeadingAccuracy,
 		HorizontalAccuracy: d.HorizontalAccuracy,
 		VerticalAccuracy:   d.VerticalAccuracy,
+		GGA:                d.GGA,
 	}
 
 	if d.RF != nil {
@@ -96,6 +102,42 @@ func (d *Data) Clone() Data {
 			MagI:         d.RF.MagI,
 			OfsQ:         d.RF.OfsQ,
 			MagQ:         d.RF.MagQ,
+		}
+	}
+	if d.RxmMeasx != nil {
+		clone.RxmMeasx = &ubx.RxmMeasx{
+			Reserved1:       d.RxmMeasx.Reserved1,
+			GpsTOW_ms:       d.RxmMeasx.GpsTOW_ms,
+			GloTOW_ms:       d.RxmMeasx.GloTOW_ms,
+			BdsTOW_ms:       d.RxmMeasx.BdsTOW_ms,
+			Reserved2:       d.RxmMeasx.Reserved2,
+			QzssTOW_ms:      d.RxmMeasx.QzssTOW_ms,
+			GpsTOWacc_msl4:  d.RxmMeasx.GpsTOWacc_msl4,
+			GloTOWacc_msl4:  d.RxmMeasx.GloTOWacc_msl4,
+			BdsTOWacc_msl4:  d.RxmMeasx.BdsTOWacc_msl4,
+			Reserved3:       d.RxmMeasx.Reserved3,
+			QzssTOWacc_msl4: d.RxmMeasx.QzssTOWacc_msl4,
+			NumSV:           d.RxmMeasx.NumSV,
+			Flags:           d.RxmMeasx.Flags,
+			Reserved4:       d.RxmMeasx.Reserved4,
+		}
+
+		for _, sv := range d.RxmMeasx.SV {
+			csv := &ubx.RxmMeasxSVType{
+				GnssId:          sv.GnssId,
+				SvId:            sv.SvId,
+				CNo:             sv.CNo,
+				MpathIndic:      sv.MpathIndic,
+				DopplerMS_m_s:   sv.DopplerMS_m_s,
+				DopplerHz_hz:    sv.DopplerHz_hz,
+				WholeChips:      sv.WholeChips,
+				FracChips:       sv.FracChips,
+				CodePhase_msl21: sv.CodePhase_msl21,
+				IntCodePhase_ms: sv.IntCodePhase_ms,
+				PseuRangeRMSErr: sv.PseuRangeRMSErr,
+				Reserved5:       sv.Reserved5,
+			}
+			clone.RxmMeasx.SV = append(clone.RxmMeasx.SV, csv)
 		}
 	}
 
@@ -238,6 +280,10 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 			OfsQ:         b.OfsQ,
 			MagQ:         b.MagQ,
 		}
+	case *ubx.RxmMeasx:
+		data.RxmMeasx = m
+	case *nmea.GGA:
+		data.GGA = m.Raw
 	}
 
 	return nil

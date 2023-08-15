@@ -9,11 +9,11 @@ import (
 )
 
 type TimeGetter struct {
-	done chan time.Time
+	timeSet chan time.Time
 }
 
 func NewTimeGetter(done chan time.Time) *TimeGetter {
-	return &TimeGetter{done: done}
+	return &TimeGetter{timeSet: done}
 }
 
 func (g *TimeGetter) HandleUbxMessage(message interface{}) error {
@@ -25,7 +25,7 @@ func (g *TimeGetter) HandleUbxMessage(message interface{}) error {
 	now := time.Date(int(navPvt.Year_y), time.Month(int(navPvt.Month_month)), int(navPvt.Day_d), int(navPvt.Hour_h), int(navPvt.Min_min), int(navPvt.Sec_s), int(navPvt.Nano_ns), time.UTC)
 	fmt.Println("Got a valid date:", now)
 
-	g.done <- now
+	g.timeSet <- now
 	return nil
 }
 
