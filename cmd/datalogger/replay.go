@@ -93,27 +93,27 @@ func replayE(cmd *cobra.Command, _ []string) error {
 	//todo: from debugger stop file purger && restart odc-api ...
 	//todo: emit and empty image for each imu event when filename change ...
 
-	//dataHandler, err := NewDataHandler(
-	//	mustGetString(cmd, "db-output-path"),
-	//	mustGetDuration(cmd, "db-log-ttl"),
-	//	mustGetString(cmd, "gnss-json-destination-folder"),
-	//	mustGetDuration(cmd, "gnss-json-save-interval"),
-	//	mustGetString(cmd, "imu-json-destination-folder"),
-	//	mustGetDuration(cmd, "imu-json-save-interval"),
-	//)
-	//if err != nil {
-	//	return fmt.Errorf("creating data handler: %w", err)
-	//}
+	dataHandler, err := NewDataHandler(
+		mustGetString(cmd, "db-output-path"),
+		mustGetDuration(cmd, "db-log-ttl"),
+		mustGetString(cmd, "gnss-json-destination-folder"),
+		mustGetDuration(cmd, "gnss-json-save-interval"),
+		mustGetString(cmd, "imu-json-destination-folder"),
+		mustGetDuration(cmd, "imu-json-save-interval"),
+	)
+	if err != nil {
+		return fmt.Errorf("creating data handler: %w", err)
+	}
 
 	geoJsonHandler := NewGeoJsonHandler()
 
 	directionEventFeed := direction.NewDirectionEventFeed(conf,
-		//dataHandler.HandleDirectionEvent,
+		dataHandler.HandleDirectionEvent,
 		geoJsonHandler.HandleDirectionEvent,
 	)
 	orientedEventFeed := imu.NewOrientedAccelerationFeed(
 		directionEventFeed.HandleOrientedAcceleration,
-		//dataHandler.HandleOrientedAcceleration,
+		dataHandler.HandleOrientedAcceleration,
 	)
 	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
 
@@ -121,10 +121,10 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		sqliteImporter,
 		[]imu.RawFeedHandler{
 			tiltCorrectedAccelerationEventFeed.HandleRawFeed,
-			//dataHandler.HandleRawImuFeed,
+			dataHandler.HandleRawImuFeed,
 		},
 		[]gnss.GnssDataHandler{
-			//dataHandler.HandlerGnssData,
+			dataHandler.HandlerGnssData,
 			directionEventFeed.HandleGnssData,
 			geoJsonHandler.HandleGnss,
 		},
@@ -135,24 +135,28 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("running sql feed: %w", err)
 	}
 
-	locations, err := geoJsonHandler.locationCollection.MarshalJSON()
-	if err != nil {
-		return fmt.Errorf("marshalling locations: %w", err)
+	if len(geoJsonHandler.locationCollection.Features) > 0 {
+		locations, err := geoJsonHandler.locationCollection.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("marshalling locations: %w", err)
+		}
+
+		err = os.WriteFile("locations.json", locations, 0644)
+		if err != nil {
+			return fmt.Errorf("writing locations: %w", err)
+		}
 	}
 
-	err = os.WriteFile("locations.json", locations, 0644)
-	if err != nil {
-		return fmt.Errorf("writing locations: %w", err)
-	}
+	if len(geoJsonHandler.fixedLocationCollection.Features) > 0 {
+		fixedLocations, err := geoJsonHandler.fixedLocationCollection.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("marshalling geojson: %w", err)
+		}
 
-	fixedLocations, err := geoJsonHandler.fixedLocationCollection.MarshalJSON()
-	if err != nil {
-		return fmt.Errorf("marshalling geojson: %w", err)
-	}
-
-	err = os.WriteFile("fixed-locations.json", fixedLocations, 0644)
-	if err != nil {
-		return fmt.Errorf("writing geojson: %w", err)
+		err = os.WriteFile("fixed-locations.json", fixedLocations, 0644)
+		if err != nil {
+			return fmt.Errorf("writing geojson: %w", err)
+		}
 	}
 
 	return nil

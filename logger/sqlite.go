@@ -74,6 +74,10 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			log := <-s.logs
 			query, fields, params := log.InsertQuery()
 
+			if query == "" {
+				continue
+			}
+
 			accumulator, found := queries[query]
 			if !found {
 				accumulator = &Accumulator{}

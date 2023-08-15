@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -51,6 +52,7 @@ func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
 	lastGnssSystemTime := time.Time{}
 	for i := 0; i < numOfIterations; i++ {
 		offset := LIMIT * i
+		var rxmMeasx *string
 		err := s.sqlite.Query(false, query(offset), func(rows *sql.Rows) error {
 			id := 0
 			t := time.Time{}
@@ -103,9 +105,16 @@ func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
 				&gnssData.RF.OfsI,
 				&gnssData.RF.MagI,
 				&gnssData.RF.OfsQ,
+				&gnssData.GGA,
+				&rxmMeasx,
 			)
 			if err != nil {
 				return fmt.Errorf("scanning last position: %s", err.Error())
+			}
+
+			err = json.Unmarshal([]byte(*rxmMeasx), &gnssData.RxmMeasx)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal rxmMeasx: %w", err)
 			}
 
 			ar := &iim42652.AngularRate{}
@@ -183,7 +192,9 @@ func query(offset int) string {
 			   gnss_rf_jam_ind,
 			   gnss_rf_ofs_i,
 			   gnss_rf_mag_i,
-			   gnss_rf_ofs_q
+			   gnss_rf_ofs_q,
+			   gnss_gga,
+			   gnss_rxm_measx
 		from imu_raw order by imu_time asc limit %d offset %d;
 		`, LIMIT, offset,
 	)
