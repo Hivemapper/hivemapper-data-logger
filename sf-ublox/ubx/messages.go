@@ -7896,39 +7896,39 @@ func (v RxmImesMediumId_2) String() string {
 // Class/Id 0x02 0x14 (44 + N*24 bytes)
 // The message payload data is, where possible and appropriate, according to the Radio Resource LCS (Location Services) Protocol (RRLP) [1]. One exception is the satellite and GNSS IDs, which here are given according to the Satellite Numbering scheme. The correct satellites have to be selected and their satellite ID translated accordingly [1, tab. A.10.14] for use in a RRLP Measure Position Response Component. Similarly, the measurement reference time of week has to be forwarded correctly (modulo 14400000 for the 24 LSB GPS measurements variant, modulo 3600000 for the 22 LSB Galileo and Additional Navigation Satelllite Systems (GANSS) measurements variant) of the RRLP measure position response to the SMLC. Reference: [1] ETSI TS 144 031 V11.0.0 (2012-10), Digital cellular telecommunications system (Phase 2+), Location Services (LCS), Mobile Station (MS) - Serving Mobile Location Centre (SMLC), Radio Resource LCS Protocol (RRLP), (3GPP TS 44.031 version 11.0.0 Release 11).
 type RxmMeasx struct {
-	Version         byte              // Message version, currently 0x01
-	Reserved1       [3]byte           // Reserved
-	GpsTOW_ms       uint32            // [ms] GPS measurement reference time
-	GloTOW_ms       uint32            // [ms] GLONASS measurement reference time
-	BdsTOW_ms       uint32            // [ms] BeiDou measurement reference time
-	Reserved2       [4]byte           // Reserved
-	QzssTOW_ms      uint32            // [ms] QZSS measurement reference time
-	GpsTOWacc_msl4  uint16            // [2^-4 ms] GPS measurement reference time accuracy (0xffff = > 4s)
-	GloTOWacc_msl4  uint16            // [2^-4 ms] GLONASS measurement reference time accuracy (0xffff = > 4s)
-	BdsTOWacc_msl4  uint16            // [2^-4 ms] BeiDou measurement reference time accuracy (0xffff = > 4s)
-	Reserved3       [2]byte           // Reserved
-	QzssTOWacc_msl4 uint16            // [2^-4 ms] QZSS measurement reference time accuracy (0xffff = > 4s)
-	NumSV           byte              `len:"SV"` // Number of satellites in repeated block
-	Flags           RxmMeasxFlags     // Flags
-	Reserved4       [8]byte           // Reserved
-	SV              []*RxmMeasxSVType // len: NumSV
+	Version         byte              `json:"version"`
+	Reserved1       [3]byte           `json:"reserved_1"`
+	GpsTOW_ms       uint32            `json:"gps_tow_ms"`
+	GloTOW_ms       uint32            `json:"glo_tow_ms"`
+	BdsTOW_ms       uint32            `json:"bds_tow_ms"`
+	Reserved2       [4]byte           `json:"reserved_2"`
+	QzssTOW_ms      uint32            `json:"qzss_tow_ms"`
+	GpsTOWacc_msl4  uint16            `json:"gps_to_wacc_msl4"`
+	GloTOWacc_msl4  uint16            `json:"glo_to_wacc_msl4"`
+	BdsTOWacc_msl4  uint16            `json:"bds_to_wacc_msl4"`
+	Reserved3       [2]byte           `json:"reserved_3"`
+	QzssTOWacc_msl4 uint16            `json:"qzss_to_wacc_msl4"`
+	NumSV           byte              `len:"SV" json:"num_sv"` // Number of satellites in repeated block
+	Flags           RxmMeasxFlags     `json:"flags"`
+	Reserved4       [8]byte           `json:"reserved_4"`
+	SV              []*RxmMeasxSVType `json:"sv_list"`
 }
 
 func (RxmMeasx) classID() uint16 { return 0x1402 }
 
 type RxmMeasxSVType struct {
-	GnssId          byte    // GNSS ID (see Satellite Numbering)
-	SvId            byte    // Satellite ID (see Satellite Numbering)
-	CNo             byte    // carrier noise ratio (0..63)
-	MpathIndic      byte    // multipath index (according to [1]) (0 = not measured, 1 = low, 2 = medium, 3 = high)
-	DopplerMS_m_s   int32   // [0.04 m/s] Doppler measurement
-	DopplerHz_hz    int32   // [0.2 Hz] Doppler measurement
-	WholeChips      uint16  // whole value of the code phase measurement (0..1022 for GPS)
-	FracChips       uint16  // fractional value of the code phase measurement (0..1023)
-	CodePhase_msl21 uint32  // [2^-21 ms] Code phase
-	IntCodePhase_ms byte    // [ms] Integer (part of the) code phase
-	PseuRangeRMSErr byte    // pseudorange RMS error index (according to [1]) (0..63)
-	Reserved5       [2]byte // Reserved
+	GnssId          byte    `json:"gnss_id"`
+	SvId            byte    `json:"sv_id"`
+	CNo             byte    `json:"c_no"`
+	MpathIndic      byte    `json:"mpath_indic"`
+	DopplerMS_m_s   int32   `json:"doppler_ms_m_s"`
+	DopplerHz_hz    int32   `json:"doppler_hz_hz"`
+	WholeChips      uint16  `json:"whole_chips"`
+	FracChips       uint16  `json:"frac_chips"`
+	CodePhase_msl21 uint32  `json:"code_phase_msl_21"`
+	IntCodePhase_ms byte    `json:"int_code_phase_ms"`
+	PseuRangeRMSErr byte    `json:"pseu_range_rms_err"`
+	Reserved5       [2]byte `json:"reserved_5"`
 }
 
 type RxmMeasxFlags byte
