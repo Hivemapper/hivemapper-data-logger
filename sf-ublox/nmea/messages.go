@@ -66,6 +66,11 @@ type GGA struct {
 	SepUnit     string
 	DiffAge_s   float64
 	DiffStation int
+	Raw         string
+}
+
+func (msg *GGA) SetRaw(raw []byte) {
+	msg.Raw = string(raw)
 }
 
 func (msg *GGA) LatLon() (lat_deg, lon_deg float64) {

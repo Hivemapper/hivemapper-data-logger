@@ -18,6 +18,10 @@ var (
 
 const hexChar = "0123456789ABCDEF"
 
+type RawSettable interface {
+	SetRaw([]byte)
+}
+
 // Decode parses the NMEA frame found between the first '$' and the last '*' in frame.
 // the '*' should be followed by the 2 hex checksum characters, but any further trailing bytes will be ignored.
 func Decode(frame []byte) (msg interface{}, err error) {
@@ -43,6 +47,15 @@ func Decode(frame []byte) (msg interface{}, err error) {
 	}
 	if msg != nil {
 		err = decodeMsg(msg, fields)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if rs, ok := msg.(RawSettable); ok {
+			rs.SetRaw(frame)
+		}
+
 		return msg, err
 	}
 
@@ -246,7 +259,7 @@ func parseHHMMSS(hhmmss float64) time.Duration {
 	hhmmss -= 10000. * float64(hh)
 	mm := int(hhmmss) / 100.
 	hhmmss -= 100. * float64(mm)
-	return time.Duration(hh)*time.Hour + time.Duration(mm)*time.Minute + time.Duration(hhmmss*1E9)*time.Nanosecond
+	return time.Duration(hh)*time.Hour + time.Duration(mm)*time.Minute + time.Duration(hhmmss*1e9)*time.Nanosecond
 }
 
 func parseDDMM(ddmm float64) float64 {
