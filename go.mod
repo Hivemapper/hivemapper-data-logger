@@ -5,7 +5,7 @@ go 1.20
 //replace github.com/daedaleanai/ublox => /Users/cbillett/devel/github/ublox
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230815154721-b29363712a91
 
-replace github.com/streamingfast/gnss-controller => ../gnss-controller
+//replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
 //replace github.com/streamingfast/imu-controller => ../imu-controller
 
@@ -19,7 +19,7 @@ require (
 	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
-	github.com/streamingfast/gnss-controller v0.1.20-0.20230804021855-65451bbfaca5
+	github.com/streamingfast/gnss-controller v0.1.20-0.20230815173310-ebdda81e33a5
 	github.com/streamingfast/imu-controller v0.0.0-20230805142536-5b0b96213d14
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.0
