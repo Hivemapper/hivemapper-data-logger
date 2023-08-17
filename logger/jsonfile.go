@@ -3,13 +3,14 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type JsonDataWrapper struct {
@@ -94,6 +95,7 @@ type JsonFile struct {
 	lock         sync.Mutex
 	destFolder   string
 	saveInterval time.Duration
+	IsLogging    bool
 }
 
 func NewJsonFile(destFolder string, saveInterval time.Duration) *JsonFile {
@@ -104,7 +106,7 @@ func NewJsonFile(destFolder string, saveInterval time.Duration) *JsonFile {
 	}
 }
 
-func (j *JsonFile) Init() error {
+func (j *JsonFile) Init(startLogging bool) error {
 	fmt.Println("initializing json file logger")
 	latestLog := path.Join(j.destFolder, "latest.log")
 	if fileExists(latestLog) {
@@ -123,12 +125,15 @@ func (j *JsonFile) Init() error {
 		}
 	}
 
-	j.StartStoring()
+	if startLogging {
+		j.StartStoring()
+	}
 
 	return nil
 }
 
 func (j *JsonFile) StartStoring() {
+	j.IsLogging = true
 	go func() {
 		for {
 			fmt.Println("saving to file with entry count:", len(j.datas))
@@ -147,8 +152,12 @@ func (j *JsonFile) StartStoring() {
 func (j *JsonFile) Log(time time.Time, data any) error {
 	j.lock.Lock()
 	defer j.lock.Unlock()
+
 	dw := NewDataWrapper(time, data)
-	j.datas = append(j.datas, dw)
+	if j.IsLogging {
+		j.datas = append(j.datas, dw)
+	}
+
 	err := writeToFile(path.Join(j.destFolder, "latest.log"), dw)
 	if err != nil {
 		return fmt.Errorf("writing latest file: %w", err)

@@ -100,9 +100,9 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 	filteredLon := d.Longitude
 	filteredLat := d.Latitude
 
-	if f.gnssFixCheck && d.Fix == "none" {
-		return
-	}
+	//if f.gnssFixCheck && d.Fix == "none" {
+	//	return
+	//}
 
 	err := f.gnssFilteredData.lonFilter.Update(d.Timestamp, f.gnssFilteredData.lonModel.NewMeasurement(d.Longitude))
 	if err != nil {

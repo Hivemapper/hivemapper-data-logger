@@ -228,13 +228,13 @@ func NewDataHandler(
 	}
 
 	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
-	err = gnssJsonLogger.Init()
+	err = gnssJsonLogger.Init(false)
 	if err != nil {
 		return nil, fmt.Errorf("initializing gnss json logger: %w", err)
 	}
 
 	imuJsonLogger := logger.NewJsonFile(imuJsonDestFolder, imuSaveInterval)
-	err = imuJsonLogger.Init()
+	err = imuJsonLogger.Init(true)
 	if err != nil {
 		return nil, fmt.Errorf("initializing imu json logger: %w", err)
 	}
@@ -267,7 +267,11 @@ func (h *DataHandler) HandleOrientedAcceleration(
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	h.gnssData = data
+	if !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
+		h.gnssJsonLogger.StartStoring()
+	}
 	err := h.gnssJsonLogger.Log(data.Timestamp, data)
+
 	if err != nil {
 		return fmt.Errorf("logging gnss data to json: %w", err)
 	}
