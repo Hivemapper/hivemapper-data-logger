@@ -21,17 +21,17 @@ type IIM42652 struct {
 	accelerationSensitivity AccelerationSensitivity
 	gyroScale               GyroScale
 
-	debug      bool
-	setupPower bool
+	debug               bool
+	skipPowerManagement bool
 }
 
-func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, gyroScale GyroScale, debug bool, setupPower bool) *IIM42652 {
+func NewSpi(device string, accelerationSensitivity AccelerationSensitivity, gyroScale GyroScale, debug bool, skipPowerManagement bool) *IIM42652 {
 	return &IIM42652{
 		deviceName:              device,
 		accelerationSensitivity: accelerationSensitivity,
 		gyroScale:               gyroScale,
 		debug:                   debug,
-		setupPower:              setupPower,
+		skipPowerManagement:     skipPowerManagement,
 	}
 }
 
@@ -61,7 +61,7 @@ func (i *IIM42652) Init() error {
 	}
 	i.connection = c
 
-	if i.setupPower {
+	if !i.skipPowerManagement {
 		err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
 		if err != nil {
 			return fmt.Errorf("setting up power: %w", err)
@@ -114,7 +114,6 @@ func (i *IIM42652) SetupPower(pwrMode byte) error {
 	if err != nil {
 		return fmt.Errorf("getting pwrManagement: %w", err)
 	}
-
 	if pwrManagement == GyroModeLowNoise|AccelerometerModeLowNoise {
 		fmt.Println("IMU devices powered on!")
 	} else {
