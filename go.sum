@@ -60,6 +60,7 @@ github.com/streamingfast/gnss-controller v0.1.20-0.20230815173310-ebdda81e33a5 h
 github.com/streamingfast/gnss-controller v0.1.20-0.20230815173310-ebdda81e33a5/go.mod h1:MD6YATsXG8nkM7zKZgEZUfO9u/Ryhe9Ygz/Cof/bc1c=
 github.com/streamingfast/imu-controller v0.0.0-20230805142536-5b0b96213d14 h1:isNrdanq4SAdvmdn6JhNQzvp/2tBnSwChZ1Tnc5ivss=
 github.com/streamingfast/imu-controller v0.0.0-20230805142536-5b0b96213d14/go.mod h1:29sd4ZYEyws4StWQLEslud5ciSCs3sh8aikZ2tSHgrw=
+github.com/streamingfast/imu-controller v0.0.0-20230829205251-e1ba049d1fbc/go.mod h1:29sd4ZYEyws4StWQLEslud5ciSCs3sh8aikZ2tSHgrw=
 github.com/streamingfast/shutter v1.5.0 h1:NpzDYzj0HVpSiDJVO/FFSL6QIK/YKOxY0gJAtyaTOgs=
 github.com/streamingfast/shutter v1.5.0/go.mod h1:B/T6efqdeMGbGwjzPS1ToXzYZI4kDzI5/u4I+7qbjY8=
 github.com/streamingfast/ublox v0.0.0-20230815154721-b29363712a91 h1:8QO0VAWa7CvdcyxxSvTdxQH3ANglZbyc+ADL+hNPwNM=
