@@ -64,6 +64,8 @@ func init() {
 	// Http server
 	LogCmd.Flags().String("http-listen-addr", ":9001", "http server address to listen on")
 
+	LogCmd.Flags().Bool("skip-filtering", false, "skip filtering of gnss data")
+
 	RootCmd.AddCommand(LogCmd)
 }
 
@@ -145,6 +147,10 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
+	var options []gnss.Option
+	if mustGetBool(cmd, "skip-filtering") {
+		options = append(options, gnss.WithSkipFiltering())
+	}
 	gnssEventFeed := gnss.NewGnssFeed(
 		[]gnss.GnssDataHandler{
 			dataHandler.HandlerGnssData,
@@ -152,7 +158,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			eventServer.HandleGnssData,
 		},
 		nil,
-		gnss.WithGnssFixCheck(mustGetBool(cmd, "gnss-fix-check")),
+		options...,
 	)
 
 	go func() {
