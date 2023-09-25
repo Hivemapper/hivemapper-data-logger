@@ -136,7 +136,7 @@ func (j *JsonFile) StartStoring() {
 	j.IsLogging = true
 	go func() {
 		for {
-			fmt.Println("saving to file with entry count:", len(j.datas))
+			fmt.Println("saving to file in ", j.destFolder, "with entry count:", len(j.datas))
 			if len(j.datas) > 0 {
 				err := j.toFile(j.datas[0].Time)
 				if err != nil {

@@ -19,7 +19,7 @@ require (
 	github.com/rosshemsley/kalman v0.0.0-20190615074247-f4b900823fd1
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
-	github.com/streamingfast/gnss-controller v0.1.20-0.20230815173310-ebdda81e33a5
+	github.com/streamingfast/gnss-controller v0.1.20-0.20230925171553-838824f2938b
 	github.com/streamingfast/imu-controller v0.0.0-20230829205251-e1ba049d1fbc
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.0

@@ -2,6 +2,7 @@ package merged
 
 import (
 	"encoding/json"
+
 	"github.com/streamingfast/gnss-controller/device/neom9n"
 	"github.com/streamingfast/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -51,6 +52,7 @@ const ImuRawCreateTable string = `
 		gnss_gga TEXT NOT NULL,
 		gnss_rxm_measx TEXT NOT NULL
 	);
+	create index if not exists imu_raw_imu_time_idx on imu_raw(imu_time);
 `
 
 const insertRawQuery string = `INSERT INTO imu_raw VALUES`

@@ -126,9 +126,9 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
-	directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
-	orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
-	tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
+	//directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
+	//orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
+	//tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
 
 	// TODO: implement replay image feed
 	//imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
@@ -139,7 +139,11 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	//	}
 	//}()
 
-	rawImuEventFeed := imu.NewRawFeed(imuDevice, tiltCorrectedAccelerationEventFeed.HandleRawFeed, dataHandler.HandleRawImuFeed)
+	rawImuEventFeed := imu.NewRawFeed(
+		imuDevice,
+		//tiltCorrectedAccelerationEventFeed.HandleRawFeed,
+		dataHandler.HandleRawImuFeed,
+	)
 	go func() {
 		err := rawImuEventFeed.Run(axisMap)
 		if err != nil {
@@ -154,7 +158,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	gnssEventFeed := gnss.NewGnssFeed(
 		[]gnss.GnssDataHandler{
 			dataHandler.HandlerGnssData,
-			directionEventFeed.HandleGnssData,
+			//directionEventFeed.HandleGnssData,
 			eventServer.HandleGnssData,
 		},
 		nil,

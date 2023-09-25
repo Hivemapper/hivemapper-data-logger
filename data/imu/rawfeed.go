@@ -30,7 +30,7 @@ type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.Angul
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
 	for {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(25 * time.Millisecond)
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
 			return fmt.Errorf("getting acceleration: %w", err)
