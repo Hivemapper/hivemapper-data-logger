@@ -18,7 +18,7 @@ func NewTimeGetter(done chan time.Time) *TimeGetter {
 
 func (g *TimeGetter) HandleUbxMessage(message interface{}) error {
 	navPvt := message.(*ubx.NavPvt)
-	fmt.Println("time getter nav pvt info, date validity:", navPvt.Valid, "accuracy:", navPvt.TAcc_ns, "lock type:", navPvt.FixType, "flags:", navPvt.Flags, "flags2:", navPvt.Flags2, "flags3:", navPvt.Flags3)
+	//fmt.Println("time getter nav pvt info, date validity:", navPvt.Valid, "accuracy:", navPvt.TAcc_ns, "lock type:", navPvt.FixType, "flags:", navPvt.Flags, "flags2:", navPvt.Flags2, "flags3:", navPvt.Flags3)
 	if navPvt.Valid&0x1 == 0 {
 		return nil
 	}
