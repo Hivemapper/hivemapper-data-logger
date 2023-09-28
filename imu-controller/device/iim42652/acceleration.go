@@ -180,5 +180,6 @@ func (i *IIM42652) GetAcceleration() (*Acceleration, error) {
 	y := int16(result[3])<<8 | int16(result[4])
 	z := int16(result[5])<<8 | int16(result[6])
 
-	return NewAcceleration(x, y, z, i.accelerationSensitivity), nil
+	acc := NewAcceleration(x, y, z, i.accelerationSensitivity)
+	return acc, nil
 }

@@ -10,6 +10,7 @@ import (
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
 	"periph.io/x/host/v3"
+	_ "periph.io/x/host/v3"
 )
 
 type IIM42652 struct {
@@ -68,6 +69,30 @@ func (i *IIM42652) Init() error {
 		}
 	}
 
+	err = i.WriteRegister(RegisterDeviceConfig, 0x00)
+	if err != nil {
+		return fmt.Errorf("setting deviceConfig: %w", err)
+	}
+	time.Sleep(time.Second)
+
+	pwrManagement, err := i.ReadRegister(RegisterPwrMgmt0)
+	if err != nil {
+		return fmt.Errorf("getting pwrManagement: %w", err)
+	}
+	fmt.Println("pwrManagement:", hex.EncodeToString([]byte{pwrManagement}))
+
+	deviceConfig, err := i.ReadRegister(RegisterDeviceConfig)
+	if err != nil {
+		return fmt.Errorf("getting deviceConfig: %w", err)
+	}
+	fmt.Println("deviceConfig:", hex.EncodeToString([]byte{deviceConfig}))
+
+	driveConfig, err := i.ReadRegister(RegisterDriveConfig)
+	if err != nil {
+		return fmt.Errorf("getting driveConfig: %w", err)
+	}
+	fmt.Println("driveConfig:", hex.EncodeToString([]byte{driveConfig}))
+
 	if err := i.SetupSignificantMotionDetection(); err != nil {
 		return fmt.Errorf("setting up significant motion detection: %w", err)
 	}
@@ -119,6 +144,15 @@ func (i *IIM42652) SetupPower(pwrMode byte) error {
 	} else {
 		return fmt.Errorf("failed to power on IMU devices")
 	}
+	return nil
+}
+
+func (i *IIM42652) ResetSignalPath() error {
+	err := i.WriteRegister(RegisterSignalPathReset, 0xFF)
+	if err != nil {
+		return fmt.Errorf("resetting signal path: %w", err)
+	}
+	time.Sleep(time.Second)
 	return nil
 }
 
