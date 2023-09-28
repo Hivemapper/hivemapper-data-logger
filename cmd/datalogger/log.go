@@ -46,6 +46,8 @@ func init() {
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 
+	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
+
 	// Sqlite database
 	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	LogCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
@@ -162,7 +164,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 
 	go func() {
-		err = gnssEventFeed.Run(gnssDevice)
+		err = gnssEventFeed.Run(gnssDevice, mustGetString(cmd, "time-valid-threshold"))
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}

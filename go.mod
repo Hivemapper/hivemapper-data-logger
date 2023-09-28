@@ -5,7 +5,7 @@ go 1.20
 //replace github.com/daedaleanai/ublox => /Users/cbillett/devel/github/ublox
 replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230815154721-b29363712a91
 
-//replace github.com/streamingfast/gnss-controller => ../gnss-controller
+replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
 replace github.com/streamingfast/imu-controller => ../imu-controller
 
