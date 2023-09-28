@@ -56,5 +56,17 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 				return fmt.Errorf("calling handler: %w", err)
 			}
 		}
+		if angularRate.X < -2000.0 {
+			fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
+			err := f.imu.Init()
+			if err != nil {
+				return fmt.Errorf("initializing IMU: %w", err)
+			}
+
+			//err := f.imu.ResetSignalPath()
+			//if err != nil {
+			//	return fmt.Errorf("resetting signal path: %w", err)
+			//}
+		}
 	}
 }

@@ -1,5 +1,26 @@
 # hivemapper data logger
 
+## General architecture
+Data Logger in composed of data feeds, data handlers and loggers. Data feed is responsible for reading data from the sensors and emitting events. Data handler is responsible for receiving the events and process it.
+
+Currently we have the following data feeds and handlers chain:
+```
+gnss.EventFeed --|                      | -- sqlite.logger
+                 |-- main.DataHandler --| 
+imu.RawFeed    --|                      | -- jsonFile.Logger
+```
+
+### jsonFile logger
+Is used to write both imu and gps log files to disk. It is also responsible to write the latest.log files. 
+
+### sqlite logger
+Is used to write both imu and gps data to a sqlite database. `merge.imu_raw_sql.go` file contains the schema for the imu and gnss data.
+
+The data is collected by keeping the latest gps data and merge with imu data. Each time the imu data is received, the merged data is inserted into the database
+
+
+## Development and setup
+
 ## Install buf
 Make sure you have buf installed
 ```bash

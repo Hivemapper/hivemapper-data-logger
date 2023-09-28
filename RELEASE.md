@@ -18,5 +18,6 @@ git push origin --tags
 
 ## Run goreleaser
 ```bash
-goreleaser 
+rm -rf dist
+goreleaser release
 ```

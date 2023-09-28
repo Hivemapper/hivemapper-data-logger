@@ -7,7 +7,7 @@ replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20
 
 //replace github.com/streamingfast/gnss-controller => ../gnss-controller
 
-//replace github.com/streamingfast/imu-controller => ../imu-controller
+replace github.com/streamingfast/imu-controller => ../imu-controller
 
 require (
 	github.com/bufbuild/connect-go v1.8.0
