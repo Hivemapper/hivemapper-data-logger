@@ -53,6 +53,7 @@ const MergedCreateTable string = `
 		gnss_rf_mag_i INTEGER NOT NULL,
 		gnss_rf_ofs_q INTEGER NOT NULL
 	);
+	create index if not exists merged_imu_time_idx on merged(imu_time);
 `
 
 const insertMergedQuery string = `INSERT INTO merged VALUES `

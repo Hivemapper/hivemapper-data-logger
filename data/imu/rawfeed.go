@@ -30,7 +30,7 @@ type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.Angul
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
 	for {
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(25 * time.Millisecond)
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
 			return fmt.Errorf("getting acceleration: %w", err)
@@ -55,6 +55,18 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)
 			}
+		}
+		if angularRate.X < -2000.0 {
+			fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
+			err := f.imu.Init()
+			if err != nil {
+				return fmt.Errorf("initializing IMU: %w", err)
+			}
+
+			//err := f.imu.ResetSignalPath()
+			//if err != nil {
+			//	return fmt.Errorf("resetting signal path: %w", err)
+			//}
 		}
 	}
 }

@@ -4,13 +4,14 @@ import (
 	"compress/gzip"
 	"database/sql"
 	"fmt"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 	"io"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	_ "modernc.org/sqlite"
 )
@@ -31,7 +32,7 @@ func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, pur
 		file:                     file,
 		createTableQueryFuncList: createTableQueryFuncList,
 		purgeQueryFuncList:       purgeQueryFuncList,
-		logs:                     make(chan Sqlable, 200),
+		logs:                     make(chan Sqlable, 1000),
 	}
 }
 
@@ -97,7 +98,10 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
 			s.lock.Lock()
+			start := time.Now()
+			fmt.Println("inserting accumulated data")
 			_, err = stmt.Exec(accumulator.cumulatedParams...)
+			fmt.Println("insertion done in:", time.Since(start).String())
 			s.lock.Unlock()
 			if err != nil {
 				panic(fmt.Errorf("inserting Data: %s", err.Error()))
@@ -265,12 +269,13 @@ func (s *Sqlite) Purge(ttl time.Duration) error {
 
 	t := time.Now().Add(ttl * -1)
 	fmt.Println("purging database older than:", t)
+	start := time.Now()
 	for _, purgeQueryFunc := range s.purgeQueryFuncList {
 		if res, err := s.DB.Exec(purgeQueryFunc(), t); err != nil {
 			return err
 		} else {
 			c, _ := res.RowsAffected()
-			fmt.Println("purged rows:", c)
+			fmt.Println("purged rows:", c, "in", time.Since(start).String())
 		}
 	}
 

@@ -42,7 +42,9 @@ const GnssCreateTable string = `
 	rf_magif INTEGER NOT NULL,
 	rf_ofsq INTEGER NOT NULL,
 	rf_magq INTEGER NOT NULL
-  );`
+  );
+	create index if not exists gnss_time_idx on gnss(time);
+`
 
 const insertQuery string = `
 	INSERT INTO gnss VALUES(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
