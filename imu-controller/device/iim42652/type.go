@@ -46,6 +46,8 @@ func (r *Register) String() string {
 }
 
 var (
+	RegisterDeviceConfig       = &Register{Bank0, 0x11}
+	RegisterDriveConfig        = &Register{Bank0, 0x13}
 	RegisterBankSel            = &Register{Bank0, 0x76}
 	RegisterIntfConfig1        = &Register{Bank0, 0x4D}
 	RegisterAccelDataX1        = &Register{Bank0, 0x1f}
@@ -69,6 +71,8 @@ var (
 	RegisterGyroscopeDataX1 = &Register{Bank0, 0x25}
 
 	RegisterTemperatureData = &Register{Bank0, 0x1D}
+
+	RegisterSignalPathReset = &Register{Bank: Bank0, Address: 0x75}
 )
 
 const (
