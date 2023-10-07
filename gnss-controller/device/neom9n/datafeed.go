@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/daedaleanai/ublox/nmea"
-
 	"github.com/daedaleanai/ublox/ubx"
 )
 
