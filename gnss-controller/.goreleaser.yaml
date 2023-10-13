@@ -13,10 +13,6 @@ builds:
       - linux
     main: ./cmd/gnsslogger
     binary: gnsslogger
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
 checksum:
   name_template: 'checksums.txt'
 snapshot:
