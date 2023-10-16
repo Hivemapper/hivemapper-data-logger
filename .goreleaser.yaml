@@ -9,10 +9,6 @@ builds:
       - linux
     main: ./cmd/datalogger
     binary: datalogger
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
 checksum:
   name_template: 'checksums.txt'
 snapshot:
