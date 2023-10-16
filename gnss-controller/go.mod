@@ -1,4 +1,4 @@
-module github.com/streamingfast/gnss-controller
+module github.com/Hivemapper/gnss-controller
 
 go 1.20
 

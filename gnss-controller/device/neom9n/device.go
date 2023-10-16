@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/daedaleanai/ublox/ubx"
-	"github.com/streamingfast/gnss-controller/message"
-	"github.com/streamingfast/gnss-controller/message/handlers"
+	"github.com/Hivemapper/gnss-controller/message"
+	"github.com/Hivemapper/gnss-controller/message/handlers"
 	"github.com/tarm/serial"
 )
 
