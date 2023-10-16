@@ -1,8 +1,8 @@
 package direction
 
 import (
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data"
 )
 
 const MergedCreateTable string = `

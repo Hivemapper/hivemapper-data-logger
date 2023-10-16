@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package sf.events.v1;
 
-option go_package = "github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1;eventsv1";
+option go_package = "github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1;eventsv1";
 
 message EventsRequest {
   repeated string includes = 1;

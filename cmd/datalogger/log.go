@@ -11,12 +11,12 @@ import (
 	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/hivemapper-data-logger/download"
-	"github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
-	"github.com/streamingfast/hivemapper-data-logger/webconnect"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/download"
+	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
+	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -45,6 +45,7 @@ func init() {
 	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
+	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
 
@@ -103,7 +104,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"))
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
 	err = gnssDevice.Init(nil)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)

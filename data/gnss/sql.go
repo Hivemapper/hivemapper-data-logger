@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/logger"
 )
 
 const GnssCreateTable string = `

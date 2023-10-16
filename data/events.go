@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
 )
 
 func round(v float64) float64 {

@@ -7,10 +7,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/gnss"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 

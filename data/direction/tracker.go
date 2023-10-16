@@ -3,9 +3,9 @@ package direction
 import (
 	"time"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 )
 
 type Tracker interface {

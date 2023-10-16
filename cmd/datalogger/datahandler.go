@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data"
-	"github.com/streamingfast/hivemapper-data-logger/data/direction"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/hivemapper-data-logger/data/merged"
-	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data"
+	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/merged"
+	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 

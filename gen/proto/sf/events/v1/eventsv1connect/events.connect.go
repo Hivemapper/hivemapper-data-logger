@@ -8,7 +8,7 @@ import (
 	context "context"
 	errors "errors"
 	connect_go "github.com/bufbuild/connect-go"
-	v1 "github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1"
+	v1 "github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1"
 	http "net/http"
 	strings "strings"
 )

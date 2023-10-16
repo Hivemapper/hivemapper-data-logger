@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/streamingfast/hivemapper-data-logger/logger"
+	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"io"
 	"net/http"
 	"os"

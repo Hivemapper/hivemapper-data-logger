@@ -3,7 +3,7 @@ package imu
 import (
 	"fmt"
 
-	"github.com/streamingfast/hivemapper-data-logger/data"
+	"github.com/Hivemapper/hivemapper-data-logger/data"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 

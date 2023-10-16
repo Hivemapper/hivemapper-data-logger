@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/streamingfast/gnss-controller/device/neom9n"
-	"github.com/streamingfast/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	"github.com/bufbuild/connect-go"
 	uuid2 "github.com/google/uuid"
-	"github.com/streamingfast/hivemapper-data-logger/data"
-	eventsv1 "github.com/streamingfast/hivemapper-data-logger/gen/proto/sf/events/v1"
+	"github.com/Hivemapper/hivemapper-data-logger/data"
+	eventsv1 "github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1"
 )
 
 type subscriptions map[string]*Subscription

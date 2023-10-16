@@ -6,7 +6,7 @@ import (
 
 	"github.com/rosshemsley/kalman"
 	"github.com/rosshemsley/kalman/models"
-	"github.com/streamingfast/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
 )
 
 type GnssDataHandler func(data *neom9n.Data) error
