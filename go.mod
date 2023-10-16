@@ -10,7 +10,7 @@ replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20
 //replace github.com/streamingfast/imu-controller => ../imu-controller
 
 require (
-	github.com/Hivemapper/gnss-controller v1.0.1
+	github.com/Hivemapper/gnss-controller v1.0.2
 	github.com/bufbuild/connect-go v1.10.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/google/uuid v1.3.1
