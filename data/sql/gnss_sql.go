@@ -2,10 +2,7 @@ package sql
 
 import (
 	"encoding/json"
-
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
-	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 const GnssCreateTable string = `
@@ -50,9 +47,9 @@ const GnssCreateTable string = `
 	create index if not exists gnss_time_idx on gnss(time);
 `
 
-const insertRawQuery string = `INSERT INTO gnss VALUES`
+const insertGnssRawQuery string = `INSERT INTO gnss VALUES`
 
-const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const gnssPurgeQuery string = `
 	DELETE FROM gnss WHERE time < ?;
@@ -82,7 +79,7 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		return "", "", nil
 	}
 
-	return insertRawQuery, insertRawFields, []any{
+	return insertGnssRawQuery, insertGnssRawFields, []any{
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Fix,

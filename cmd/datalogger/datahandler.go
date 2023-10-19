@@ -84,11 +84,9 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	}
 	err := h.sqliteLogger.Log(sql.NewGnssSqlWrapper(data))
 	if err != nil {
-		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
+		return fmt.Errorf("logging raw gnss data to sqlite: %w", err)
 	}
-
-	err := h.gnssJsonLogger.Log(data.Timestamp, data)
-
+	err = h.gnssJsonLogger.Log(data.Timestamp, data)
 	if err != nil {
 		return fmt.Errorf("logging gnss data to json: %w", err)
 	}

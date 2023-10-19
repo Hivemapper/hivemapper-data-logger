@@ -1,9 +1,6 @@
 package sql
 
 import (
-	"encoding/json"
-
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -23,9 +20,9 @@ const ImuCreateTable string = `
 	create index if not exists imu_time_idx on imu(imu_time);
 `
 
-const insertRawQuery string = `INSERT INTO imu VALUES`
+const insertImuRawQuery string = `INSERT INTO imu VALUES`
 
-const insertRawFields string = `(NULL,?,?,?,?,?,?,?,?),`
+const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?),`
 
 const imuPurgeQuery string = `
 	DELETE FROM imu WHERE time < ?;
@@ -54,7 +51,7 @@ func NewImuSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Accele
 }
 
 func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
-	return insertRawQuery, insertRawFields, []any{
+	return insertImuRawQuery, insertImuRawFields, []any{
 		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"),
 		w.acceleration.X,
 		w.acceleration.Y,
