@@ -17,7 +17,7 @@ const ImuCreateTable string = `
 		gyro_z REAL NOT NULL,
 		temperature REAL NOT NULL
 	);
-	create index if not exists imu_time_idx on imu(imu_time);
+	create index if not exists imu_time_idx on imu(time);
 `
 
 const insertImuRawQuery string = `INSERT INTO imu VALUES`
