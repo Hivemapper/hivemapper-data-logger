@@ -8,7 +8,6 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data"
 	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/data/merged"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -33,7 +32,7 @@ func NewDataHandler(
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, direction.CreateTableQuery},
-		[]logger.PurgeQueryFunc{merged.PurgeQuery, merged.ImuRawPurgeQuery, sql.GnssPurgeQuery, sql.ImuPurgeQuery, direction.PurgeQuery})
+		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.ImuPurgeQuery, direction.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)

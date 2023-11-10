@@ -104,7 +104,8 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			fmt.Println("insertion done in:", time.Since(start).String())
 			s.lock.Unlock()
 			if err != nil {
-				panic(fmt.Errorf("inserting Data: %s", err.Error()))
+				fmt.Println("cannot insert, probably locked")
+				// panic(fmt.Errorf("inserting Data: %s", err.Error()))
 			}
 			delete(queries, query)
 		}
