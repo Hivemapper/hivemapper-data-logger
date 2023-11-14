@@ -9,6 +9,7 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/merged"
+	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -31,8 +32,8 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
-		[]logger.CreateTableQueryFunc{merged.CreateTableQuery, merged.ImuRawCreateTableQuery, direction.CreateTableQuery},
-		[]logger.PurgeQueryFunc{merged.PurgeQuery, merged.ImuRawPurgeQuery, direction.PurgeQuery})
+		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, direction.CreateTableQuery},
+		[]logger.PurgeQueryFunc{merged.PurgeQuery, merged.ImuRawPurgeQuery, sql.GnssPurgeQuery, sql.ImuPurgeQuery, direction.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -68,11 +69,11 @@ func (h *DataHandler) HandleOrientedAcceleration(
 	temperature iim42652.Temperature,
 	orientation imu.Orientation,
 ) error {
-	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, gnssData, temperature, orientation))
-	if err != nil {
-		return fmt.Errorf("logging merged data to sqlite: %w", err)
-	}
+	// gnssData := mustGnssEvent(h.gnssData)
+	// err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, gnssData, temperature, orientation))
+	// if err != nil {
+	// 	return fmt.Errorf("logging merged data to sqlite: %w", err)
+	// }
 	return nil
 }
 
@@ -81,8 +82,11 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	if !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
 		h.gnssJsonLogger.StartStoring()
 	}
-	err := h.gnssJsonLogger.Log(data.Timestamp, data)
-
+	err := h.sqliteLogger.Log(sql.NewGnssSqlWrapper(data))
+	if err != nil {
+		return fmt.Errorf("logging raw gnss data to sqlite: %w", err)
+	}
+	err = h.gnssJsonLogger.Log(data.Timestamp, data)
 	if err != nil {
 		return fmt.Errorf("logging gnss data to json: %w", err)
 	}
@@ -90,8 +94,7 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(merged.NewImuRawSqlWrapper(temperature, acceleration, gnssData /*h.lastImageFileName*/))
+	err := h.sqliteLogger.Log(sql.NewImuSqlWrapper(temperature, acceleration, angularRate))
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
 	}

@@ -14,9 +14,8 @@ imu.RawFeed    --|                      | -- jsonFile.Logger
 Is used to write both imu and gps log files to disk. It is also responsible to write the latest.log files. 
 
 ### sqlite logger
-Is used to write both imu and gps data to a sqlite database. `merge.imu_raw_sql.go` file contains the schema for the imu and gnss data.
-
-The data is collected by keeping the latest gps data and merge with imu data. Each time the imu data is received, the merged data is inserted into the database
+Sensor data is getting written into GNSS and IMU tables respectively,
+`gnss_sql.go` and `imu_sql.go` contain the schema for imu and gnss data.
 
 
 ## Development and setup
