@@ -79,7 +79,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 		}
 	}()
 
-	_ = n.decoder.Decode(n.stream)
+	_ = n.decoder.Decode(n.stream, n.config)
 
 	n.delConfig(1079115777, "CFG-UART1-BAUDRATE")
 	n.delConfig(807469057, "CFG-RATE-MEAS")
@@ -95,7 +95,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.stream.Close()
 	n.stream, err = serial.OpenPort(n.config)
 	n.decoder = message.NewDecoder(n.handlersRegistry)
-	n.decoderDone = n.decoder.Decode(n.stream)
+	n.decoderDone = n.decoder.Decode(n.stream, n.config)
 
 	fmt.Println("Baud changed")
 

@@ -26,7 +26,7 @@ func NewDecoder(registry *HandlerRegistry) *Decoder {
 	}
 }
 
-func (d *Decoder) Decode(stream *serial.Port) chan error {
+func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error {
 	done := make(chan error)
 	var ubxDecoder *ublox.Decoder
 
@@ -34,7 +34,11 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
         if stream != nil {
             stream.Close()
         }
-        stream = //... (Reopen or create a new serial port)
+		stream, err := serial.OpenPort(config)
+
+		if err != nil {
+			return fmt.Errorf("opening gps serial port: %w", err)
+		
         ubxDecoder = ublox.NewDecoder(stream)
     }
 
