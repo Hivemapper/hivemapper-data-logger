@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/daedaleanai/ublox"
 	"github.com/daedaleanai/ublox/nmea"
@@ -27,8 +28,19 @@ func NewDecoder(registry *HandlerRegistry) *Decoder {
 
 func (d *Decoder) Decode(stream *serial.Port) chan error {
 	done := make(chan error)
-	ubxDecoder := ublox.NewDecoder(stream)
+	var ubxDecoder *ublox.Decoder
+
+	initializeDecoder := func() {
+        if stream != nil {
+            stream.Close()
+        }
+        stream = //... (Reopen or create a new serial port)
+        ubxDecoder = ublox.NewDecoder(stream)
+    }
+
 	go func() {
+		initializeDecoder()
+
 		for {
 			if d.IsTerminating() || d.IsTerminated() {
 				done <- d.Err()
@@ -52,6 +64,11 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 					break
 				}
 				fmt.Println("WARNING: error decoding ubx", err)
+
+				if needToRepair(err) {
+					fmt.Println("Re-initialising decoder...")
+                    initializeDecoder()
+                }
 				continue
 			}
 			if txt, ok := msg.(*nmea.TXT); ok {
@@ -72,4 +89,9 @@ func (d *Decoder) Decode(stream *serial.Port) chan error {
 		}
 	}()
 	return done
+}
+
+func needToRepair(err error) bool {
+    // Check if the error message contains the word "unexpected"
+    return strings.Contains(err.Error(), "unexpected")
 }
