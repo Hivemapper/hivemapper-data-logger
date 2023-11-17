@@ -19,6 +19,7 @@ type DataHandler struct {
 	imuJsonLogger     *logger.JsonFile
 	gnssData          *neom9n.Data
 	lastImageFileName string
+	jsonLogsEnabled   bool
 }
 
 func NewDataHandler(
@@ -28,6 +29,7 @@ func NewDataHandler(
 	gnssSaveInterval time.Duration,
 	imuJsonDestFolder string,
 	imuSaveInterval time.Duration,
+	jsonLogsEnabled bool,
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
@@ -45,7 +47,7 @@ func NewDataHandler(
 	}
 
 	imuJsonLogger := logger.NewJsonFile(imuJsonDestFolder, imuSaveInterval)
-	err = imuJsonLogger.Init(true)
+	err = imuJsonLogger.Init(jsonLogsEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("initializing imu json logger: %w", err)
 	}
@@ -54,6 +56,7 @@ func NewDataHandler(
 		sqliteLogger:   sqliteLogger,
 		gnssJsonLogger: gnssJsonLogger,
 		imuJsonLogger:  imuJsonLogger,
+		jsonLogsEnabled: jsonLogsEnabled,
 	}, err
 }
 
@@ -78,7 +81,7 @@ func (h *DataHandler) HandleOrientedAcceleration(
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	h.gnssData = data
-	if !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
+	if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
 		h.gnssJsonLogger.StartStoring()
 	}
 	err := h.sqliteLogger.Log(sql.NewGnssSqlWrapper(data))

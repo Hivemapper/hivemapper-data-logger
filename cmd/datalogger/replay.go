@@ -100,6 +100,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		mustGetDuration(cmd, "gnss-json-save-interval"),
 		mustGetString(cmd, "imu-json-destination-folder"),
 		mustGetDuration(cmd, "imu-json-save-interval"),
+		mustGetBool(cmd, "json-logs-enabled"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

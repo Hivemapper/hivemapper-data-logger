@@ -51,6 +51,12 @@ func NewImuSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Accele
 }
 
 func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
+	// very basic validation to prevent empty records on getting into database
+	if w.acceleration == nil || 
+		w.acceleration.Time.IsZero()  {
+		 return "", "", nil
+	}
+
 	return insertImuRawQuery, insertImuRawFields, []any{
 		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"),
 		w.acceleration.X,

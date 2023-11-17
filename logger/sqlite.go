@@ -44,6 +44,12 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		return fmt.Errorf("opening database: %s", err.Error())
 	}
 
+	// Enable Write-Ahead Logging
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		return fmt.Errorf("setting WAL mode: %s", err.Error())
+	}
+
 	for _, createQuery := range s.createTableQueryFuncList {
 		if _, err := db.Exec(createQuery()); err != nil {
 			return fmt.Errorf("creating table: %s", err.Error())
@@ -55,7 +61,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	if logTTL > 0 {
 		go func() {
 			for {
-				time.Sleep(time.Minute)
+				time.Sleep(5 * time.Minute)
 				err := s.Purge(logTTL)
 				if err != nil {
 					panic(fmt.Errorf("purging database: %s", err.Error()))
@@ -88,7 +94,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			accumulator.cumulatedFields += fields
 			accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 
-			if accumulator.count < 100 {
+			if accumulator.count < 20 {
 				continue
 			}
 
@@ -97,14 +103,12 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			if err != nil {
 				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
-			s.lock.Lock()
 			start := time.Now()
 			fmt.Println("inserting accumulated data")
 			_, err = stmt.Exec(accumulator.cumulatedParams...)
 			fmt.Println("insertion done in:", time.Since(start).String())
-			s.lock.Unlock()
 			if err != nil {
-				fmt.Println("cannot insert, probably locked")
+				fmt.Println(err)
 				// panic(fmt.Errorf("inserting Data: %s", err.Error()))
 			}
 			delete(queries, query)

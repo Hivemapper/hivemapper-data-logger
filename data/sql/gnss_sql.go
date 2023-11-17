@@ -73,7 +73,16 @@ func NewGnssSqlWrapper(gnssData *neom9n.Data) *GnssSqlWrapper {
 	}
 }
 
+
+
 func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
+	// very basic validation to prevent empty records on getting into database
+	if w.gnssData == nil || 
+		w.gnssData.SystemTime.IsZero() || 
+		w.gnssData.Timestamp.IsZero() {
+		return "", "", nil
+ 	}
+
 	rxmMeasx, err := json.Marshal(w.gnssData.RxmMeasx)
 	if err != nil {
 		return "", "", nil
