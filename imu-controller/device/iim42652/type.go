@@ -61,18 +61,26 @@ var (
 
 	RegisterSdmConfig0  = &Register{Bank0, 0x57}
 	RegisterIntStatus2  = &Register{Bank0, 0x37}
-	RegisterAccelConfig = &Register{Bank0, 0x50}
+	RegisterAccelConfig = &Register{Bank0, 0x50} // MPUREG_ACCEL_CONFIG0
 
 	RegisterAntiAliasFilterDelta    = &Register{Bank2, 0x03} // bits 6:1, ACCEL_AAF_DELT: Code from 1 to 63 that allows programming the bandwidth for accelerometer anti-alias filter
 	RegisterAntiAliasFilterDeltaSqr = &Register{Bank2, 0x04} //bits 7:0 and Bank 2, register 0x05h, bits 3:0, ACCEL_AAF_DELTSQR: Square of the delt value for accelerometer
 	RegisterAntiAliasFilterBitshift = &Register{Bank2, 0x05} //bits 7:4, ACCEL_AAF_BITSHIFT: Bitshift value for accelerometer used in hardware implementation
 
+	RegisterGyroscopeConfig0 = &Register{Bank0, 0x4f} // MPUREG_GYRO_CONFIG0
+	RegisterGyroscopeConfig1 = &Register{Bank0, 0x51} // MPUREG_GYRO_CONFIG1
+
 	// RegisterGyroscopeDataX1 GYRO_DATA_X1 (0x25), GYRO_DATA_X0 (0x26), GYRO_DATA_Y1 (0x27), GYRO_DATA_Y0 (0x28), GYRO_DATA_Z1 (0x29), GYRO_DATA_Z0 (0x2A)
-	RegisterGyroscopeDataX1 = &Register{Bank0, 0x25}
+	RegisterGyroscopeDataX1 = &Register{Bank0, 0x25} // MPUREG_GYRO_DATA_X1_UI
 
 	RegisterTemperatureData = &Register{Bank0, 0x1D}
 
 	RegisterSignalPathReset = &Register{Bank: Bank0, Address: 0x75}
+
+	RegisterAccelGyroConfig = &Register{Bank: Bank0, Address: 0x52} // MPUREG_ACCEL_GYRO_CONFIG0
+
+	RegisterOffsetUser0 = &Register{Bank: Bank4, Address: 0x77} // MPUREG_OFFSET_USER_0_B4
+	RegisterOffsetUser4 = &Register{Bank: Bank4, Address: 0x7B} // MPUREG_OFFSET_USER_4_B4
 )
 
 const (
