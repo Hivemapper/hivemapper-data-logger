@@ -291,7 +291,7 @@ func (i *IIM42652) writeAccelerometerBiasToUserRegister(bias [3]int32) error {
 	if err != nil {
 		return err
 	}
-	data[0] = (gyroData & bitAccelXOffuserMaskHi)
+	data[0] = (gyroData & bitGyroZOffuserMaskHi)
 
 	cur_bias := convertAccelBiasToRegisterFormat(bias[0])
 	data[0] |= storeHighBits(cur_bias, bitAccelXOffuserPosHi)
