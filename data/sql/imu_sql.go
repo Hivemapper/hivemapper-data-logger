@@ -20,7 +20,7 @@ const ImuCreateTable string = `
 	create index if not exists imu_time_idx on imu(time);
 `
 
-const insertImuRawQuery string = `INSERT INTO imu VALUES`
+const insertImuRawQuery string = `INSERT OR IGNORE INTO imu VALUES`
 
 const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?),`
 

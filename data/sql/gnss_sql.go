@@ -47,7 +47,7 @@ const GnssCreateTable string = `
 	create index if not exists gnss_time_idx on gnss(time);
 `
 
-const insertGnssRawQuery string = `INSERT INTO gnss VALUES`
+const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 
 const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 

@@ -94,7 +94,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			accumulator.cumulatedFields += fields
 			accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 
-			if accumulator.count < 20 {
+			if accumulator.count < 10 {
 				continue
 			}
 
@@ -103,10 +103,10 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			if err != nil {
 				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
-			start := time.Now()
-			fmt.Println("inserting accumulated data")
+			// start := time.Now()
+			// fmt.Println("inserting accumulated data")
 			_, err = stmt.Exec(accumulator.cumulatedParams...)
-			fmt.Println("insertion done in:", time.Since(start).String())
+			// fmt.Println("insertion done in:", time.Since(start).String())
 			if err != nil {
 				fmt.Println(err)
 				// panic(fmt.Errorf("inserting Data: %s", err.Error()))
