@@ -97,7 +97,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.decoder = message.NewDecoder(n.handlersRegistry)
 	n.decoderDone = n.decoder.Decode(n.stream, n.config)
 
-	fmt.Println("Baud changed")
+	fmt.Println("===== NEW: Baud changed =====")
 
 	n.setConfig(269549605, []byte{0x01}, "CFG-NAVSPG-ACKAIDING")         // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 	n.setConfig(546374490, []byte{0x01}, "CFG-MSGOUT-UBX_MON_RF_UART1")  // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1

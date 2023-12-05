@@ -31,14 +31,18 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 	var ubxDecoder *ublox.Decoder
 
 	initializeDecoder := func() {
-        if stream != nil {
-            stream.Close()
-        }
+		fmt.Println("=========================");
+		fmt.Println("Initializing decoder...");
+		fmt.Println("=========================");
+        // if stream != nil {
+		// 	fmt.Println("Closing stream");
+        //     stream.Close()
+        // }
 		stream, err := serial.OpenPort(config)
 
 		if err != nil {
-			return fmt.Errorf("opening gps serial port: %w", err)
-		
+			fmt.Errorf("opening gps serial port: %w", err)
+		}
         ubxDecoder = ublox.NewDecoder(stream)
     }
 
@@ -69,10 +73,7 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				}
 				fmt.Println("WARNING: error decoding ubx", err)
 
-				if needToRepair(err) {
-					fmt.Println("Re-initialising decoder...")
-                    initializeDecoder()
-                }
+				initializeDecoder()
 				continue
 			}
 			if txt, ok := msg.(*nmea.TXT); ok {
