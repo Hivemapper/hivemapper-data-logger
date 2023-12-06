@@ -103,11 +103,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
-	err = gnssDevice.Init(nil)
-	if err != nil {
-		return fmt.Errorf("initializing neom9n: %w", err)
-	}
 
 	// listenAddr := mustGetString(cmd, "listen-addr")
 	eventServer := webconnect.NewEventServer()
@@ -123,6 +118,12 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
+	}
+
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
+	err = gnssDevice.Init(nil)
+	if err != nil {
+		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 
 	//directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)

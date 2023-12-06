@@ -23,7 +23,6 @@ require (
 	github.com/streamingfast/imu-controller v0.0.0-20230928133410-7c6595dd3783
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.1
-	golang.org/x/net v0.17.0
 	google.golang.org/protobuf v1.31.0
 	modernc.org/sqlite v1.26.0
 )

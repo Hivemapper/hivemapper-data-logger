@@ -33,8 +33,8 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
-		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, direction.CreateTableQuery},
-		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.ImuPurgeQuery, direction.PurgeQuery})
+		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, direction.CreateTableQuery},
+		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, direction.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
