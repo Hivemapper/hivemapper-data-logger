@@ -8,7 +8,6 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data"
 	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/data/merged"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -20,6 +19,7 @@ type DataHandler struct {
 	imuJsonLogger     *logger.JsonFile
 	gnssData          *neom9n.Data
 	lastImageFileName string
+	jsonLogsEnabled   bool
 }
 
 func NewDataHandler(
@@ -29,11 +29,12 @@ func NewDataHandler(
 	gnssSaveInterval time.Duration,
 	imuJsonDestFolder string,
 	imuSaveInterval time.Duration,
+	jsonLogsEnabled bool,
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
-		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, direction.CreateTableQuery},
-		[]logger.PurgeQueryFunc{merged.PurgeQuery, merged.ImuRawPurgeQuery, sql.GnssPurgeQuery, sql.ImuPurgeQuery, direction.PurgeQuery})
+		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, direction.CreateTableQuery},
+		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, direction.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -46,7 +47,7 @@ func NewDataHandler(
 	}
 
 	imuJsonLogger := logger.NewJsonFile(imuJsonDestFolder, imuSaveInterval)
-	err = imuJsonLogger.Init(true)
+	err = imuJsonLogger.Init(jsonLogsEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("initializing imu json logger: %w", err)
 	}
@@ -55,6 +56,7 @@ func NewDataHandler(
 		sqliteLogger:   sqliteLogger,
 		gnssJsonLogger: gnssJsonLogger,
 		imuJsonLogger:  imuJsonLogger,
+		jsonLogsEnabled: jsonLogsEnabled,
 	}, err
 }
 
@@ -79,7 +81,7 @@ func (h *DataHandler) HandleOrientedAcceleration(
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	h.gnssData = data
-	if !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
+	if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
 		h.gnssJsonLogger.StartStoring()
 	}
 	err := h.sqliteLogger.Log(sql.NewGnssSqlWrapper(data))

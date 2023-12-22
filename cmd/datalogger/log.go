@@ -18,8 +18,6 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 var LogCmd = &cobra.Command{
@@ -46,6 +44,7 @@ func init() {
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
+	LogCmd.Flags().Bool("json-logs-enabled", false, "enable logging sensor data into json files")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
 
@@ -104,13 +103,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
-	err = gnssDevice.Init(nil)
-	if err != nil {
-		return fmt.Errorf("initializing neom9n: %w", err)
-	}
 
-	listenAddr := mustGetString(cmd, "listen-addr")
+	// listenAddr := mustGetString(cmd, "listen-addr")
 	eventServer := webconnect.NewEventServer()
 
 	dataHandler, err := NewDataHandler(
@@ -120,9 +114,16 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetDuration(cmd, "gnss-json-save-interval"),
 		mustGetString(cmd, "imu-json-destination-folder"),
 		mustGetDuration(cmd, "imu-json-save-interval"),
+		mustGetBool(cmd, "json-logs-enabled"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
+	}
+
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
+	err = gnssDevice.Init(nil)
+	if err != nil {
+		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 
 	//directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
@@ -183,13 +184,13 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	mux.Handle(path, handler)
 
-	go func() {
-		fmt.Printf("Starting GRPC server on %s ...\n", listenAddr)
-		err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
-		if err != nil {
-			panic(fmt.Sprintf("running server: %s", err.Error()))
-		}
-	}()
+	// go func() {
+	// 	fmt.Printf("Starting GRPC server on %s ...\n", listenAddr)
+	// 	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
+	// 	if err != nil {
+	// 		panic(fmt.Sprintf("running server: %s", err.Error()))
+	// 	}
+	// }()
 
 	httpListenAddr := mustGetString(cmd, "http-listen-addr")
 

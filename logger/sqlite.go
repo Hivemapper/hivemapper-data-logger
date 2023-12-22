@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 	"time"
-
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -36,12 +35,22 @@ func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, pur
 	}
 }
 
+func (s *Sqlite) InsertErrorLog(message string) {
+	s.DB.Exec("INSERT OR IGNORE INTO error_logs VALUES (NULL,?,?,?)", time.Now().Format("2006-01-02 15:04:05.99999"), "data-logger", message)
+}
+
 func (s *Sqlite) Init(logTTL time.Duration) error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
+	}
+
+	// Enable Write-Ahead Logging
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		return fmt.Errorf("setting WAL mode: %s", err.Error())
 	}
 
 	for _, createQuery := range s.createTableQueryFuncList {
@@ -52,12 +61,18 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 
 	fmt.Println("database initialized, will purge every:", logTTL.String())
 
+	s.DB = db
+
+	s.InsertErrorLog("testing error logs")
+
 	if logTTL > 0 {
 		go func() {
 			for {
-				time.Sleep(time.Minute)
+				time.Sleep(5 * time.Minute)
+				s.InsertErrorLog("purging database")
 				err := s.Purge(logTTL)
 				if err != nil {
+					s.InsertErrorLog("purging database error: " + err.Error())
 					panic(fmt.Errorf("purging database: %s", err.Error()))
 				}
 			}
@@ -88,29 +103,39 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			accumulator.cumulatedFields += fields
 			accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 
-			if accumulator.count < 100 {
+			if accumulator.count < 10 {
 				continue
 			}
 
 			accumulator.cumulatedFields = accumulator.cumulatedFields[0 : len(accumulator.cumulatedFields)-1] //remove last comma
 			stmt, err := db.Prepare(query + accumulator.cumulatedFields)
 			if err != nil {
+				s.InsertErrorLog(err.Error())
 				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
 			}
-			s.lock.Lock()
-			start := time.Now()
-			fmt.Println("inserting accumulated data")
-			_, err = stmt.Exec(accumulator.cumulatedParams...)
-			fmt.Println("insertion done in:", time.Since(start).String())
-			s.lock.Unlock()
-			if err != nil {
-				panic(fmt.Errorf("inserting Data: %s", err.Error()))
+
+			maxRetries := 4 // Maximum number of retries
+			for attempt := 0; attempt < maxRetries; attempt++ {
+				_, err = stmt.Exec(accumulator.cumulatedParams...)
+				if err == nil {
+					break // Success, exit the retry loop
+				}
+	
+				if attempt < maxRetries - 1 {
+					delay := time.Duration(50 * (1 << attempt)) * time.Millisecond
+                	time.Sleep(delay)
+					s.InsertErrorLog(fmt.Sprintf("Retry attempt %d for query: %s", attempt+1, query))
+				}
 			}
+	
+			if err != nil {
+				s.InsertErrorLog(err.Error()) // Log final failure
+				fmt.Println(err)
+			}
+
 			delete(queries, query)
 		}
 	}()
-
-	s.DB = db
 
 	return nil
 }
