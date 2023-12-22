@@ -44,7 +44,7 @@ const GnssCreateTable string = `
 		gga TEXT NOT NULL,
 		rxm_measx TEXT NOT NULL
 	);
-	create index if not exists gnss_time_idx on gnss(time);
+	create index if not exists gnss_time_idx on gnss(system_time);
 `
 
 const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
@@ -52,7 +52,7 @@ const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const gnssPurgeQuery string = `
-	DELETE FROM gnss WHERE time < ?;
+	DELETE FROM gnss WHERE system_time < ?;
 `
 
 func GnssCreateTableQuery() string {
