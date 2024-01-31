@@ -39,14 +39,14 @@ func ImuPurgeQuery() string {
 type ImuSqlWrapper struct {
 	acceleration *imu.Acceleration
 	temperature  iim42652.Temperature
-	gyroscope *iim42652.AngularRate
+	gyroscope    *iim42652.AngularRate
 }
 
 func NewImuSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, gyroscope *iim42652.AngularRate) *ImuSqlWrapper {
 	return &ImuSqlWrapper{
 		acceleration: acceleration,
 		temperature:  temperature,
-		gyroscope:     gyroscope,
+		gyroscope:    gyroscope,
 	}
 }
 
@@ -62,9 +62,9 @@ func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
 		w.acceleration.X,
 		w.acceleration.Y,
 		w.acceleration.Z,
-		*w.temperature,
 		w.gyroscope.X,
 		w.gyroscope.Y,
 		w.gyroscope.Z,
+		*w.temperature,
 	}
 }
