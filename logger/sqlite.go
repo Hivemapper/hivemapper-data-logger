@@ -68,8 +68,8 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	if logTTL > 0 {
 		go func() {
 			for {
+				fmt.Println("will purge DB in 5 minute")
 				time.Sleep(5 * time.Minute)
-				s.InsertErrorLog("purging database")
 				err := s.Purge(logTTL)
 				if err != nil {
 					s.InsertErrorLog("purging database error: " + err.Error())
