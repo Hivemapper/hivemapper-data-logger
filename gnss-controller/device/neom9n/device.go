@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/daedaleanai/ublox/ubx"
 	"github.com/Hivemapper/gnss-controller/message"
 	"github.com/Hivemapper/gnss-controller/message/handlers"
+	"github.com/daedaleanai/ublox/ubx"
 	"github.com/tarm/serial"
 )
 
@@ -21,8 +21,8 @@ type Neom9n struct {
 	output             chan ubx.Message
 	mgaOfflineFilePath string
 	decoderDone        chan error
-	measxEnabled	   bool
-	errorCallback	   message.ErrorCallback
+	measxEnabled       bool
+	errorCallback      message.ErrorCallback
 }
 
 func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, errorCallback message.ErrorCallback) *Neom9n {
@@ -38,8 +38,8 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRa
 		handlersRegistry:   message.NewHandlerRegistry(),
 		mgaOfflineFilePath: mgaOfflineFilePath,
 		output:             make(chan ubx.Message),
-		measxEnabled: measxEnabled,
-		errorCallback: errorCallback,
+		measxEnabled:       measxEnabled,
+		errorCallback:      errorCallback,
 	}
 
 	return n
@@ -110,8 +110,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 		value = []byte{0x01}
 	}
 	n.setConfig(546374149, value, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	//todo: request UBX-SEC-ECSIGN message output
-	//todo: find CFG-MSGOUT-UBX_SEC_ECSIGN_UART1
+	n.setConfig(0x2091034b, []byte{0x01}, "CFG-MSGOUT-UBX_SEC_ECSIGN_UART1")
 
 	n.setConfig(807469057, uint16(128), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
@@ -202,6 +201,10 @@ func (n *Neom9n) Run(dataFeed *DataFeed, timeValidThreshold string, timeSetCallb
 	if n.measxEnabled {
 		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
 	}
+
+	// We need to pass a buffer along with ubx.SecEcsign to the data handler,
+	// so we must register a composite class instead of ubx.SecEcsign
+	n.handlersRegistry.RegisterHandler(message.UbxSecEcsignWithBuffer, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.NneaGGA, dataFeed)
 
 	if now == (time.Time{}) {

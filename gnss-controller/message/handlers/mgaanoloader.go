@@ -44,7 +44,7 @@ func (l *MgaAnoLoader) LoadAnoFile(file string, loadAll bool, now time.Time, out
 	}()
 
 	for {
-		msg, err := mgaOfflineDecoder.Decode()
+		msg, _, err := mgaOfflineDecoder.Decode()
 		if err != nil {
 			if err == io.EOF {
 				fmt.Println()
