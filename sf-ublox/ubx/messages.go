@@ -8385,6 +8385,23 @@ type SecUniqid struct {
 
 func (SecUniqid) classID() uint16 { return 0x0327 }
 
+// Message ubx-sec-ecsign
+
+// SecEcsign (Periodic/Polled) Secure ECDSA Signature Hash
+// Class/Id 0x27 0x04 (108 bytes)
+// This message contains the information needed to authenticate gnss messages
+type SecEcsign struct {
+	Version        uint8
+	Reserved0      uint8
+	MsgNum         uint16
+	FinalHash      [32]byte
+	SessionId      [24]byte
+	EcdsaSignature [48]byte
+}
+
+func (SecEcsign) classID() uint16 { return 0x2704 }
+
+
 // Message ubx-tim-dosc
 
 // TimDosc (Output) Disciplined oscillator control
@@ -9491,6 +9508,9 @@ func mkMsg(classId, sz uint16, frame []byte) Message {
 
 	case 0x0327:
 		return new(SecUniqid)
+
+	case 0x0427:
+		return new(SecEcsign)
 
 	case 0x110d:
 		return new(TimDosc)

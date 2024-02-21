@@ -75,19 +75,21 @@ func splitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 }
 
 // Decode reads on NMEA or UBX frame and calls nmea.Decode or ubx.Decode accordingly to parse the message.
-func (d *Decoder) Decode() (msg interface{}, err error) {
+func (d *Decoder) Decode() (msg interface{}, bytes []byte, err error) {
 	if !d.s.Scan() {
 		if err = d.s.Err(); err == nil {
 			err = io.EOF
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	switch d.s.Bytes()[0] {
 	case '$':
-		return nmea.Decode(d.s.Bytes())
+		msg, err := nmea.Decode(d.s.Bytes())
+		return msg, d.s.Bytes(), err
 	case 0xB5:
-		return ubx.Decode(d.s.Bytes())
+		msg, err := ubx.Decode(d.s.Bytes())
+		return msg, d.s.Bytes(), err
 	}
 	panic("impossible frame")
 }
