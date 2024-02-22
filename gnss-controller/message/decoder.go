@@ -26,7 +26,9 @@ func NewDecoder(registry *HandlerRegistry) *Decoder {
 	}
 }
 
-func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error {
+type ErrorCallback func(errorMessage string)
+
+func (d *Decoder) Decode(stream *serial.Port, config *serial.Config, errorCallback ErrorCallback) chan error {
 	done := make(chan error)
 	var ubxDecoder *ublox.Decoder
 
@@ -72,7 +74,7 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 					break
 				}
 				fmt.Println("WARNING: error decoding ubx", err)
-
+				errorCallback(err.Error())
 				initializeDecoder()
 				continue
 			}
