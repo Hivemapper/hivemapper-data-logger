@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Hivemapper/gnss-controller/message"
 	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 )
@@ -40,10 +41,11 @@ type Data struct {
 	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
 	VerticalAccuracy   float64     `json:"vertical_accuracy"`
 
-	startTime time.Time
-	GGA       string        `json:"gga"`
-	RxmMeasx  *ubx.RxmMeasx `json:"rxm_measx"`
-
+	startTime       time.Time
+	GGA             string         `json:"gga"`
+	RxmMeasx        *ubx.RxmMeasx  `json:"rxm_measx"`
+	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
+	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
 }
 
@@ -281,6 +283,10 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		}
 	case *ubx.RxmMeasx:
 		data.RxmMeasx = m
+	case *message.SecEcsignWithBuffer:
+		data.SecEcsign = m.SecEcsign
+		data.SecEcsignBuffer = m.Base64MessageBuffer
+		df.HandleData(data)
 	case *nmea.GGA:
 		data.GGA = m.Raw
 	}
