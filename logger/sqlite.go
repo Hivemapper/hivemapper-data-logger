@@ -128,7 +128,6 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			if accumulator.cumulatedFields[len(accumulator.cumulatedFields)-1] == ',' {
 				accumulator.cumulatedFields = accumulator.cumulatedFields[0 : len(accumulator.cumulatedFields)-1] //remove last comma
 			}
-			fmt.Println(query + accumulator.cumulatedFields)
 			stmt, err := db.Prepare(query + accumulator.cumulatedFields)
 			if err != nil {
 				s.InsertErrorLog(err.Error())
