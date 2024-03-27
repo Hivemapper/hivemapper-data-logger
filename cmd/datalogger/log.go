@@ -7,16 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
+	"github.com/Hivemapper/hivemapper-data-logger/download"
+	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
+	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
-	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
-	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/download"
-	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
-	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
@@ -27,6 +28,8 @@ var LogCmd = &cobra.Command{
 }
 
 func init() {
+	// readI2C()
+
 	// Imu
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
@@ -169,6 +172,22 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		err = gnssEventFeed.Run(gnssDevice, mustGetString(cmd, "time-valid-threshold"))
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
+		}
+	}()
+
+	magnetometerEventFeed := magnetometer.NewRawFeed(
+		dataHandler.HandlerMagnetometerData,
+	)
+
+	err = magnetometerEventFeed.Init()
+	if err != nil {
+		panic(fmt.Errorf("initializing magnetometer feed: %w", err))
+	}
+
+	go func() {
+		err = magnetometerEventFeed.Run()
+		if err != nil {
+			panic(fmt.Errorf("running magnetometer feed: %w", err))
 		}
 	}()
 
