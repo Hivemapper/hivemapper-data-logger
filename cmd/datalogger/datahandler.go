@@ -8,6 +8,7 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data"
 	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -33,8 +34,8 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
-		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, direction.CreateTableQuery},
-		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, direction.PurgeQuery})
+		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, direction.CreateTableQuery, magnetometer.CreateTableQuery},
+		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, direction.PurgeQuery, magnetometer.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -101,6 +102,14 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 		return nil
 	}
 
+	return nil
+}
+
+func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
+	err := h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, mag_x, mag_y, mag_z))
+	if err != nil {
+		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
+	}
 	return nil
 }
 

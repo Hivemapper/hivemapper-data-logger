@@ -7,16 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
+	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
+	"github.com/Hivemapper/hivemapper-data-logger/download"
+	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
+	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
-	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
-	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/download"
-	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
-	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
@@ -63,6 +64,9 @@ func init() {
 	LogCmd.Flags().String("http-listen-addr", ":9001", "http server address to listen on")
 
 	LogCmd.Flags().Bool("skip-filtering", false, "skip filtering of gnss data")
+
+	// Magnetometer
+	LogCmd.Flags().Bool("enable-magnetometer", false, "enable reading from magnetometer")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -171,6 +175,23 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}
 	}()
+
+	if mustGetBool(cmd, "enable-magnetometer") {
+		magnetometerEventFeed := magnetometer.NewRawFeed(
+			dataHandler.HandlerMagnetometerData,
+		)
+
+		err = magnetometerEventFeed.Init()
+		if err != nil {
+			panic(fmt.Errorf("initializing magnetometer feed: %w", err))
+		}
+		go func() {
+			err = magnetometerEventFeed.Run()
+			if err != nil {
+				panic(fmt.Errorf("running magnetometer feed: %w", err))
+			}
+		}()
+	}
 
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
