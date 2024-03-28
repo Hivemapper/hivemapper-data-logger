@@ -66,7 +66,7 @@ func init() {
 	LogCmd.Flags().Bool("skip-filtering", false, "skip filtering of gnss data")
 
 	// Magnetometer
-	LogCmd.Flags().Bool("skip-magnetometer", false, "skip reading from magnetometer")
+	LogCmd.Flags().Bool("enable-magnetometer", false, "enable reading from magnetometer")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -176,7 +176,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
-	if !mustGetBool(cmd, "skip-magnetometer") {
+	if mustGetBool(cmd, "enable-magnetometer") {
 		magnetometerEventFeed := magnetometer.NewRawFeed(
 			dataHandler.HandlerMagnetometerData,
 		)
