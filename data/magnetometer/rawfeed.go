@@ -68,7 +68,7 @@ func (f *RawFeed) Run() error {
 		time.Sleep(25 * time.Millisecond)
 		mag_readings, err := readData(f.device)
 		if err != nil {
-			return fmt.Errorf("getting acceleration: %w", err)
+			return fmt.Errorf("getting magnetometer readings: %w", err)
 		}
 
 		for _, handler := range f.handlers {

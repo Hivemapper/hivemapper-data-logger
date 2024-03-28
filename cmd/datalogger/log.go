@@ -28,8 +28,6 @@ var LogCmd = &cobra.Command{
 }
 
 func init() {
-	// readI2C()
-
 	// Imu
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
 	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
@@ -66,6 +64,9 @@ func init() {
 	LogCmd.Flags().String("http-listen-addr", ":9001", "http server address to listen on")
 
 	LogCmd.Flags().Bool("skip-filtering", false, "skip filtering of gnss data")
+
+	// Magnetometer
+	LogCmd.Flags().Bool("skip-magnetometer", false, "skip reading from magnetometer")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -175,21 +176,22 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
-	magnetometerEventFeed := magnetometer.NewRawFeed(
-		dataHandler.HandlerMagnetometerData,
-	)
+	if !mustGetBool(cmd, "skip-magnetometer") {
+		magnetometerEventFeed := magnetometer.NewRawFeed(
+			dataHandler.HandlerMagnetometerData,
+		)
 
-	err = magnetometerEventFeed.Init()
-	if err != nil {
-		panic(fmt.Errorf("initializing magnetometer feed: %w", err))
-	}
-
-	go func() {
-		err = magnetometerEventFeed.Run()
+		err = magnetometerEventFeed.Init()
 		if err != nil {
-			panic(fmt.Errorf("running magnetometer feed: %w", err))
+			panic(fmt.Errorf("initializing magnetometer feed: %w", err))
 		}
-	}()
+		go func() {
+			err = magnetometerEventFeed.Run()
+			if err != nil {
+				panic(fmt.Errorf("running magnetometer feed: %w", err))
+			}
+		}()
+	}
 
 	mux := http.NewServeMux()
 	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
