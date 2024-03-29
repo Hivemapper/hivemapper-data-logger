@@ -8,9 +8,9 @@ const MagCreateTable string = `
   CREATE TABLE IF NOT EXISTS magnetometer (
   	id INTEGER NOT NULL PRIMARY KEY,
   	system_time TIMESTAMP NOT NULL,
-	mag_x TEXT NOT NULL,
-	mag_y INTEGER NOT NULL,
-	mag_z INTEGER NOT NULL
+	mag_x REAL NOT NULL,
+	mag_y REAL NOT NULL,
+	mag_z REAL NOT NULL
   );
 	create index if not exists mag_time_idx on magnetometer(system_time);
 `
