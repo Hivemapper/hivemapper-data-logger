@@ -110,7 +110,21 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 }
 
 func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
-	err := h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, mag_x, mag_y, mag_z))
+	var calib_x float64
+	var calib_y float64
+	var calib_z float64
+	calibrationString := h.sqliteLogger.GetConfig("magnetometerCalibration")
+	// fmt.Println(calibrationString)
+	_, err := fmt.Sscanf(calibrationString, "%f %f %f", &calib_x, &calib_y, &calib_z)
+	if err != nil {
+		fmt.Printf("Failed to parse magnetometer config %v\n", err)
+		calib_x = 0.0
+		calib_y = 0.0
+		calib_z = 0.0
+	}
+	// fmt.Printf("%v %v %v\n", calib_x, calib_y, calib_z)
+
+	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, mag_x-calib_x, mag_y-calib_y, mag_z-calib_z))
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}
