@@ -28,45 +28,73 @@ type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.Angul
 // inspire on the file watcher in the hdc-debugger
 
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
-	fmt.Println("Run imu raw feed")
-	for {
-		time.Sleep(25 * time.Millisecond)
-		acceleration, err := f.imu.GetAcceleration()
-		if err != nil {
-			return fmt.Errorf("getting acceleration: %w", err)
-		}
+    fmt.Println("Run imu raw feed")
 
-		angularRate, err := f.imu.GetGyroscopeData()
-		if err != nil {
-			return fmt.Errorf("getting angular rate: %w", err)
-		}
+    var count int
+    var totalAccelX, totalAccelY, totalAccelZ, totalAccelMag, totalAngularX, totalAngularY, totalAngularZ, totalTemperature float64
+	windowSize := 5
+    for {
+        time.Sleep((100 / windowSize) * time.Millisecond)
+        acceleration, err := f.imu.GetAcceleration()
+        if err != nil {
+            return fmt.Errorf("getting acceleration: %w", err)
+        }
 
-		temperature, err := f.imu.GetTemperature()
-		if err != nil {
-			return fmt.Errorf("getting temperature: %w", err)
-		}
+        angularRate, err := f.imu.GetGyroscopeData()
+        if err != nil {
+            return fmt.Errorf("getting angular rate: %w", err)
+        }
 
-		for _, handler := range f.handlers {
-			err := handler(
-				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now()),
-				angularRate,
-				temperature,
-			)
-			if err != nil {
-				return fmt.Errorf("calling handler: %w", err)
-			}
-		}
-		if angularRate.X < -2000.0 {
-			fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
-			err := f.imu.Init()
-			if err != nil {
-				return fmt.Errorf("initializing IMU: %w", err)
-			}
+        temperature, err := f.imu.GetTemperature()
+        if err != nil {
+            return fmt.Errorf("getting temperature: %w", err)
+        }
 
-			//err := f.imu.ResetSignalPath()
-			//if err != nil {
-			//	return fmt.Errorf("resetting signal path: %w", err)
-			//}
-		}
-	}
+        // Accumulate values
+        totalAccelX += axisMap.X(acceleration)
+        totalAccelY += axisMap.Y(acceleration)
+        totalAccelZ += axisMap.Z(acceleration)
+        totalAccelMag += acceleration.TotalMagnitude
+        totalAngularX += angularRate.X
+        totalAngularY += angularRate.Y
+        totalAngularZ += angularRate.Z
+        totalTemperature += temperature
+        count++
+
+        if count == windowSize {
+            // Compute averages
+            avgAccelX := totalAccelX / windowSize
+            avgAccelY := totalAccelY / windowSize
+            avgAccelZ := totalAccelZ / windowSize
+            avgAccelMag := totalAccelMag / windowSize
+            avgAngularX := totalAngularX / windowSize
+            avgAngularY := totalAngularY / windowSize
+            avgAngularZ := totalAngularZ / windowSize
+            avgTemperature := totalTemperature / windowSize
+
+            // Call handlers with averages
+            for _, handler := range f.handlers {
+                err := handler(
+                    NewAcceleration(avgAccelX, avgAccelY, avgAccelZ, avgAccelMag, time.Now()),
+                    ImuAngularRate{avgAngularX, avgAngularY, avgAngularZ},
+                    avgTemperature,
+                )
+                if err != nil {
+                    return fmt.Errorf("calling handler: %w", err)
+                }
+            }
+
+            // Reset accumulators and counter
+            totalAccelX, totalAccelY, totalAccelZ, totalAccelMag, totalAngularX, totalAngularY, totalAngularZ, totalTemperature = 0, 0, 0, 0, 0, 0, 0, 0
+            count = 0
+        }
+
+        if angularRate.X < -2000.0 {
+            fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
+            err := f.imu.Init()
+            if err != nil {
+                return fmt.Errorf("initializing IMU: %w", err)
+            }
+        }
+    }
 }

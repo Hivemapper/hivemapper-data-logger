@@ -53,6 +53,11 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		return fmt.Errorf("setting WAL mode: %s", err.Error())
 	}
 
+	_, err = db.Exec("PRAGMA busy_timeout = 1000;")
+	if err != nil {
+		return fmt.Errorf("setting BUSY timeout: %s", err.Error())
+	}
+
 	for _, createQuery := range s.createTableQueryFuncList {
 		if _, err := db.Exec(createQuery()); err != nil {
 			return fmt.Errorf("creating table: %s", err.Error())
@@ -86,6 +91,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 			cumulatedFields string
 		}
 		queries := map[string]*Accumulator{}
+		hardRetries := 0
 		for {
 			log := <-s.logs
 			query, fields, params := log.InsertQuery()
@@ -99,41 +105,60 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				accumulator = &Accumulator{}
 				queries[query] = accumulator
 			}
+
 			accumulator.count++
-			accumulator.cumulatedFields += fields
-			accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
+			// Properly format and accumulate fields and parameters
+			if len(fields) > 0 {
+				// Trim any trailing comma from cumulatedFields
+				if len(accumulator.cumulatedFields) > 0 && accumulator.cumulatedFields[len(accumulator.cumulatedFields)-1] == ',' {
+					accumulator.cumulatedFields = accumulator.cumulatedFields[:len(accumulator.cumulatedFields)-1]
+				}
+				// Append comma only if there are already fields
+				if len(accumulator.cumulatedFields) > 0 {
+					accumulator.cumulatedFields += ","
+				}
+				accumulator.cumulatedFields += fields
+				accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
+			}
 
 			if accumulator.count < 10 {
 				continue
 			}
 
-			accumulator.cumulatedFields = accumulator.cumulatedFields[0 : len(accumulator.cumulatedFields)-1] //remove last comma
+			if accumulator.cumulatedFields[len(accumulator.cumulatedFields)-1] == ',' {
+				accumulator.cumulatedFields = accumulator.cumulatedFields[0 : len(accumulator.cumulatedFields)-1] //remove last comma
+			}
 			stmt, err := db.Prepare(query + accumulator.cumulatedFields)
 			if err != nil {
 				s.InsertErrorLog(err.Error())
-				panic(fmt.Errorf("preparing statement for inserting Data: %w", err))
-			}
-
-			maxRetries := 4 // Maximum number of retries
-			for attempt := 0; attempt < maxRetries; attempt++ {
-				_, err = stmt.Exec(accumulator.cumulatedParams...)
-				if err == nil {
-					break // Success, exit the retry loop
+				delete(queries, query)
+			} else {
+				maxRetries := 6 // Maximum number of retries
+				for attempt := 0; attempt < maxRetries; attempt++ {
+					_, err = stmt.Exec(accumulator.cumulatedParams...)
+					if err == nil {
+						delete(queries, query)
+						break // Success, exit the retry loop
+					}
+		
+					if attempt < maxRetries - 1 {
+						delay := time.Duration(100 * (1 << attempt)) * time.Millisecond
+						time.Sleep(delay)
+						fmt.Println(err)
+						s.InsertErrorLog(fmt.Sprintf("Retry attempt %d for query: %s", attempt+1, err))
+					}
 				}
-	
-				if attempt < maxRetries - 1 {
-					delay := time.Duration(50 * (1 << attempt)) * time.Millisecond
-                	time.Sleep(delay)
-					s.InsertErrorLog(fmt.Sprintf("Retry attempt %d for query: %s", attempt+1, query))
+		
+				if err != nil {
+					s.InsertErrorLog(err.Error()) // Log final failure
+					fmt.Println(err)
+					hardRetries++
+					if hardRetries > 3 {
+						delete(queries, query)
+						hardRetries = 0
+					}
 				}
 			}
-	
-			if err != nil {
-				s.InsertErrorLog(err.Error()) // Log final failure
-				fmt.Println(err)
-			}
-
-			delete(queries, query)
 		}
 	}()
 
