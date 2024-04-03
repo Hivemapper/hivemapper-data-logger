@@ -34,7 +34,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
     var totalAccelX, totalAccelY, totalAccelZ, totalAccelMag, totalAngularX, totalAngularY, totalAngularZ, totalTemperature float64
 	windowSize := 5
     for {
-        time.Sleep((100 / windowSize) * time.Millisecond)
+        time.Sleep(20 * time.Millisecond)
         acceleration, err := f.imu.GetAcceleration()
         if err != nil {
             return fmt.Errorf("getting acceleration: %w", err)
@@ -58,26 +58,27 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
         totalAngularX += angularRate.X
         totalAngularY += angularRate.Y
         totalAngularZ += angularRate.Z
-        totalTemperature += temperature
+        totalTemperature += float64(*temperature)
         count++
 
         if count == windowSize {
             // Compute averages
-            avgAccelX := totalAccelX / windowSize
-            avgAccelY := totalAccelY / windowSize
-            avgAccelZ := totalAccelZ / windowSize
-            avgAccelMag := totalAccelMag / windowSize
-            avgAngularX := totalAngularX / windowSize
-            avgAngularY := totalAngularY / windowSize
-            avgAngularZ := totalAngularZ / windowSize
-            avgTemperature := totalTemperature / windowSize
+            size := float64(windowSize)
+            avgAccelX := totalAccelX / size
+            avgAccelY := totalAccelY / size
+            avgAccelZ := totalAccelZ / size
+            avgAccelMag := totalAccelMag / size
+            avgAngularX := totalAngularX / size
+            avgAngularY := totalAngularY / size
+            avgAngularZ := totalAngularZ / size
+            avgTemperature := totalTemperature / size
 
             // Call handlers with averages
             for _, handler := range f.handlers {
                 err := handler(
                     NewAcceleration(avgAccelX, avgAccelY, avgAccelZ, avgAccelMag, time.Now()),
-                    ImuAngularRate{avgAngularX, avgAngularY, avgAngularZ},
-                    avgTemperature,
+                    &iim42652.AngularRate{int16(avgAngularX), int16(avgAngularY), int16(avgAngularZ), avgAngularX, avgAngularY, avgAngularZ},
+                    iim42652.NewTemperature(avgTemperature),
                 )
                 if err != nil {
                     return fmt.Errorf("calling handler: %w", err)

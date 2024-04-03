@@ -2,6 +2,8 @@ github.com/Hivemapper/gnss-controller v1.0.2 h1:Lc06Pqjy+AkHMXLsOxWE3lu+IrJjctvn
 github.com/Hivemapper/gnss-controller v1.0.2/go.mod h1:6IAy9KhnCs3w4FVGfH1mfnUmVUnaLiprEJwizYx3wlM=
 github.com/Hivemapper/gnss-controller v1.0.3-0.20240223002434-6a390f606047 h1:PMt1Ddc9AX0hJJpLP9WffmcSnsZ4dqabWIyMVJJQqiM=
 github.com/Hivemapper/gnss-controller v1.0.3-0.20240223002434-6a390f606047/go.mod h1:womfs6qB93Ki7FczKxw0pR6H0MGNBM6j8bhCjVX4pWE=
+github.com/Hivemapper/gnss-controller v1.0.3-0.20240402232423-1de9f3a3a7f8 h1:et/0KUk3Pqg8xqPQwLunoAM/6Eg3WbhuV6oAEXrQdQo=
+github.com/Hivemapper/gnss-controller v1.0.3-0.20240402232423-1de9f3a3a7f8/go.mod h1:womfs6qB93Ki7FczKxw0pR6H0MGNBM6j8bhCjVX4pWE=
 github.com/Hivemapper/sf-ublox v0.0.0-20240221201612-d92d22b86230 h1:gJnD/mOM6RzqRjkZ5HBA0VVDd7DhfgatO/mCCWl5Huw=
 github.com/Hivemapper/sf-ublox v0.0.0-20240221201612-d92d22b86230/go.mod h1:pfcwlN8XUYXVYAkPU2LrFZnXIS4EvpZaXh+qRKCN9Sg=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
@@ -600,6 +602,7 @@ golang.org/x/tools v0.19.0/go.mod h1:qoJWxmGSIBmAeriMx19ogtrEPrGtDbPK634QFIcLAhc
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gonum.org/v1/gonum v0.0.0-20180816165407-929014505bf4/go.mod h1:Y+Yx5eoAFn32cQvJDxZx5Dpnq+c3wtXuadVZAcxbbBo=
 gonum.org/v1/gonum v0.0.0-20190606121551-14af50e936aa/go.mod h1:zXcK6UmEkbNk22MqyPrZPx3T6fsE/O56XzkDfeYUF+Y=
 gonum.org/v1/gonum v0.14.0 h1:2NiG67LD1tEH0D7kM+ps2V+fXmsAnpUeec7n8tcr4S0=
