@@ -21,6 +21,7 @@ type DataHandler struct {
 	gnssData          *neom9n.Data
 	lastImageFileName string
 	jsonLogsEnabled   bool
+	gnssAuthCount     int
 }
 
 func NewDataHandler(
@@ -95,10 +96,13 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 			return fmt.Errorf("logging gnss data to json: %w", err)
 		}
 	} else {
-		err := h.sqliteLogger.Log(sql.NewGnssAuthSqlWrapper(data))
-		if err != nil {
-			return fmt.Errorf("logging gnss auth data to sqlite: %w", err)
+		if h.gnssAuthCount%60 == 0 {
+			err := h.sqliteLogger.Log(sql.NewGnssAuthSqlWrapper(data))
+			if err != nil {
+				return fmt.Errorf("logging gnss auth data to sqlite: %w", err)
+			}
 		}
+		h.gnssAuthCount += 1
 		return nil
 	}
 
