@@ -24,7 +24,7 @@ const insertGnssAuthQuery string = `INSERT INTO gnss_auth VALUES`
 const insertGnssAuthFields string = `(NULL,?,?,?,?,?,?),`
 
 const gnssAuthPurgeQuery string = `
-	DELETE FROM gnss_auth WHERE time < ?;
+	DELETE FROM gnss_auth WHERE system_time < ?;
 `
 
 func GnssAuthCreateTableQuery() string {
