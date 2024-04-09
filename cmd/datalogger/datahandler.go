@@ -109,22 +109,46 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	return nil
 }
 
+func calibrate(mag_x float64, mag_y float64, mag_z float64, transform [3][3]float64, center [3]float64) [3]float64 {
+	mag := [3]float64{mag_x, mag_y, mag_z}
+	for i := 0; i < 3; i++ {
+		mag[i] -= center[i]
+	}
+
+	results := [3]float64{0, 0, 0}
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			results[row] += transform[row][col] * mag[col]
+		}
+	}
+	return results
+}
+
 func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
-	var calib_x float64
-	var calib_y float64
-	var calib_z float64
+	var center [3]float64
+	var transform [3][3]float64
 	calibrationString := h.sqliteLogger.GetConfig("magnetometerCalibration")
-	// fmt.Println(calibrationString)
-	_, err := fmt.Sscanf(calibrationString, "%f %f %f", &calib_x, &calib_y, &calib_z)
+	fmt.Printf("calibration string: %v\n", calibrationString)
+	_, err := fmt.Sscanf(calibrationString, "%f %f %f %f %f %f %f %f %f %f %f %f",
+		&transform[0][0], &transform[0][1], &transform[0][2],
+		&transform[1][0], &transform[1][1], &transform[1][2],
+		&transform[2][0], &transform[2][1], &transform[2][2],
+		&center[0], &center[1], &center[2])
 	if err != nil {
 		fmt.Printf("Failed to parse magnetometer config %v\n", err)
-		calib_x = 0.0
-		calib_y = 0.0
-		calib_z = 0.0
+		center = [3]float64{0, 0, 0}
+		transform = [3][3]float64{
+			{1, 0, 0},
+			{0, 1, 0},
+			{0, 0, 1},
+		}
 	}
-	// fmt.Printf("%v %v %v\n", calib_x, calib_y, calib_z)
+	fmt.Printf("%v %v\n", transform, center)
 
-	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, mag_x-calib_x, mag_y-calib_y, mag_z-calib_z))
+	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
+	fmt.Printf("uncalibrated: %v %v %v", mag_x, mag_y, mag_z)
+	fmt.Printf("calibrated: %v", calibrated_mag)
+	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}
