@@ -53,6 +53,6 @@ func (w *GnssAuthSqlWrapper) InsertQuery() (string, string, []any) {
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.FinalHash[:]),
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.SessionId[:]),
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.EcdsaSignature[:]),
-		time.Now(),
+		time.Now().Format("2006-01-02 15:04:05.99999"),
 	}
 }
