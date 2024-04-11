@@ -2,6 +2,7 @@ package sql
 
 import (
 	b64 "encoding/base64"
+	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 )
@@ -52,6 +53,6 @@ func (w *GnssAuthSqlWrapper) InsertQuery() (string, string, []any) {
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.FinalHash[:]),
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.SessionId[:]),
 		b64.StdEncoding.EncodeToString(w.gnssData.SecEcsign.EcdsaSignature[:]),
-		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
+		time.Now().Format("2006-01-02 15:04:05.99999"),
 	}
 }
