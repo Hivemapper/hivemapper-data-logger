@@ -109,8 +109,41 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	return nil
 }
 
+func calibrate(mag_x float64, mag_y float64, mag_z float64, transform [3][3]float64, center [3]float64) [3]float64 {
+	mag := [3]float64{mag_x, mag_y, mag_z}
+	for i := 0; i < 3; i++ {
+		mag[i] -= center[i]
+	}
+
+	results := [3]float64{0, 0, 0}
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			results[row] += transform[row][col] * mag[col]
+		}
+	}
+	return results
+}
+
 func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
-	err := h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, mag_x, mag_y, mag_z))
+	var center [3]float64
+	var transform [3][3]float64
+	calibrationString := h.sqliteLogger.GetConfig("magnetometerCalibration")
+	_, err := fmt.Sscanf(calibrationString, "%f %f %f %f %f %f %f %f %f %f %f %f",
+		&transform[0][0], &transform[0][1], &transform[0][2],
+		&transform[1][0], &transform[1][1], &transform[1][2],
+		&transform[2][0], &transform[2][1], &transform[2][2],
+		&center[0], &center[1], &center[2])
+	if err != nil {
+		center = [3]float64{0, 0, 0}
+		transform = [3][3]float64{
+			{1, 0, 0},
+			{0, 1, 0},
+			{0, 0, 1},
+		}
+	}
+
+	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
+	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}

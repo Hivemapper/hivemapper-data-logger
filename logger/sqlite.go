@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 	"time"
+
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -24,6 +25,16 @@ type Sqlite struct {
 	createTableQueryFuncList []CreateTableQueryFunc
 
 	logs chan Sqlable
+}
+
+func (s *Sqlite) GetConfig(key string) string {
+	row := s.DB.QueryRow("SELECT value FROM config WHERE key = ?", key)
+	var result string
+	err := row.Scan(&result)
+	if err != nil {
+		result = ""
+	}
+	return result
 }
 
 func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
@@ -140,15 +151,15 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 						delete(queries, query)
 						break // Success, exit the retry loop
 					}
-		
-					if attempt < maxRetries - 1 {
-						delay := time.Duration(100 * (1 << attempt)) * time.Millisecond
+
+					if attempt < maxRetries-1 {
+						delay := time.Duration(100*(1<<attempt)) * time.Millisecond
 						time.Sleep(delay)
 						fmt.Println(err)
 						s.InsertErrorLog(fmt.Sprintf("Retry attempt %d for query: %s", attempt+1, err))
 					}
 				}
-		
+
 				if err != nil {
 					s.InsertErrorLog(err.Error()) // Log final failure
 					fmt.Println(err)
