@@ -32,7 +32,6 @@ func (s *Sqlite) GetConfig(key string) string {
 	var result string
 	err := row.Scan(&result)
 	if err != nil {
-		fmt.Printf("Failed to get config %v: %v\n", key, err)
 		result = ""
 	}
 	return result
