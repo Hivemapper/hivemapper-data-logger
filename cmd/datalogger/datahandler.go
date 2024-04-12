@@ -128,14 +128,12 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	var center [3]float64
 	var transform [3][3]float64
 	calibrationString := h.sqliteLogger.GetConfig("magnetometerCalibration")
-	fmt.Printf("calibration string: %v\n", calibrationString)
 	_, err := fmt.Sscanf(calibrationString, "%f %f %f %f %f %f %f %f %f %f %f %f",
 		&transform[0][0], &transform[0][1], &transform[0][2],
 		&transform[1][0], &transform[1][1], &transform[1][2],
 		&transform[2][0], &transform[2][1], &transform[2][2],
 		&center[0], &center[1], &center[2])
 	if err != nil {
-		fmt.Printf("Failed to parse magnetometer config %v\n", err)
 		center = [3]float64{0, 0, 0}
 		transform = [3][3]float64{
 			{1, 0, 0},
@@ -143,11 +141,8 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 			{0, 0, 1},
 		}
 	}
-	fmt.Printf("%v %v\n", transform, center)
 
 	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
-	fmt.Printf("uncalibrated: %v %v %v", mag_x, mag_y, mag_z)
-	fmt.Printf("calibrated: %v", calibrated_mag)
 	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
