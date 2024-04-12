@@ -75,6 +75,24 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}
 	}
 
+	fmt.Println("WAL checkpoint 1")
+	_, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
+	if err != nil {
+		return fmt.Errorf("checkpoint: %s", err.Error())
+	}
+
+	fmt.Println("Vacuum DB")
+	_, err = db.Exec("VACUUM")
+	if err != nil {
+		return fmt.Errorf("VACUUM: %s", err.Error())
+	}
+
+	fmt.Println("WAL checkpoint 2")
+	_, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
+	if err != nil {
+		return fmt.Errorf("checkpoint: %s", err.Error())
+	}
+
 	fmt.Println("database initialized, will purge every:", logTTL.String())
 
 	s.DB = db
