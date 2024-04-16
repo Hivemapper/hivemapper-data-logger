@@ -2,7 +2,6 @@ package gnss
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
@@ -96,11 +95,8 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	if !f.skipFiltering {
-
 		if d.Dop.HDop < 6 {
-			if f.lastGoodData == nil ||
-				math.Abs(f.lastGoodData.Latitude-d.Latitude) > 0.01 ||
-				math.Abs(f.lastGoodData.Longitude-d.Longitude) > 0.01 {
+			if f.lastGoodData == nil {
 				f.gnssFilteredData.init(d)
 			}
 			f.lastGoodData = d
@@ -121,6 +117,7 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 			d.Latitude = filteredLat
 		} else {
 			fmt.Printf("Skipping adding gnss entry to filter due to high HDOP: %v\n", d.Dop.HDop)
+			f.lastGoodData = nil
 		}
 	}
 
