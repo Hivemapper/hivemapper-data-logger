@@ -105,7 +105,6 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 			math.Abs(f.lastGoodData.Latitude-d.Latitude) > 0.01 ||
 			math.Abs(f.lastGoodData.Longitude-d.Longitude) > 0.01 {
 			f.gnssFilteredData.init(d)
-			f.lastGoodData = d
 		}
 		f.lastGoodData = d
 
