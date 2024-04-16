@@ -94,7 +94,7 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 }
 
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
-	if d.Dop.HDop < 1.5 {
+	if d.Dop.HDop > 5 {
 		fmt.Println("Rejecting data because HDOP is too high")
 		return
 	}
