@@ -97,7 +97,7 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	if !f.skipFiltering {
 
-		if d.Dop.HDop > 6 {
+		if d.Dop.HDop < 6 {
 			if f.lastGoodData == nil ||
 				math.Abs(f.lastGoodData.Latitude-d.Latitude) > 0.01 ||
 				math.Abs(f.lastGoodData.Longitude-d.Longitude) > 0.01 {
