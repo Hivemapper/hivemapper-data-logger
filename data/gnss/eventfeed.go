@@ -95,7 +95,7 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	if !f.skipFiltering {
-		if d.Dop.HDop < 6 {
+		if d.Dop.HDop < 10 && d.Fix == "3D" && (d.Longitude != 0 || d.Latitude != 0) {
 			if f.lastGoodData == nil {
 				f.gnssFilteredData.init(d)
 			}
@@ -116,7 +116,6 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 			d.Longitude = filteredLon
 			d.Latitude = filteredLat
 		} else {
-			fmt.Printf("Skipping adding gnss entry to filter due to high HDOP: %v\n", d.Dop.HDop)
 			f.lastGoodData = nil
 		}
 	}
