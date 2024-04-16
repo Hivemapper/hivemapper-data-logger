@@ -120,7 +120,7 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 			d.Longitude = filteredLon
 			d.Latitude = filteredLat
 		} else {
-			fmt.Printf("Skipping adding gnss entry to filter due to high HDOP: %v", d.Dop.HDop)
+			fmt.Printf("Skipping adding gnss entry to filter due to high HDOP: %v\n", d.Dop.HDop)
 		}
 	}
 
