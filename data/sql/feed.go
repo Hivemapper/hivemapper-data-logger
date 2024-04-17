@@ -106,7 +106,6 @@ func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
 				&gnssData.RF.MagI,
 				&gnssData.RF.OfsQ,
 				&gnssData.GGA,
-				&gnssData.Filtered,
 				&rxmMeasx,
 			)
 			if err != nil {
