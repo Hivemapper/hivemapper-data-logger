@@ -2,6 +2,7 @@ package sql
 
 import (
 	"encoding/json"
+
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 )
 
@@ -42,6 +43,9 @@ const GnssCreateTable string = `
 		rf_mag_i INTEGER NOT NULL,
 		rf_ofs_q INTEGER NOT NULL,
 		gga TEXT NOT NULL,
+		filtered BOOLEAN DEFAULT FALSE,
+		orig_latitude REAL,
+		orig_longitude REAL,
 		rxm_measx TEXT NOT NULL
 	);
 	create index if not exists gnss_time_idx on gnss(system_time);
@@ -49,7 +53,7 @@ const GnssCreateTable string = `
 
 const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 
-const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const gnssPurgeQuery string = `
 	DELETE FROM gnss WHERE system_time < ?;
@@ -123,6 +127,9 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.RF.MagI,
 		w.gnssData.RF.OfsQ,
 		w.gnssData.GGA,
+		w.gnssData.Filtered,
+		w.gnssData.OriginalLatitude,
+		w.gnssData.OriginalLongitude,
 		string(rxmMeasx),
 	}
 }

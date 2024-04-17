@@ -2,6 +2,7 @@ package gnss
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
@@ -95,7 +96,10 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	if !f.skipFiltering {
-		if d.Dop.HDop < 10 && d.Fix == "3D" && (d.Longitude != 0 || d.Latitude != 0) {
+		d.OriginalLatitude = d.Latitude
+		d.OriginalLongitude = d.Longitude
+		
+		if d.Dop.HDop < 10 && d.Fix == "3D" && (math.Abs(d.Longitude) > 0.0001 || math.Abs(d.Latitude) > 0.0001) {
 			if f.lastGoodData == nil {
 				f.gnssFilteredData.init(d)
 			}
@@ -115,6 +119,7 @@ func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 			d.Longitude = filteredLon
 			d.Latitude = filteredLat
+			d.Filtered = true
 		} else {
 			f.lastGoodData = nil
 		}
