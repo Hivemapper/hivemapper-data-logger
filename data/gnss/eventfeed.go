@@ -2,6 +2,7 @@ package gnss
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
@@ -27,14 +28,14 @@ func NewGnssFilteredData() *GnssFilteredData {
 
 func (g *GnssFilteredData) init(d *neom9n.Data) {
 	g.initialized = true
-	g.lonModel = models.NewSimpleModel(d.Timestamp, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
+	g.lonModel = models.NewSimpleModel(d.Timestamp, d.Longitude, models.SimpleModelConfig{
+		InitialVariance:     d.Longitude,
 		ProcessVariance:     2.0,
 		ObservationVariance: 2.0,
 	})
 	g.lonFilter = kalman.NewKalmanFilter(g.lonModel)
-	g.latModel = models.NewSimpleModel(d.Timestamp, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
+	g.latModel = models.NewSimpleModel(d.Timestamp, d.Latitude, models.SimpleModelConfig{
+		InitialVariance:     d.Latitude,
 		ProcessVariance:     2.0,
 		ObservationVariance: 2.0,
 	})
@@ -95,7 +96,7 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
 
 	if !f.skipFiltering {
-		if d.Dop.HDop < 10 && d.Fix == "3D" && (d.Longitude != 0 || d.Latitude != 0) {
+		if d.Dop.HDop < 10 && d.Fix == "3D" && (math.Abs(d.Longitude) > 0.0001 || math.Abs(d.Latitude) > 0.0001) {
 			if f.lastGoodData == nil {
 				f.gnssFilteredData.init(d)
 			}
