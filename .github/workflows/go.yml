@@ -4,9 +4,11 @@
 name: Go
 
 on:
+  pull_request:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    # run only against tags
+    tags:
+      - "*"
 
 jobs:
 
