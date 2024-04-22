@@ -2,11 +2,12 @@ package gnss
 
 import (
 	"fmt"
+	"math"
 	"time"
 
+	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/rosshemsley/kalman"
 	"github.com/rosshemsley/kalman/models"
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
 )
 
 type GnssDataHandler func(data *neom9n.Data) error
@@ -27,14 +28,14 @@ func NewGnssFilteredData() *GnssFilteredData {
 
 func (g *GnssFilteredData) init(d *neom9n.Data) {
 	g.initialized = true
-	g.lonModel = models.NewSimpleModel(d.Timestamp, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
+	g.lonModel = models.NewSimpleModel(d.Timestamp, d.Longitude, models.SimpleModelConfig{
+		InitialVariance:     d.Longitude,
 		ProcessVariance:     2.0,
 		ObservationVariance: 2.0,
 	})
 	g.lonFilter = kalman.NewKalmanFilter(g.lonModel)
-	g.latModel = models.NewSimpleModel(d.Timestamp, 0.0, models.SimpleModelConfig{
-		InitialVariance:     0.0,
+	g.latModel = models.NewSimpleModel(d.Timestamp, d.Latitude, models.SimpleModelConfig{
+		InitialVariance:     d.Latitude,
 		ProcessVariance:     2.0,
 		ObservationVariance: 2.0,
 	})
@@ -50,6 +51,7 @@ type GnssFeed struct {
 	gnssFilteredData *GnssFilteredData
 
 	skipFiltering bool
+	lastGoodData  *neom9n.Data
 }
 
 func NewGnssFeed(dataHandlers []GnssDataHandler, timeHandlers []TimeHandler, opts ...Option) *GnssFeed {
@@ -92,28 +94,31 @@ func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) err
 }
 
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
-	if !f.gnssFilteredData.initialized {
-		f.gnssFilteredData.init(d)
-	}
 
 	if !f.skipFiltering {
-		filteredLon := d.Longitude
-		filteredLat := d.Latitude
+		if d.Dop.HDop < 10 && d.Fix == "3D" && (math.Abs(d.Longitude) > 0.0001 || math.Abs(d.Latitude) > 0.0001) {
+			if f.lastGoodData == nil {
+				f.gnssFilteredData.init(d)
+			}
+			f.lastGoodData = d
 
-		err := f.gnssFilteredData.lonFilter.Update(d.Timestamp, f.gnssFilteredData.lonModel.NewMeasurement(d.Longitude))
-		if err != nil {
-			panic("updating lon filter: " + err.Error())
+			err := f.gnssFilteredData.lonFilter.Update(d.Timestamp, f.gnssFilteredData.lonModel.NewMeasurement(d.Longitude))
+			if err != nil {
+				panic("updating lon filter: " + err.Error())
+			}
+			err = f.gnssFilteredData.latFilter.Update(d.Timestamp, f.gnssFilteredData.latModel.NewMeasurement(d.Latitude))
+			if err != nil {
+				panic("updating lat filter: " + err.Error())
+			}
+
+			filteredLon := f.gnssFilteredData.lonModel.Value(f.gnssFilteredData.lonFilter.State())
+			filteredLat := f.gnssFilteredData.latModel.Value(f.gnssFilteredData.latFilter.State())
+
+			d.Longitude = filteredLon
+			d.Latitude = filteredLat
+		} else {
+			f.lastGoodData = nil
 		}
-		err = f.gnssFilteredData.latFilter.Update(d.Timestamp, f.gnssFilteredData.latModel.NewMeasurement(d.Latitude))
-		if err != nil {
-			panic("updating lat filter: " + err.Error())
-		}
-
-		filteredLon = f.gnssFilteredData.lonModel.Value(f.gnssFilteredData.lonFilter.State())
-		filteredLat = f.gnssFilteredData.latModel.Value(f.gnssFilteredData.latFilter.State())
-
-		d.Longitude = filteredLon
-		d.Latitude = filteredLat
 	}
 
 	for _, handler := range f.dataHandlers {
