@@ -6,3 +6,4 @@ type Sqlable interface {
 
 type PurgeQueryFunc func() string
 type CreateTableQueryFunc func() string
+type AlterTableQueryFunc func() string

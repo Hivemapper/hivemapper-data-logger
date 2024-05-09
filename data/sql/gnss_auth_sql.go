@@ -19,7 +19,10 @@ const GnssAuthCreateTable string = `
 		system_time TIMESTAMP NOT NULL
 	);
 	create index if not exists gnss_time_idx on gnss_auth(system_time);
-	ALTER TABLE gnss_auth ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
+`
+
+const GnssAuthAlterTable string = `
+	ALTER TABLE gnss_auth ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
 
 const insertGnssAuthQuery string = `INSERT INTO gnss_auth VALUES`
@@ -34,6 +37,10 @@ DELETE FROM gnss_auth WHERE rowid NOT IN (
 
 func GnssAuthCreateTableQuery() string {
 	return GnssAuthCreateTable
+}
+
+func GnssAuthAlterTableQuery() string {
+	return GnssAuthAlterTable
 }
 
 func GnssAuthPurgeQuery() string {

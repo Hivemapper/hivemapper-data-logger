@@ -24,6 +24,7 @@ type Sqlite struct {
 	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
+	alterTableQueryFuncList []AlterTableQueryFunc
 
 	logs chan Sqlable
 }
@@ -38,10 +39,11 @@ func (s *Sqlite) GetConfig(key string) string {
 	return result
 }
 
-func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
+func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, alterTableQueryFuncList []AlterTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
 	return &Sqlite{
 		file:                     file,
 		createTableQueryFuncList: createTableQueryFuncList,
+		alterTableQueryFuncList:  alterTableQueryFuncList,
 		purgeQueryFuncList:       purgeQueryFuncList,
 		logs:                     make(chan Sqlable, 1000),
 	}
@@ -73,6 +75,12 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 	for _, createQuery := range s.createTableQueryFuncList {
 		if _, err := db.Exec(createQuery()); err != nil {
 			return fmt.Errorf("creating table: %s", err.Error())
+		}
+	}
+
+	for _, alterQuery := range s.alterTableQueryFuncList {
+		if _, err := db.Exec(alterQuery()); err != nil {
+			fmt.Println("field exists:", err.Error())
 		}
 	}
 
@@ -202,6 +210,7 @@ func (s *Sqlite) initiateSession() error {
 	// Assume s.DB is *sql.DB
 	var lastImuTime sql.NullTime // Using sql.NullTime to handle possible null values
 	err := s.DB.QueryRow("SELECT time FROM imu ORDER BY time DESC LIMIT 1").Scan(&lastImuTime)
+	fmt.Println("last imu time:", lastImuTime.Time, time.Now(), lastImuTime.Time.Before(time.Now()))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// No rows in the table, so generate new session

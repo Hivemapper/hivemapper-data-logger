@@ -15,6 +15,9 @@ const MagCreateTable string = `
 	mag_z REAL NOT NULL
   );
 	create index if not exists mag_time_idx on magnetometer(system_time);
+`
+
+const MagAlterTable string = `
 	ALTER TABLE magnetometer ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
 `
 
@@ -59,6 +62,10 @@ func (s *MagnetometerSqlWrapper) InsertQuery() (string, string, []any) {
 
 func CreateTableQuery() string {
 	return MagCreateTable
+}
+
+func AlterTableQuery() string {
+	return MagAlterTable
 }
 
 func PurgeQuery() string {

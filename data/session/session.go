@@ -3,6 +3,7 @@ package session
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -25,6 +26,10 @@ func SetSession(id string) error {
 			return err
 		}
 		sessionID = newSessionID.String()
+		sessionComponents := strings.Split(sessionID, "-")
+		if len(sessionComponents) == 5 {
+			sessionID = sessionComponents[4]  // This is the node part
+		}
 		fmt.Println("Generated new session ID:", sessionID)
 	} else {
 		sessionID = id

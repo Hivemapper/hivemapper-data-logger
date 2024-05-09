@@ -47,7 +47,10 @@ const GnssCreateTable string = `
 		rxm_measx TEXT NOT NULL
 	);
 	create index if not exists gnss_time_idx on gnss(system_time);
-	ALTER TABLE gnss ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
+`
+
+const GnssAlterTable string = `
+	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
 
 const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
@@ -62,6 +65,10 @@ const gnssPurgeQuery string = `
 
 func GnssCreateTableQuery() string {
 	return GnssCreateTable
+}
+
+func GnssAlterTableQuery() string {
+	return GnssAlterTable
 }
 
 func GnssPurgeQuery() string {

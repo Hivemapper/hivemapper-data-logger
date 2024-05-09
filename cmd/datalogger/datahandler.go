@@ -36,6 +36,7 @@ func NewDataHandler(
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, magnetometer.CreateTableQuery},
+		[]logger.AlterTableQueryFunc{sql.GnssAlterTableQuery, sql.GnssAuthAlterTableQuery, sql.ImuAlterTableQuery, magnetometer.AlterTableQuery},
 		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, magnetometer.PurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {

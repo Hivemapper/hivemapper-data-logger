@@ -19,7 +19,10 @@ const ImuCreateTable string = `
 		temperature REAL NOT NULL
 	);
 	create index if not exists imu_time_idx on imu(time);
-	ALTER TABLE imu ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
+`
+
+const ImuAlterTable string = `
+	ALTER TABLE imu ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
 
 const insertImuRawQuery string = `INSERT OR IGNORE INTO imu VALUES`
@@ -34,6 +37,10 @@ DELETE FROM imu WHERE rowid NOT IN (
 
 func ImuCreateTableQuery() string {
 	return ImuCreateTable
+}
+
+func ImuAlterTableQuery() string {
+	return ImuAlterTable
 }
 
 func ImuPurgeQuery() string {
