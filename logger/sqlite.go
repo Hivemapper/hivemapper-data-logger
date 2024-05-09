@@ -11,6 +11,7 @@ import (
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/session"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	_ "modernc.org/sqlite"
@@ -97,7 +98,10 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 
 	s.DB = db
 
-	s.InsertErrorLog("testing error logs")
+	err = s.initiateSession()
+	if err != nil {
+		return fmt.Errorf("init session: %s", err.Error())
+	}
 
 	if logTTL > 0 {
 		go func() {
@@ -191,6 +195,42 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		}
 	}()
 
+	return nil
+}
+
+func (s *Sqlite) initiateSession() error {
+	// Assume s.DB is *sql.DB
+	var lastImuTime sql.NullTime // Using sql.NullTime to handle possible null values
+	err := s.DB.QueryRow("SELECT time FROM imu ORDER BY time DESC LIMIT 1").Scan(&lastImuTime)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows in the table, so generate new session
+			err := session.SetSession("")
+			if err != nil {
+				return fmt.Errorf("setting session: %s", err.Error())
+			}
+		} else {
+			return fmt.Errorf("query last imu time: %s", err.Error())
+		}
+	} else if lastImuTime.Valid && lastImuTime.Time.Before(time.Now()) {
+		// If last imu time is valid and before the current time, then get session from last imu
+		var sessionID string
+		err = s.DB.QueryRow("SELECT session FROM imu ORDER BY time DESC LIMIT 1").Scan(&sessionID)
+		if err != nil {
+			return fmt.Errorf("getting session: %s", err.Error())
+		}
+		fmt.Println("Using session:", sessionID)
+		err = session.SetSession(sessionID)
+		if err != nil {
+			return fmt.Errorf("setting session: %s", err.Error())
+		}
+	} else {
+		// Generate new session
+		err := session.SetSession("")
+		if err != nil {
+			return fmt.Errorf("setting session: %s", err.Error())
+		}
+	}
 	return nil
 }
 

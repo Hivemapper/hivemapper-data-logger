@@ -2,6 +2,8 @@ package magnetometer
 
 import (
 	"time"
+
+	"github.com/Hivemapper/hivemapper-data-logger/data/session"
 )
 
 const MagCreateTable string = `
@@ -13,13 +15,16 @@ const MagCreateTable string = `
 	mag_z REAL NOT NULL
   );
 	create index if not exists mag_time_idx on magnetometer(system_time);
+	ALTER TABLE magnetometer ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
 `
 
 const insertMagnetometerQuery string = `INSERT INTO magnetometer VALUES `
-const insertMagnetometerFields string = `(NULL,?,?,?,?),`
+const insertMagnetometerFields string = `(NULL,?,?,?,?,?),`
 
 const purgeQuery string = `
-	DELETE FROM magnetometer WHERE system_time < ?;
+	DELETE FROM magnetometer WHERE rowid NOT IN (
+		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 100000
+	);
 `
 
 type MagnetometerSqlWrapper struct {
@@ -39,11 +44,16 @@ func NewMagnetometerSqlWrapper(system_time time.Time, mag_x float64, mag_y float
 }
 
 func (s *MagnetometerSqlWrapper) InsertQuery() (string, string, []any) {
+	sessionID, err := session.GetSession()
+	if err != nil {
+		panic(err) // Handle error if any
+	}
 	return insertMagnetometerQuery, insertMagnetometerFields, []any{
 		s.System_time.Format("2006-01-02 15:04:05.99999"),
 		s.Mag_x,
 		s.Mag_y,
 		s.Mag_z,
+		sessionID,
 	}
 }
 
