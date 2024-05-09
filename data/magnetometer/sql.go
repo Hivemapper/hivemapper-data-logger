@@ -18,7 +18,7 @@ const MagCreateTable string = `
 `
 
 const MagAlterTable string = `
-	ALTER TABLE magnetometer ADD COLUMN IF NOT EXISTS session TEXT NOT NULL DEFAULT '';
+	ALTER TABLE magnetometer ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
 
 const insertMagnetometerQuery string = `INSERT INTO magnetometer VALUES `
