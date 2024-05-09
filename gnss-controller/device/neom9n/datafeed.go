@@ -49,14 +49,6 @@ type Data struct {
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
 }
 
-func (d *Data) GetStartTime() time.Time {
-	return d.startTime
-}
-
-func (d *Data) SetStartTime(startTime time.Time) {
-	d.startTime = startTime
-}
-
 func (d *Data) Clone() Data {
 	clone := Data{
 		Ttff:       d.Ttff,
@@ -186,14 +178,6 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 	}
 }
 
-func (d *DataFeed) GetStartTime() time.Time {
-	return d.Data.startTime
-}
-
-func (d *DataFeed) SetStartTime(startTime time.Time) {
-	d.Data.startTime = startTime
-}
-
 // GNSSfix Type: 0: no fix 1: dead reckoning only 2: 2D-fix 3: 3D-fix 4: GNSS + dead reckoning combined 5: time only fix
 var fix = []string{"none", "dead reckoning only", "2D", "3D", "GNSS + dead reckoning combined", "time only fix"}
 
@@ -211,61 +195,15 @@ type RF struct {
 	MagQ         byte   `json:"mag_q"`
 }
 
-const (
-    offsetMeasurementsNeeded = 100
-    maxAllowedOffset         = 2 * time.Second
-    maxAllowedFluctuation    = 50 * time.Millisecond
-)
-
-var (
-    timeOffset           time.Duration
-    offsetConfirmedTimes int
-    offsetConfirmed      bool
-)
-
-func calculateAndConfirmOffset(gnssTime, systemTime time.Time) {
-    if offsetConfirmed {
-        return
-    }
-
-    currentOffset := systemTime.Sub(gnssTime)
-    if currentOffset < -maxAllowedOffset || currentOffset > maxAllowedOffset {
-        offsetConfirmedTimes = 0
-        timeOffset = 0
-        return
-    }
-
-    if offsetConfirmedTimes < offsetMeasurementsNeeded {
-        if offsetConfirmedTimes > 0 && (currentOffset < timeOffset-maxAllowedFluctuation || currentOffset > timeOffset+maxAllowedFluctuation) {
-            fmt.Printf("Offset fluctuates too much: %v, resetting confirmation process\n", currentOffset)
-            offsetConfirmedTimes = 0
-            timeOffset = 0
-            return
-        }
-
-        timeOffset = ((timeOffset * time.Duration(offsetConfirmedTimes)) + currentOffset) / time.Duration(offsetConfirmedTimes+1)
-        offsetConfirmedTimes++
-        fmt.Printf("Current average offset after %d measurements: %v\n", offsetConfirmedTimes, timeOffset)
-    } else {
-        fmt.Printf("Confirmed offset: %v\n", timeOffset)
-        offsetConfirmed = true
-    }
-}
-
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	data := df.Data
-
+ 
 	switch m := msg.(type) {
 	case *ubx.NavPvt:
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
 		data.Timestamp = now
 
-        if offsetConfirmed {
-            data.SystemTime = data.Timestamp.Add(timeOffset)
-        } else {
-			data.SystemTime = time.Now()
-			calculateAndConfirmOffset(data.Timestamp, data.SystemTime)
-		}
+		data.SystemTime = time.Now()
 
 		data.Fix = fix[m.FixType]
 		if data.Ttff == 0 && data.Fix == "3D" && data.Dop.HDop < 5.0 {

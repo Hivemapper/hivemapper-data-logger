@@ -162,23 +162,8 @@ func (n *Neom9n) delConfig(key uint32, description string) {
 }
 
 func (n *Neom9n) Run(dataFeed *DataFeed, timeValidThreshold string, timeSetCallback func(now time.Time)) error {
-	timeSet := make(chan time.Time)
-	timeGetter := handlers.NewTimeGetter(timeValidThreshold, timeSet)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, timeGetter)
-
 	now := time.Time{}
-	loadAll := false
-	select {
-	case now = <-timeSet:
-		err := n.setSystemStartTime(timeGetter, now)
-		if err != nil {
-			return fmt.Errorf("setting system start time: %w", err)
-		}
-		timeSetCallback(n.startTime)
-	case <-time.After(5 * time.Second):
-		fmt.Println("not time yet, will load all ano messages")
-		loadAll = true
-	}
+	loadAll := true
 
 	if _, err := os.Stat(n.mgaOfflineFilePath); errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("File %s does not exist\n", n.mgaOfflineFilePath)
@@ -207,39 +192,9 @@ func (n *Neom9n) Run(dataFeed *DataFeed, timeValidThreshold string, timeSetCallb
 	n.handlersRegistry.RegisterHandler(message.UbxSecEcsignWithBuffer, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.NneaGGA, dataFeed)
 
-	if now == (time.Time{}) {
-		fmt.Println("Waiting for time")
-		now = <-timeSet
-		err := n.setSystemStartTime(timeGetter, now)
-		if err != nil {
-			return fmt.Errorf("setting system start time: %w", err)
-		}
-
-		timeSetCallback(n.startTime)
-	}
-
 	if err := <-n.decoderDone; err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (n *Neom9n) setSystemStartTime(timeGetter *handlers.TimeGetter, now time.Time) error {
-	n.handlersRegistry.UnregisterHandler(message.UbxMsgNavPvt, timeGetter)
-	sinceStart := time.Since(n.startTime)
-	err := handlers.SetSystemDate(now)
-	if err != nil {
-		return fmt.Errorf("setting system date: %w", err)
-	}
-
-	newTime := time.Now()
-	fmt.Printf("Time set to %s, took %s\n", now, sinceStart)
-	n.startTime = newTime.Add(-sinceStart)
-	fmt.Println("new start time:", n.startTime)
-	return nil
-}
-
-func (n *Neom9n) SetStartTime(startTime time.Time) {
-	n.startTime = startTime
 }

@@ -192,6 +192,7 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config, errorCallba
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
 				err := handler.HandleUbxMessage(msg)
 				if err != nil {
+					errorCallback(err.Error())
 					done <- err
 				}
 			})
