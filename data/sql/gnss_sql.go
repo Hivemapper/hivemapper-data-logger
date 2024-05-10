@@ -49,13 +49,9 @@ const GnssCreateTable string = `
 	create index if not exists gnss_time_idx on gnss(system_time);
 `
 
-const GnssAlterTable string = `
-	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
-`
-
 const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 
-const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const gnssPurgeQuery string = `
 	DELETE FROM gnss WHERE rowid NOT IN (
@@ -67,8 +63,19 @@ func GnssCreateTableQuery() string {
 	return GnssCreateTable
 }
 
-func GnssAlterTableQuery() string {
-	return GnssAlterTable
+func GnssAlterTableQuerySessionUnfilteredAndResolved() string {
+	return `
+	ALTER TABLE gnss ADD COLUMN actual_system_time TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';
+	ALTER TABLE gnss ADD COLUMN unfiltered_latitude REAL NOT NULL DEFAULT 0;
+	ALTER TABLE gnss ADD COLUMN unfiltered_longitude REAL NOT NULL DEFAULT 0;
+	ALTER TABLE gnss ADD COLUMN time_resolved INTEGER NOT NULL DEFAULT 0;
+`
+}
+
+func GnssAlterTableQuerySession() string {
+	return `
+	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
+`
 }
 
 func GnssPurgeQuery() string {
@@ -140,5 +147,9 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.GGA,
 		string(rxmMeasx),
 		sessionID,
+		w.gnssData.ActualSystemTime.Format("2006-01-02 15:04:05.99999"),
+		w.gnssData.UnfilteredLatitude,
+		w.gnssData.UnfilteredLongitude,
+		w.gnssData.TimeResolved,
 	}
 }

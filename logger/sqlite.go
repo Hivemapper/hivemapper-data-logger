@@ -209,7 +209,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 func (s *Sqlite) initiateSession() error {
 	// Assume s.DB is *sql.DB
 	var lastImuTime sql.NullTime // Using sql.NullTime to handle possible null values
-	err := s.DB.QueryRow("SELECT time FROM imu ORDER BY time DESC LIMIT 1").Scan(&lastImuTime)
+	err := s.DB.QueryRow("SELECT time FROM imu ORDER BY id DESC LIMIT 1").Scan(&lastImuTime)
 	fmt.Println("last imu time:", lastImuTime.Time, time.Now(), lastImuTime.Time.Before(time.Now()))
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -224,7 +224,7 @@ func (s *Sqlite) initiateSession() error {
 	} else if lastImuTime.Valid && lastImuTime.Time.Before(time.Now()) {
 		// If last imu time is valid and before the current time, then get session from last imu
 		var sessionID string
-		err = s.DB.QueryRow("SELECT session FROM imu ORDER BY time DESC LIMIT 1").Scan(&sessionID)
+		err = s.DB.QueryRow("SELECT session FROM imu ORDER BY id DESC LIMIT 1").Scan(&sessionID)
 		if err != nil {
 			return fmt.Errorf("getting session: %s", err.Error())
 		}
