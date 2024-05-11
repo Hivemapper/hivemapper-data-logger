@@ -26,7 +26,7 @@ const insertMagnetometerFields string = `(NULL,?,?,?,?,?),`
 
 const purgeQuery string = `
 	DELETE FROM magnetometer WHERE rowid NOT IN (
-		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 100000
+		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 60000
 	);
 `
 

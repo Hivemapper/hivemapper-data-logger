@@ -55,7 +55,7 @@ const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 
 const gnssPurgeQuery string = `
 	DELETE FROM gnss WHERE rowid NOT IN (
-		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 100000
+		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 60000
 	);
 `
 
@@ -144,12 +144,12 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.RF.OfsI,
 		w.gnssData.RF.MagI,
 		w.gnssData.RF.OfsQ,
-		w.gnssData.GGA,
+		"",
 		string(rxmMeasx),
 		sessionID,
 		w.gnssData.ActualSystemTime.Format("2006-01-02 15:04:05.99999"),
-		w.gnssData.UnfilteredLatitude,
-		w.gnssData.UnfilteredLongitude,
+		0.0,
+		0.0,
 		w.gnssData.TimeResolved,
 	}
 }
