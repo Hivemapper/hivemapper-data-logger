@@ -31,7 +31,7 @@ const insertGnssAuthFields string = `(NULL,?,?,?,?,?,?,?),`
 
 const gnssAuthPurgeQuery string = `
 DELETE FROM gnss_auth WHERE rowid NOT IN (
-	SELECT rowid FROM gnss_auth ORDER BY rowid DESC LIMIT 1000
+	SELECT rowid FROM gnss_auth ORDER BY rowid DESC LIMIT 600
 );
 `
 
