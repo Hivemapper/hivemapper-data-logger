@@ -21,12 +21,6 @@ func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 
 type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error
 
-//TODO: add FileWatcherEventFeed
-// and have imu raw subscribe to it
-// have 1 jpg that we will keep on reusing the same image
-// then create the frameKms and the gz files with the same image over and over again
-// inspire on the file watcher in the hdc-debugger
-
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
     fmt.Println("Run imu raw feed")
 
