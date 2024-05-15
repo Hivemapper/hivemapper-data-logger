@@ -2,7 +2,9 @@ package sql
 
 import (
 	"encoding/json"
+
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/hivemapper-data-logger/data/session"
 )
 
 const GnssCreateTable string = `
@@ -49,14 +51,31 @@ const GnssCreateTable string = `
 
 const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 
-const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
+const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
 const gnssPurgeQuery string = `
-	DELETE FROM gnss WHERE system_time < ?;
+	DELETE FROM gnss WHERE rowid NOT IN (
+		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 60000
+	);
 `
 
 func GnssCreateTableQuery() string {
 	return GnssCreateTable
+}
+
+func GnssAlterTableQuerySessionUnfilteredAndResolved() string {
+	return `
+	ALTER TABLE gnss ADD COLUMN actual_system_time TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00';
+	ALTER TABLE gnss ADD COLUMN unfiltered_latitude REAL NOT NULL DEFAULT 0;
+	ALTER TABLE gnss ADD COLUMN unfiltered_longitude REAL NOT NULL DEFAULT 0;
+	ALTER TABLE gnss ADD COLUMN time_resolved INTEGER NOT NULL DEFAULT 0;
+`
+}
+
+func GnssAlterTableQuerySession() string {
+	return `
+	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
+`
 }
 
 func GnssPurgeQuery() string {
@@ -73,22 +92,25 @@ func NewGnssSqlWrapper(gnssData *neom9n.Data) *GnssSqlWrapper {
 	}
 }
 
-
-
 func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 	// very basic validation to prevent empty records on getting into database
-	if w.gnssData == nil || 
-		w.gnssData.SystemTime.IsZero() || 
+	if w.gnssData == nil ||
+		w.gnssData.SystemTime.IsZero() ||
 		w.gnssData.Timestamp.IsZero() {
 		return "", "", nil
- 	}
+	}
 
 	rxmMeasx, err := json.Marshal(w.gnssData.RxmMeasx)
 	if err != nil {
 		return "", "", nil
 	}
+	sessionID, err := session.GetSession()
+	if err != nil {
+		panic(err) // Handle error if any
+	}
+	
 
-	return insertGnssRawQuery, insertGnssRawFields, []any{
+	return insertGnssRawQuery, insertGnssRawFields, []interface{}{
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Timestamp.Format("2006-01-02 15:04:05.99999"),
 		w.gnssData.Fix,
@@ -122,7 +144,12 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.RF.OfsI,
 		w.gnssData.RF.MagI,
 		w.gnssData.RF.OfsQ,
-		w.gnssData.GGA,
+		"",
 		string(rxmMeasx),
+		sessionID,
+		w.gnssData.ActualSystemTime.Format("2006-01-02 15:04:05.99999"),
+		0.0,
+		0.0,
+		w.gnssData.TimeResolved,
 	}
 }

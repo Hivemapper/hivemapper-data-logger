@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	geojson "github.com/paulmach/go.geojson"
-	"github.com/rosshemsley/kalman"
-	"github.com/rosshemsley/kalman/models"
-	"github.com/spf13/cobra"
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data"
 	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
@@ -18,6 +14,10 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
+	geojson "github.com/paulmach/go.geojson"
+	"github.com/rosshemsley/kalman"
+	"github.com/rosshemsley/kalman/models"
+	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -77,7 +77,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	sqliteImporter := logger.NewSqlite(mustGetString(cmd, "db-import-path"), nil, nil)
+	sqliteImporter := logger.NewSqlite(mustGetString(cmd, "db-import-path"), nil, nil, nil)
 	err = sqliteImporter.Init(0)
 	if err != nil {
 		return fmt.Errorf("initializing sqlite logger database: %w", err)

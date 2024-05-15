@@ -2,6 +2,7 @@ package sql
 
 import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	"github.com/Hivemapper/hivemapper-data-logger/data/session"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
@@ -20,16 +21,26 @@ const ImuCreateTable string = `
 	create index if not exists imu_time_idx on imu(time);
 `
 
+const ImuAlterTable string = `
+	ALTER TABLE imu ADD COLUMN session TEXT NOT NULL DEFAULT '';
+`
+
 const insertImuRawQuery string = `INSERT OR IGNORE INTO imu VALUES`
 
-const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?),`
+const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?,?),`
 
 const imuPurgeQuery string = `
-	DELETE FROM imu WHERE time < ?;
+DELETE FROM imu WHERE rowid NOT IN (
+	SELECT rowid FROM imu ORDER BY rowid DESC LIMIT 60000
+);
 `
 
 func ImuCreateTableQuery() string {
 	return ImuCreateTable
+}
+
+func ImuAlterTableQuery() string {
+	return ImuAlterTable
 }
 
 func ImuPurgeQuery() string {
@@ -56,6 +67,10 @@ func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
 		w.acceleration.Time.IsZero()  {
 		 return "", "", nil
 	}
+	sessionID, err := session.GetSession()
+	if err != nil {
+		panic(err) // Handle error if any
+	}
 
 	return insertImuRawQuery, insertImuRawFields, []any{
 		w.acceleration.Time.Format("2006-01-02 15:04:05.99999"),
@@ -66,5 +81,6 @@ func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gyroscope.Y,
 		w.gyroscope.Z,
 		*w.temperature,
+		sessionID,
 	}
 }
