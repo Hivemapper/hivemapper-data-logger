@@ -1,3 +1,5 @@
+github.com/Hivemapper/imu-controller v0.0.0-20231130001728-f18271e94548 h1:gYX9lG4aet8tbeBR9m8nswHO6yCWtmzL5LE2/k657hw=
+github.com/Hivemapper/imu-controller v0.0.0-20231130001728-f18271e94548/go.mod h1:29sd4ZYEyws4StWQLEslud5ciSCs3sh8aikZ2tSHgrw=
 github.com/Hivemapper/sf-ublox v0.0.0-20240221201612-d92d22b86230 h1:gJnD/mOM6RzqRjkZ5HBA0VVDd7DhfgatO/mCCWl5Huw=
 github.com/Hivemapper/sf-ublox v0.0.0-20240221201612-d92d22b86230/go.mod h1:pfcwlN8XUYXVYAkPU2LrFZnXIS4EvpZaXh+qRKCN9Sg=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
@@ -61,8 +63,6 @@ github.com/spf13/cobra v1.7.0 h1:hyqWnYt1ZQShIddO5kBpj3vu05/++x6tJ6dg8EC572I=
 github.com/spf13/cobra v1.7.0/go.mod h1:uLxZILRyS/50WlhOIKD7W6V5bgeIt+4sICxh6uRMrb0=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/streamingfast/imu-controller v0.0.0-20230928133410-7c6595dd3783 h1:sHEUQ2L72D07oR0bCN/9tmFiNWwNfVrqvR7OnLiU4G8=
-github.com/streamingfast/imu-controller v0.0.0-20230928133410-7c6595dd3783/go.mod h1:29sd4ZYEyws4StWQLEslud5ciSCs3sh8aikZ2tSHgrw=
 github.com/streamingfast/shutter v1.5.0 h1:NpzDYzj0HVpSiDJVO/FFSL6QIK/YKOxY0gJAtyaTOgs=
 github.com/streamingfast/shutter v1.5.0/go.mod h1:B/T6efqdeMGbGwjzPS1ToXzYZI4kDzI5/u4I+7qbjY8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
