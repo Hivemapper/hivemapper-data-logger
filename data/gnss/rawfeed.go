@@ -42,60 +42,32 @@ func (g *GnssFilteredData) init(d *neom9n.Data) {
 	g.Data = d
 }
 
-type Option func(*GnssFeed)
-
 type GnssFeed struct {
-	dataHandlers     []GnssDataHandler
-	timeHandlers     []TimeHandler
-	gnssFilteredData *GnssFilteredData
-
-	skipFiltering bool
+	dataHandler GnssDataHandler
 }
 
-func NewGnssFeed(dataHandlers []GnssDataHandler, timeHandlers []TimeHandler, opts ...Option) *GnssFeed {
+func NewGnssFeed(dataHandler GnssDataHandler) *GnssFeed {
 	g := &GnssFeed{
-		dataHandlers:     dataHandlers,
-		timeHandlers:     timeHandlers,
-		gnssFilteredData: NewGnssFilteredData(),
-	}
-
-	for _, opt := range opts {
-		opt(g)
+		dataHandler: dataHandler,
 	}
 
 	return g
 }
 
-func WithSkipFiltering() func(*GnssFeed) {
-	return func(f *GnssFeed) {
-		f.skipFiltering = true
-	}
-}
-
-func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) error {
+func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n) error {
 	//todo: datafeed is ugly
 	dataFeed := neom9n.NewDataFeed(f.HandleData)
-	err := gnssDevice.Run(dataFeed, timeValidThreshold, func(now time.Time) {
-		for _, handler := range f.timeHandlers {
-			err := handler(now)
-			if err != nil {
-				fmt.Printf("handling gnss time: %s\n", err)
-			}
-		}
-	})
+	err := gnssDevice.Run(dataFeed)
 	if err != nil {
 		return fmt.Errorf("running gnss device: %w", err)
 	}
-
 	return nil
 }
 
 func (f *GnssFeed) HandleData(d *neom9n.Data) {
-
-	for _, handler := range f.dataHandlers {
-		err := handler(d)
-		if err != nil {
-			fmt.Printf("handling gnss data: %s\n", err)
-		}
+	err := f.dataHandler(d)
+	if err != nil {
+		fmt.Printf("handling gnss data: %s\n", err)
 	}
+
 }
