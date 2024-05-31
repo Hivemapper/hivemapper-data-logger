@@ -41,23 +41,7 @@ func init() {
 
 func logRun(cmd *cobra.Command, _ []string) error {
 	fmt.Println(("Entering logRun --------------------------------"))
-
-	fmt.Println("IMU:Setup SPI connection to IMU")
-	imuDevice := iim42652.NewSpi(
-		mustGetString(cmd, "imu-dev-path"),
-		iim42652.AccelerationSensitivityG16,
-		iim42652.GyroScalesG2000,
-		true,
-		false,
-	)
-
-	fmt.Println("IMU: Running IMU initilization")
-	err := imuDevice.Init()
-	if err != nil {
-		return fmt.Errorf("initializing IMU: %w", err)
-	}
-	fmt.Println("IMU: IMU initialized")
-
+	// setup section
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
 
@@ -69,11 +53,34 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
+	// ALL Devices Initialization and Setup
+	fmt.Println("IMU:Setup SPI connection to IMU")
+	imuDevice := iim42652.NewSpi(
+		mustGetString(cmd, "imu-dev-path"),
+		iim42652.AccelerationSensitivityG16,
+		iim42652.GyroScalesG2000,
+		true,
+		false,
+	)
+
+	fmt.Println("IMU: Running IMU initilization")
+	err = imuDevice.Init()
+	if err != nil {
+		return fmt.Errorf("initializing IMU: %w", err)
+	}
+	fmt.Println("IMU: IMU initialized")
+
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
 	err = gnssDevice.Init(nil)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
+
+	// Individual Device Feed Creation
+
+	gnssEventFeed := gnss.NewGnssFeed(
+		dataHandler.HandlerGnssData,
+	)
 
 	rawImuFeed := imu.NewRawFeed(
 		imuDevice,
@@ -86,22 +93,18 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := rawImuFeed.Run()
+		err = gnssEventFeed.Run(gnssDevice)
 		if err != nil {
-			panic(fmt.Errorf("running raw imu event feed: %w", err))
+			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}
 	}()
-
-	gnssEventFeed := gnss.NewGnssFeed(
-		dataHandler.HandlerGnssData,
-	)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = gnssEventFeed.Run(gnssDevice)
+		err := rawImuFeed.Run()
 		if err != nil {
-			panic(fmt.Errorf("running gnss event feed: %w", err))
+			panic(fmt.Errorf("running raw imu event feed: %w", err))
 		}
 	}()
 
