@@ -7,6 +7,28 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
+type Acceleration struct {
+	X         float64
+	Y         float64
+	Z         float64
+	Magnitude float64
+	Time      time.Time
+}
+
+func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {
+	return &Acceleration{
+		X:         x,
+		Y:         y,
+		Z:         z,
+		Magnitude: m,
+		Time:      time,
+	}
+}
+
+func (a *Acceleration) String() string {
+	return fmt.Sprintf("Acceleration{x=%f, y=%f, z=%f, magnitude=%f, time=%s}", a.X, a.Y, a.Z, a.Magnitude, a.Time)
+}
+
 type RawFeed struct {
 	imu      *iim42652.IIM42652
 	handlers []RawFeedHandler

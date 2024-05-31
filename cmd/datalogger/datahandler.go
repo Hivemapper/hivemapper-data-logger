@@ -6,7 +6,6 @@ import (
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -24,9 +23,9 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
-		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, magnetometer.CreateTableQuery},
-		[]logger.AlterTableQueryFunc{sql.GnssAlterTableQuerySession, sql.GnssAlterTableQuerySessionUnfilteredAndResolved, sql.GnssAuthAlterTableQuery, sql.ImuAlterTableQuery, magnetometer.AlterTableQuery},
-		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.ErrorLogsPurgeQuery, magnetometer.PurgeQuery})
+		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.MagCreateTableQuery},
+		[]logger.AlterTableQueryFunc{sql.GnssAlterTableQuerySession, sql.GnssAlterTableQuerySessionUnfilteredAndResolved, sql.GnssAuthAlterTableQuery, sql.ImuAlterTableQuery, sql.MagAlterTableQuery},
+		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.MagPurgeQuery})
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
@@ -92,7 +91,7 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	}
 
 	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
-	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
+	err = h.sqliteLogger.Log(sql.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}

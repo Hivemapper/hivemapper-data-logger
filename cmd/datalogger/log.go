@@ -20,9 +20,6 @@ var LogCmd = &cobra.Command{
 }
 
 func init() {
-	// Imu
-	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
-
 	// Gnss
 	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
@@ -62,9 +59,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("initializing IMU: %w", err)
 	}
 	fmt.Println("IMU: IMU initialized")
-
-	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
-	fmt.Println("Config: ", conf.String())
 
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")

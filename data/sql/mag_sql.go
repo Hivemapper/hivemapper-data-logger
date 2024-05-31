@@ -1,4 +1,4 @@
-package magnetometer
+package sql
 
 import (
 	"time"
@@ -60,14 +60,14 @@ func (s *MagnetometerSqlWrapper) InsertQuery() (string, string, []any) {
 	}
 }
 
-func CreateTableQuery() string {
+func MagCreateTableQuery() string {
 	return MagCreateTable
 }
 
-func AlterTableQuery() string {
+func MagAlterTableQuery() string {
 	return MagAlterTable
 }
 
-func PurgeQuery() string {
+func MagPurgeQuery() string {
 	return purgeQuery
 }
