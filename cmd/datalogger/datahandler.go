@@ -13,23 +13,14 @@ import (
 )
 
 type DataHandler struct {
-	sqliteLogger      *logger.Sqlite
-	gnssJsonLogger    *logger.JsonFile
-	imuJsonLogger     *logger.JsonFile
-	gnssData          *neom9n.Data
-	lastImageFileName string
-	jsonLogsEnabled   bool
-	gnssAuthCount     int
+	sqliteLogger  *logger.Sqlite
+	gnssData      *neom9n.Data
+	gnssAuthCount int
 }
 
 func NewDataHandler(
 	dbPath string,
 	dbLogTTL time.Duration,
-	gnssJsonDestFolder string,
-	gnssSaveInterval time.Duration,
-	imuJsonDestFolder string,
-	imuSaveInterval time.Duration,
-	jsonLogsEnabled bool,
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
@@ -41,39 +32,17 @@ func NewDataHandler(
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 
-	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
-	err = gnssJsonLogger.Init(false)
-	if err != nil {
-		return nil, fmt.Errorf("initializing gnss json logger: %w", err)
-	}
-
-	imuJsonLogger := logger.NewJsonFile(imuJsonDestFolder, imuSaveInterval)
-	err = imuJsonLogger.Init(jsonLogsEnabled)
-	if err != nil {
-		return nil, fmt.Errorf("initializing imu json logger: %w", err)
-	}
-
 	return &DataHandler{
-		sqliteLogger:    sqliteLogger,
-		gnssJsonLogger:  gnssJsonLogger,
-		imuJsonLogger:   imuJsonLogger,
-		jsonLogsEnabled: jsonLogsEnabled,
+		sqliteLogger: sqliteLogger,
 	}, err
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	if data.SecEcsign == nil {
 		h.gnssData = data
-		if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
-			h.gnssJsonLogger.StartStoring()
-		}
 		err := h.sqliteLogger.Log(sql.NewGnssSqlWrapper(data))
 		if err != nil {
 			return fmt.Errorf("logging raw gnss data to sqlite: %w", err)
-		}
-		err = h.gnssJsonLogger.Log(data.Timestamp, data)
-		if err != nil {
-			return fmt.Errorf("logging gnss data to json: %w", err)
 		}
 	} else {
 		if h.gnssAuthCount%60 == 0 {
@@ -134,11 +103,6 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	err := h.sqliteLogger.Log(sql.NewImuSqlWrapper(temperature, acceleration, angularRate))
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
-	}
-	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
-	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
-	if err != nil {
-		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
 	return nil
 }

@@ -9,10 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
-	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/session"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 
 	_ "modernc.org/sqlite"
 )
@@ -21,10 +18,9 @@ type Sqlite struct {
 	lock                     sync.Mutex
 	DB                       *sql.DB
 	file                     string
-	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
-	alterTableQueryFuncList []AlterTableQueryFunc
+	alterTableQueryFuncList  []AlterTableQueryFunc
 
 	logs chan Sqlable
 }
@@ -284,108 +280,6 @@ func (s *Sqlite) Clone() (string, error) {
 	}
 
 	return cloneFilename, nil
-}
-
-func (s *Sqlite) FetchRawMergedData(from string, to string, includeImu bool, includeGnss bool) ([]*JsonDataWrapper, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	rows, err := s.DB.Query("SELECT * FROM merged WHERE imu_time > ? AND imu_time < ?", from, to)
-	if err != nil {
-		return nil, fmt.Errorf("querying last position: %s", err.Error())
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("querying last position: %s", err.Error())
-	}
-	defer rows.Close()
-
-	var jsonData []*JsonDataWrapper
-
-	for rows.Next() {
-		id := 0
-		imuTime := time.Time{}
-		temperature := iim42652.NewTemperature(0.0)
-		acceleration := &iim42652.Acceleration{}
-		gnssData := &neom9n.Data{
-			SystemTime: time.Time{},
-			Timestamp:  time.Time{},
-			Dop:        &neom9n.Dop{},
-			Satellites: &neom9n.Satellites{},
-			RF:         &neom9n.RF{},
-		}
-		gyro := &Gyro{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}
-		var _camOrientation *imu.Orientation // read the data, but do not use it in the json writer, not useful as of now
-		err := rows.Scan(
-			&id,
-			&imuTime,
-			&acceleration.TotalMagnitude,
-			&acceleration.X,
-			&gyro.X,
-			&acceleration.Y,
-			&gyro.Y,
-			&acceleration.Z,
-			&gyro.Z,
-			&temperature,
-			&_camOrientation,
-			&gnssData.SystemTime,
-			&gnssData.Timestamp,
-			&gnssData.Fix,
-			&gnssData.Ttff,
-			&gnssData.Latitude,
-			&gnssData.Longitude,
-			&gnssData.Altitude,
-			&gnssData.Speed,
-			&gnssData.Heading,
-			&gnssData.Satellites.Seen,
-			&gnssData.Satellites.Used,
-			&gnssData.Eph,
-			&gnssData.HorizontalAccuracy,
-			&gnssData.VerticalAccuracy,
-			&gnssData.HeadingAccuracy,
-			&gnssData.SpeedAccuracy,
-			&gnssData.Dop.HDop,
-			&gnssData.Dop.VDop,
-			&gnssData.Dop.XDop,
-			&gnssData.Dop.YDop,
-			&gnssData.Dop.TDop,
-			&gnssData.Dop.PDop,
-			&gnssData.Dop.GDop,
-			&gnssData.RF.JammingState,
-			&gnssData.RF.AntStatus,
-			&gnssData.RF.AntPower,
-			&gnssData.RF.PostStatus,
-			&gnssData.RF.NoisePerMS,
-			&gnssData.RF.AgcCnt,
-			&gnssData.RF.JamInd,
-			&gnssData.RF.OfsI,
-			&gnssData.RF.MagI,
-			&gnssData.RF.OfsQ,
-		)
-
-		jsonDataWrapper := NewJsonDataWrapper(nil, nil, nil, gyro)
-
-		if includeImu {
-			jsonDataWrapper.Acceleration = imu.NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, imuTime)
-			jsonDataWrapper.Temperature = temperature
-		}
-
-		if includeGnss {
-			jsonDataWrapper.GnssData = gnssData
-		}
-
-		jsonData = append(jsonData, jsonDataWrapper)
-
-		if err != nil {
-			return nil, fmt.Errorf("scanning last position: %s", err.Error())
-		}
-	}
-
-	return jsonData, nil
 }
 
 func (s *Sqlite) Purge(ttl time.Duration) error {

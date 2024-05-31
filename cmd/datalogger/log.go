@@ -22,20 +22,14 @@ var LogCmd = &cobra.Command{
 func init() {
 	// Imu
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
-	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
-	LogCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
-	LogCmd.Flags().Bool("imu-skip-power-management", false, "skip power management setup of imu device on HDC-S")
 
 	// Gnss
 	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
-	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
-	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
 	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
-	LogCmd.Flags().Bool("json-logs-enabled", false, "enable logging sensor data into json files")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
 
@@ -43,17 +37,6 @@ func init() {
 	LogCmd.Flags().String("db-output-path", "/mnt/data/gnss.v1.1.0.db", "path to sqliteLogger database")
 	LogCmd.Flags().Duration("db-log-ttl", 12*time.Hour, "ttl of logs in database")
 	LogCmd.Flags().String("imu-dev-path", "/dev/spidev0.0", "Config serial location")
-
-	//Image feed
-	LogCmd.Flags().String("images-folder", "/mnt/data/pic", "")
-
-	// Connect-go
-	LogCmd.Flags().String("listen-addr", ":9000", "address to listen on")
-
-	// Http server
-	LogCmd.Flags().String("http-listen-addr", ":9001", "http server address to listen on")
-
-	LogCmd.Flags().Bool("skip-filtering", false, "skip filtering of gnss data")
 
 	// Magnetometer
 	LogCmd.Flags().Bool("enable-magnetometer", false, "enable reading from magnetometer")
@@ -70,7 +53,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		iim42652.AccelerationSensitivityG16,
 		iim42652.GyroScalesG2000,
 		true,
-		mustGetBool(cmd, "imu-skip-power-management"),
+		false,
 	)
 
 	fmt.Println("IMU: Running IMU initilization")
@@ -89,11 +72,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
 		mustGetDuration(cmd, "db-log-ttl"),
-		mustGetString(cmd, "gnss-json-destination-folder"),
-		mustGetDuration(cmd, "gnss-json-save-interval"),
-		mustGetString(cmd, "imu-json-destination-folder"),
-		mustGetDuration(cmd, "imu-json-save-interval"),
-		mustGetBool(cmd, "json-logs-enabled"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
@@ -123,9 +101,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	}()
 
 	var options []gnss.Option
-	if mustGetBool(cmd, "skip-filtering") {
-		options = append(options, gnss.WithSkipFiltering())
-	}
 	gnssEventFeed := gnss.NewGnssFeed(
 		[]gnss.GnssDataHandler{
 			dataHandler.HandlerGnssData,

@@ -41,13 +41,6 @@ func mustGetDuration(cmd *cobra.Command, flagName string) time.Duration {
 	return val
 }
 
-func mustGetInt64(cmd *cobra.Command, flagName string) int64 {
-	val, err := cmd.Flags().GetInt64(flagName)
-	if err != nil {
-		panic(fmt.Sprintf("flags: couldn't find flag %q", flagName))
-	}
-	return val
-}
 func mustGetInt(cmd *cobra.Command, flagName string) int {
 	val, err := cmd.Flags().GetInt(flagName)
 	if err != nil {
