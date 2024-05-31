@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
-	"github.com/Hivemapper/hivemapper-data-logger/data"
-	"github.com/Hivemapper/hivemapper-data-logger/data/direction"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
@@ -61,25 +59,6 @@ func NewDataHandler(
 		imuJsonLogger:   imuJsonLogger,
 		jsonLogsEnabled: jsonLogsEnabled,
 	}, err
-}
-
-func (h *DataHandler) HandleImage(imageFileName string) error {
-	h.lastImageFileName = imageFileName
-	return nil
-}
-
-func (h *DataHandler) HandleOrientedAcceleration(
-	acceleration *imu.Acceleration,
-	tiltAngles *imu.TiltAngles,
-	temperature iim42652.Temperature,
-	orientation imu.Orientation,
-) error {
-	// gnssData := mustGnssEvent(h.gnssData)
-	// err := h.sqliteLogger.Log(merged.NewSqlWrapper(acceleration, tiltAngles, gnssData, temperature, orientation))
-	// if err != nil {
-	// 	return fmt.Errorf("logging merged data to sqlite: %w", err)
-	// }
-	return nil
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
@@ -160,15 +139,6 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
-	}
-	return nil
-}
-
-func (h *DataHandler) HandleDirectionEvent(event data.Event) error {
-	gnssData := mustGnssEvent(h.gnssData)
-	err := h.sqliteLogger.Log(direction.NewSqlWrapper(event, gnssData))
-	if err != nil {
-		return fmt.Errorf("logging direction data to sqlite: %w", err)
 	}
 	return nil
 }

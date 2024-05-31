@@ -30,7 +30,7 @@ func NewSqlImporterFeed(sqlite *logger.Sqlite, imuRawFeedHandlers []imu.RawFeedH
 	}
 }
 
-func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
+func (s *SqlImporterFeed) Run() error {
 	fmt.Println("Starting sql feed")
 
 	numOfRows := 0
@@ -119,9 +119,9 @@ func (s *SqlImporterFeed) Run(axisMap *iim42652.AxisMap) error {
 
 			ar := &iim42652.AngularRate{}
 			for _, handler := range s.imuRawFeedHandlers {
-				x := axisMap.X(acceleration)
-				y := axisMap.Y(acceleration)
-				z := axisMap.Z(acceleration)
+				x := acceleration.X
+				y := acceleration.Y
+				z := acceleration.Z
 				m := math.Sqrt(x*x + y*y + z*z)
 				a := imu.NewAcceleration(x, y, z, m, t)
 				err := handler(a, ar, temperature)

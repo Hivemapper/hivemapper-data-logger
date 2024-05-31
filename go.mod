@@ -8,9 +8,9 @@ replace github.com/daedaleanai/ublox => github.com/Hivemapper/sf-ublox v0.0.0-20
 
 replace github.com/Hivemapper/gnss-controller => ../gnss-controller
 
-// replace github.com/streamingfast/imu-controller => ../imu-controller
+replace github.com/streamingfast/imu-controller => ../imu-controller
 
-replace github.com/streamingfast/imu-controller => github.com/Hivemapper/imu-controller v0.0.0-20231130001728-f18271e94548
+// replace github.com/streamingfast/imu-controller => github.com/Hivemapper/imu-controller v0.0.0-20231130001728-f18271e94548
 
 require (
 	github.com/Hivemapper/gnss-controller v1.0.3-0.20240402232423-1de9f3a3a7f8

@@ -19,7 +19,7 @@ func rootRun(cmd *cobra.Command, args []string) error {
 
 func main() {
 	if err := RootCmd.Execute(); err != nil {
-		panic(err)
+		panic("Error executing root command")
 	}
 
 	fmt.Println("Goodbye!")
