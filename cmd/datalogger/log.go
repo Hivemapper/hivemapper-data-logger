@@ -20,6 +20,9 @@ var LogCmd = &cobra.Command{
 }
 
 func init() {
+	// Camera Type
+	LogCmd.Flags().String("camera-type", "hdcs", "camera type ('hdc' or 'hdcs' only options for now)")
+
 	// Gnss
 	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
@@ -44,6 +47,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	// setup section
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
+	// Get camera type for axis mapping
+	deviceType := mustGetString(cmd, "camera-type")
 
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
@@ -60,7 +65,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		iim42652.AccelerationSensitivityG16,
 		iim42652.GyroScalesG2000,
 		true,
-		false,
+		deviceType,
 	)
 
 	fmt.Println("IMU: Running IMU initilization")
