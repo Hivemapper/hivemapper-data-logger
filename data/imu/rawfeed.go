@@ -8,25 +8,23 @@ import (
 )
 
 type Acceleration struct {
-	X         float64
-	Y         float64
-	Z         float64
-	Magnitude float64
-	Time      time.Time
+	X    float64
+	Y    float64
+	Z    float64
+	Time time.Time
 }
 
-func NewAcceleration(x, y, z, m float64, time time.Time) *Acceleration {
+func NewAcceleration(x, y, z float64, time time.Time) *Acceleration {
 	return &Acceleration{
-		X:         x,
-		Y:         y,
-		Z:         z,
-		Magnitude: m,
-		Time:      time,
+		X:    x,
+		Y:    y,
+		Z:    z,
+		Time: time,
 	}
 }
 
 func (a *Acceleration) String() string {
-	return fmt.Sprintf("Acceleration{x=%f, y=%f, z=%f, magnitude=%f, time=%s}", a.X, a.Y, a.Z, a.Magnitude, a.Time)
+	return fmt.Sprintf("Acceleration{x=%f, y=%f, z=%f, time=%s}", a.X, a.Y, a.Z, a.Time)
 }
 
 type RawFeed struct {
@@ -47,9 +45,9 @@ func (f *RawFeed) Run() error {
 	fmt.Println("Run imu raw feed")
 
 	for {
-		// time.Sleep(5 * time.Millisecond)
+		// Check if data is ready
 		var status byte = 0x00
-		intStatus, err := f.imu.ReadRegister(iim42652.INT_STATUS)
+		intStatus, err := f.imu.ReadRegister(iim42652.DATA_READY_INTERRUPT_STATUS)
 		if err != nil {
 			return fmt.Errorf("error reading register: %w", err)
 		}
@@ -70,7 +68,7 @@ func (f *RawFeed) Run() error {
 				return fmt.Errorf("getting temperature: %w", err)
 			}
 
-			err = f.handler(NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, time.Now()), angularRate, temperature)
+			err = f.handler(NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, time.Now()), angularRate, temperature)
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)
 			}
