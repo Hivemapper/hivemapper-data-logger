@@ -30,14 +30,14 @@ func (a *Acceleration) String() string {
 }
 
 type RawFeed struct {
-	imu      *iim42652.IIM42652
-	handlers []RawFeedHandler
+	imu     *iim42652.IIM42652
+	handler RawFeedHandler
 }
 
-func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
+func NewRawFeed(imu *iim42652.IIM42652, handler RawFeedHandler) *RawFeed {
 	return &RawFeed{
-		imu:      imu,
-		handlers: handlers,
+		imu:     imu,
+		handler: handler,
 	}
 }
 
@@ -47,38 +47,42 @@ func (f *RawFeed) Run() error {
 	fmt.Println("Run imu raw feed")
 
 	for {
-		time.Sleep(5 * time.Millisecond)
-		acceleration, err := f.imu.GetAcceleration()
+		// time.Sleep(5 * time.Millisecond)
+		var status byte = 0x00
+		intStatus, err := f.imu.ReadRegister(iim42652.INT_STATUS)
 		if err != nil {
-			return fmt.Errorf("getting acceleration: %w", err)
+			return fmt.Errorf("error reading register: %w", err)
 		}
+		status |= intStatus
+		if status&iim42652.BIT_INT_STATUS_DRDY == iim42652.BIT_INT_STATUS_DRDY {
+			acceleration, err := f.imu.GetAcceleration()
+			if err != nil {
+				return fmt.Errorf("getting acceleration: %w", err)
+			}
 
-		angularRate, err := f.imu.GetGyroscopeData()
-		if err != nil {
-			return fmt.Errorf("getting angular rate: %w", err)
-		}
+			angularRate, err := f.imu.GetGyroscopeData()
+			if err != nil {
+				return fmt.Errorf("getting angular rate: %w", err)
+			}
 
-		temperature, err := f.imu.GetTemperature()
-		if err != nil {
-			return fmt.Errorf("getting temperature: %w", err)
-		}
+			temperature, err := f.imu.GetTemperature()
+			if err != nil {
+				return fmt.Errorf("getting temperature: %w", err)
+			}
 
-		for _, handler := range f.handlers {
-			err := handler(
-				NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, time.Now()),
-				angularRate,
-				temperature,
-			)
+			err = f.handler(NewAcceleration(acceleration.X, acceleration.Y, acceleration.Z, acceleration.TotalMagnitude, time.Now()), angularRate, temperature)
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)
 			}
-		}
-		if angularRate.X < -2000.0 {
-			fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
-			err := f.imu.Init()
-			if err != nil {
-				return fmt.Errorf("initializing IMU: %w", err)
+
+			if angularRate.X < -2000.0 {
+				fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
+				err := f.imu.Init()
+				if err != nil {
+					return fmt.Errorf("initializing IMU: %w", err)
+				}
 			}
+
 		}
 	}
 }
