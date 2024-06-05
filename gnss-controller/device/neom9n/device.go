@@ -161,7 +161,7 @@ func (n *Neom9n) delConfig(key uint32, description string) {
 	time.Sleep(100 * time.Millisecond)
 }
 
-func (n *Neom9n) Run(dataFeed *DataFeed, timeValidThreshold string, timeSetCallback func(now time.Time)) error {
+func (n *Neom9n) Run(dataFeed *DataFeed) error {
 	now := time.Time{}
 	loadAll := true
 
