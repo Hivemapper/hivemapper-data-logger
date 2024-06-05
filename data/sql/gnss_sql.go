@@ -55,7 +55,7 @@ const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 
 const gnssPurgeQuery string = `
 	DELETE FROM gnss WHERE rowid NOT IN (
-		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 60000
+		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 100000
 	);
 `
 

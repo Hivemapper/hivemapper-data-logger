@@ -31,7 +31,7 @@ const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?,?),`
 
 const imuPurgeQuery string = `
 DELETE FROM imu WHERE rowid NOT IN (
-	SELECT rowid FROM imu ORDER BY rowid DESC LIMIT 150000
+	SELECT rowid FROM imu ORDER BY rowid DESC LIMIT 500000
 );
 `
 
