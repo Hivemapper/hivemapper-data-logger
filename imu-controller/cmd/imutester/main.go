@@ -9,7 +9,7 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 )
 
-var skipPwrMngt = flag.Bool("skip-power-management", false, "skip power management")
+var cameraType = flag.String("camera-type", "hdcs", "Camera type ('hdc' or 'hdcs' only options for now)")
 
 func main() {
 	flag.Parse()
@@ -20,7 +20,7 @@ func main() {
 		iim42652.AccelerationSensitivityG16,
 		iim42652.GyroScalesG2000,
 		true,
-		*skipPwrMngt,
+		*cameraType,
 	)
 
 	err := imuDevice.Init()

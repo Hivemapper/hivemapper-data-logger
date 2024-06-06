@@ -39,6 +39,7 @@ var (
 	maxSamples        = flag.Int("max-samples", 200, "The maximum number of samples to take for calibration. Default is 200")
 	clearCalibration  = flag.Bool("clear-calibration", false, "Clear existing calibration data from the IMU")
 	verifyCalibration = flag.Bool("verify-calibration", false, "Verify that measured values make sense.")
+	cameraType        = flag.String("camera-type", "hdcs", "Camera type ('hdc' or 'hdcs' only options for now)")
 )
 
 func abs(value int32) int32 {
@@ -142,7 +143,7 @@ func main() {
 		iim42652.AccelerationSensitivityG16,
 		iim42652.GyroScalesG2000,
 		true,
-		false, // skip power management
+		*cameraType,
 	)
 
 	err := imuDevice.Init()
