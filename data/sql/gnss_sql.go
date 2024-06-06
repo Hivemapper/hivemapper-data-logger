@@ -3,8 +3,8 @@ package sql
 import (
 	"encoding/json"
 
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/session"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/device/neom9n"
 )
 
 const GnssCreateTable string = `
@@ -83,12 +83,12 @@ func GnssPurgeQuery() string {
 }
 
 type GnssSqlWrapper struct {
-	gnssData     *neom9n.Data
+	gnssData *neom9n.Data
 }
 
 func NewGnssSqlWrapper(gnssData *neom9n.Data) *GnssSqlWrapper {
 	return &GnssSqlWrapper{
-		gnssData:     gnssData,
+		gnssData: gnssData,
 	}
 }
 
@@ -108,7 +108,6 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 	if err != nil {
 		panic(err) // Handle error if any
 	}
-	
 
 	return insertGnssRawQuery, insertGnssRawFields, []interface{}{
 		w.gnssData.SystemTime.Format("2006-01-02 15:04:05.99999"),

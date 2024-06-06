@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Hivemapper/gnss-controller/message"
-	"github.com/Hivemapper/gnss-controller/message/handlers"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/message"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/message/handlers"
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/tarm/serial"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Hivemapper/gnss-controller/message"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/message"
 	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 )
@@ -22,28 +22,28 @@ type Position struct {
 }
 
 type Data struct {
-	Ttff               int64       `json:"ttff"`
-	SystemTime         time.Time   `json:"systemtime"`
-	ActualSystemTime   time.Time   `json:"actual_systemtime"`
-	Timestamp          time.Time   `json:"timestamp"`
-	Fix                string      `json:"fix"`
-	Latitude           float64     `json:"latitude"`
-	UnfilteredLatitude float64     `json:"unfiltered_latitude"`
-	Longitude          float64     `json:"longitude"`
-	UnfilteredLongitude float64    `json:"unfiltered_longitude"`
-	Altitude           float64     `json:"height"`
-	Heading            float64     `json:"heading"`
-	Speed              float64     `json:"speed"`
-	Dop                *Dop        `json:"dop"`
-	Satellites         *Satellites `json:"satellites"`
-	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
-	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
-	RF                 *RF         `json:"rf,omitempty"`
-	SpeedAccuracy      float64     `json:"speed_accuracy"`
-	HeadingAccuracy    float64     `json:"heading_accuracy"`
-	TimeResolved	   int         `json:"time_resolved"`
-	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
-	VerticalAccuracy   float64     `json:"vertical_accuracy"`
+	Ttff                int64       `json:"ttff"`
+	SystemTime          time.Time   `json:"systemtime"`
+	ActualSystemTime    time.Time   `json:"actual_systemtime"`
+	Timestamp           time.Time   `json:"timestamp"`
+	Fix                 string      `json:"fix"`
+	Latitude            float64     `json:"latitude"`
+	UnfilteredLatitude  float64     `json:"unfiltered_latitude"`
+	Longitude           float64     `json:"longitude"`
+	UnfilteredLongitude float64     `json:"unfiltered_longitude"`
+	Altitude            float64     `json:"height"`
+	Heading             float64     `json:"heading"`
+	Speed               float64     `json:"speed"`
+	Dop                 *Dop        `json:"dop"`
+	Satellites          *Satellites `json:"satellites"`
+	Sep                 float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
+	Eph                 float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	RF                  *RF         `json:"rf,omitempty"`
+	SpeedAccuracy       float64     `json:"speed_accuracy"`
+	HeadingAccuracy     float64     `json:"heading_accuracy"`
+	TimeResolved        int         `json:"time_resolved"`
+	HorizontalAccuracy  float64     `json:"horizontal_accuracy"`
+	VerticalAccuracy    float64     `json:"vertical_accuracy"`
 
 	startTime       time.Time
 	GGA             string         `json:"gga"`
@@ -55,18 +55,18 @@ type Data struct {
 
 func (d *Data) Clone() Data {
 	clone := Data{
-		Ttff:       d.Ttff,
-		SystemTime: d.SystemTime,
-		ActualSystemTime: d.ActualSystemTime,
-		Timestamp:  d.Timestamp,
-		Fix:        d.Fix,
-		Latitude:   d.Latitude,
-		UnfilteredLatitude: d.UnfilteredLatitude,
-		Longitude:  d.Longitude,
+		Ttff:                d.Ttff,
+		SystemTime:          d.SystemTime,
+		ActualSystemTime:    d.ActualSystemTime,
+		Timestamp:           d.Timestamp,
+		Fix:                 d.Fix,
+		Latitude:            d.Latitude,
+		UnfilteredLatitude:  d.UnfilteredLatitude,
+		Longitude:           d.Longitude,
 		UnfilteredLongitude: d.UnfilteredLongitude,
-		Altitude:   d.Altitude,
-		Heading:    d.Heading,
-		Speed:      d.Speed,
+		Altitude:            d.Altitude,
+		Heading:             d.Heading,
+		Speed:               d.Speed,
 		Dop: &Dop{
 			GDop: d.Dop.GDop,
 			HDop: d.Dop.HDop,
@@ -82,7 +82,7 @@ func (d *Data) Clone() Data {
 		},
 		Sep:                d.Sep,
 		Eph:                d.Eph,
-		TimeResolved: 	 	d.TimeResolved,
+		TimeResolved:       d.TimeResolved,
 		SpeedAccuracy:      d.SpeedAccuracy,
 		HeadingAccuracy:    d.HeadingAccuracy,
 		HorizontalAccuracy: d.HorizontalAccuracy,
@@ -169,9 +169,9 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 	return &DataFeed{
 		HandleData: handleData,
 		Data: &Data{
-			SystemTime: noTime,
+			SystemTime:       noTime,
 			ActualSystemTime: noTime,
-			Timestamp:  noTime,
+			Timestamp:        noTime,
 			Dop: &Dop{
 				GDop: 99.99,
 				HDop: 99.99,
@@ -181,9 +181,9 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 				XDop: 99.99,
 				YDop: 99.99,
 			},
-			Satellites: &Satellites{},
+			Satellites:   &Satellites{},
 			TimeResolved: 0,
-			RF:         &RF{},
+			RF:           &RF{},
 		},
 	}
 }
@@ -210,12 +210,12 @@ const (
 )
 
 var (
-	recCounter			int64
+	recCounter int64
 )
 
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	data := df.Data
- 
+
 	switch m := msg.(type) {
 	case *ubx.NavPvt:
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)

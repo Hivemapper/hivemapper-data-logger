@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 	"github.com/spf13/cobra"
 )
