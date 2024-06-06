@@ -14,13 +14,13 @@ const MAX_TRIES = 150
 const NULL_FIELD = 524288
 
 type RawFeed struct {
-	device   *i2c.Device
-	handlers []RawFeedHandler
+	device  *i2c.Device
+	handler RawFeedHandler
 }
 
-func NewRawFeed(handlers ...RawFeedHandler) *RawFeed {
+func NewRawFeed(handlers RawFeedHandler) *RawFeed {
 	return &RawFeed{
-		handlers: handlers,
+		handler: handlers,
 	}
 }
 
@@ -32,7 +32,6 @@ func readData(dev *i2c.Device) ([3]float64, error) {
 	for i = 0; i < MAX_TRIES; i++ {
 		result := [1]byte{}
 		dev.ReadReg(0x18, result[:])
-		// fmt.Printf("result %v\n", result)
 
 		if result[0]&(1<<6) != 0 {
 			break
@@ -44,7 +43,6 @@ func readData(dev *i2c.Device) ([3]float64, error) {
 
 	data := [9]byte{}
 	dev.ReadReg(0x00, data[:])
-	// fmt.Printf("data %v\n", data)
 
 	mag_x := float64(int(binary.BigEndian.Uint32([]byte{0, data[0], data[1], data[6]}))>>4-NULL_FIELD) / 16384 * 1000
 	mag_y := float64(int(binary.BigEndian.Uint32([]byte{0, data[2], data[3], data[7]}))>>4-NULL_FIELD) / 16384 * 1000
@@ -54,7 +52,7 @@ func readData(dev *i2c.Device) ([3]float64, error) {
 
 func (f *RawFeed) Init() error {
 	// Open a connection to the I2C device.
-	dev, err := i2c.Open(&i2c.Devfs{Dev: I2C_DEVICE}, I2C_ADDRESS) // Change the address according to your device.
+	dev, err := i2c.Open(&i2c.Devfs{Dev: I2C_DEVICE}, I2C_ADDRESS)
 	if err != nil {
 		return fmt.Errorf("failed to open I2C device: %v", err)
 	}
@@ -63,7 +61,7 @@ func (f *RawFeed) Init() error {
 }
 
 func (f *RawFeed) Run() error {
-	fmt.Println("Run imu raw feed")
+	fmt.Println("Run mag feed")
 	for {
 		time.Sleep(25 * time.Millisecond)
 		mag_readings, err := readData(f.device)
@@ -71,16 +69,15 @@ func (f *RawFeed) Run() error {
 			return fmt.Errorf("getting magnetometer readings: %w", err)
 		}
 
-		for _, handler := range f.handlers {
-			err := handler(
-				time.Now(),
-				mag_readings[0],
-				mag_readings[1],
-				mag_readings[2],
-			)
-			if err != nil {
-				return fmt.Errorf("calling handler: %w", err)
-			}
+		err = f.handler(
+			time.Now(),
+			mag_readings[0],
+			mag_readings[1],
+			mag_readings[2],
+		)
+		if err != nil {
+			return fmt.Errorf("calling handler: %w", err)
 		}
+
 	}
 }

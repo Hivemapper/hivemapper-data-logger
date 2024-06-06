@@ -4,8 +4,8 @@ import (
 	b64 "encoding/base64"
 	"time"
 
-	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/session"
+	"github.com/Hivemapper/hivemapper-data-logger/gnss-controller/device/neom9n"
 )
 
 const GnssAuthCreateTable string = `

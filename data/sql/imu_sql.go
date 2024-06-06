@@ -3,7 +3,7 @@ package sql
 import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/session"
-	"github.com/streamingfast/imu-controller/device/iim42652"
+	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 )
 
 const ImuCreateTable string = `
@@ -63,9 +63,9 @@ func NewImuSqlWrapper(temperature iim42652.Temperature, acceleration *imu.Accele
 
 func (w *ImuSqlWrapper) InsertQuery() (string, string, []any) {
 	// very basic validation to prevent empty records on getting into database
-	if w.acceleration == nil || 
-		w.acceleration.Time.IsZero()  {
-		 return "", "", nil
+	if w.acceleration == nil ||
+		w.acceleration.Time.IsZero() {
+		return "", "", nil
 	}
 	sessionID, err := session.GetSession()
 	if err != nil {

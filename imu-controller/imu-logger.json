@@ -1,0 +1,8 @@
+{
+  "continuous_count_window": 10,
+  "minimum_magnitude_threshold": 0.2,
+  "left_turn_threshold": 0.15,
+  "right_turn_threshold": -0.15,
+  "g_force_accelerator_threshold": 0.25,
+  "g_force_decelerator_threshold": -0.25
+}
