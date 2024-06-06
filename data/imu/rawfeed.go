@@ -137,5 +137,7 @@ func (f *RawFeed) Run() error {
 			}
 
 		}
+		// Prevent hitting interrupt register too fast
+		time.Sleep(10 * time.Microsecond)
 	}
 }

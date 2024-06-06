@@ -41,7 +41,7 @@ func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, alt
 		createTableQueryFuncList: createTableQueryFuncList,
 		alterTableQueryFuncList:  alterTableQueryFuncList,
 		purgeQueryFuncList:       purgeQueryFuncList,
-		logs:                     make(chan Sqlable, 1000),
+		logs:                     make(chan Sqlable, 5000),
 	}
 }
 
