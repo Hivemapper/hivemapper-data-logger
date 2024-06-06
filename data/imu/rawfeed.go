@@ -135,9 +135,8 @@ func (f *RawFeed) Run() error {
 					return fmt.Errorf("initializing IMU: %w", err)
 				}
 			}
-
+			// Prevent hitting interrupt register too fast
+			time.Sleep(25 * time.Microsecond)
 		}
-		// Prevent hitting interrupt register too fast
-		time.Sleep(10 * time.Microsecond)
 	}
 }
