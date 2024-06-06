@@ -30,7 +30,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/streamingfast/imu-controller/device/iim42652"
+	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 )
 
 var (

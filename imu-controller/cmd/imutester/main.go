@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/streamingfast/imu-controller/device/iim42652"
+	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 )
 
 var skipPwrMngt = flag.Bool("skip-power-management", false, "skip power management")

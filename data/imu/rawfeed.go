@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type Acceleration struct {

@@ -7,8 +7,8 @@ import (
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/sql"
+	"github.com/Hivemapper/hivemapper-data-logger/imu-controller/device/iim42652"
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
-	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
 type DataHandler struct {
