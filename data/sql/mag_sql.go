@@ -24,12 +24,6 @@ const MagAlterTable string = `
 const insertMagnetometerQuery string = `INSERT INTO magnetometer VALUES `
 const insertMagnetometerFields string = `(NULL,?,?,?,?,?),`
 
-const purgeQuery string = `
-	DELETE FROM magnetometer WHERE rowid NOT IN (
-		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 150000
-	);
-`
-
 type MagnetometerSqlWrapper struct {
 	System_time time.Time
 	Mag_x       float64
@@ -66,8 +60,4 @@ func MagCreateTableQuery() string {
 
 func MagAlterTableQuery() string {
 	return MagAlterTable
-}
-
-func MagPurgeQuery() string {
-	return purgeQuery
 }

@@ -29,22 +29,12 @@ const insertImuRawQuery string = `INSERT OR IGNORE INTO imu VALUES`
 
 const insertImuRawFields string = `(NULL,?,?,?,?,?,?,?,?,?),`
 
-const imuPurgeQuery string = `
-DELETE FROM imu WHERE rowid NOT IN (
-	SELECT rowid FROM imu ORDER BY rowid DESC LIMIT 150000
-);
-`
-
 func ImuCreateTableQuery() string {
 	return ImuCreateTable
 }
 
 func ImuAlterTableQuery() string {
 	return ImuAlterTable
-}
-
-func ImuPurgeQuery() string {
-	return imuPurgeQuery
 }
 
 type ImuSqlWrapper struct {

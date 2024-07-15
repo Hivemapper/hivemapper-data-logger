@@ -18,7 +18,6 @@ type Sqlite struct {
 	lock                     sync.Mutex
 	DB                       *sql.DB
 	file                     string
-	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
 	alterTableQueryFuncList  []AlterTableQueryFunc
 
@@ -35,12 +34,11 @@ func (s *Sqlite) GetConfig(key string) string {
 	return result
 }
 
-func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, alterTableQueryFuncList []AlterTableQueryFunc, purgeQueryFuncList []PurgeQueryFunc) *Sqlite {
+func NewSqlite(file string, createTableQueryFuncList []CreateTableQueryFunc, alterTableQueryFuncList []AlterTableQueryFunc) *Sqlite {
 	return &Sqlite{
 		file:                     file,
 		createTableQueryFuncList: createTableQueryFuncList,
 		alterTableQueryFuncList:  alterTableQueryFuncList,
-		purgeQueryFuncList:       purgeQueryFuncList,
 		logs:                     make(chan Sqlable, 5000),
 	}
 }
@@ -49,7 +47,7 @@ func (s *Sqlite) InsertErrorLog(message string) {
 	s.DB.Exec("INSERT OR IGNORE INTO error_logs VALUES (NULL,?,?,?)", time.Now().Format("2006-01-02 15:04:05.99999"), "data-logger", message)
 }
 
-func (s *Sqlite) Init(logTTL time.Duration) error {
+func (s *Sqlite) Init() error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 
@@ -98,27 +96,13 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		return fmt.Errorf("checkpoint: %s", err.Error())
 	}
 
-	fmt.Println("database initialized, will purge every:", logTTL.String())
+	fmt.Println("database initialized")
 
 	s.DB = db
 
 	err = s.initiateSession()
 	if err != nil {
 		return fmt.Errorf("init session: %s", err.Error())
-	}
-
-	if logTTL > 0 {
-		go func() {
-			for {
-				time.Sleep(5 * time.Minute)
-				s.InsertErrorLog("purging database")
-				err := s.Purge(logTTL)
-				if err != nil {
-					s.InsertErrorLog("purging database error: " + err.Error())
-					panic(fmt.Errorf("purging database: %s", err.Error()))
-				}
-			}
-		}()
 	}
 
 	go func() {
@@ -280,28 +264,6 @@ func (s *Sqlite) Clone() (string, error) {
 	}
 
 	return cloneFilename, nil
-}
-
-func (s *Sqlite) Purge(ttl time.Duration) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.DB == nil {
-		return fmt.Errorf("database not initialized")
-	}
-
-	t := time.Now().Add(ttl * -1)
-	fmt.Println("purging database older than:", t)
-	start := time.Now()
-	for _, purgeQueryFunc := range s.purgeQueryFuncList {
-		if res, err := s.DB.Exec(purgeQueryFunc(), t); err != nil {
-			return err
-		} else {
-			c, _ := res.RowsAffected()
-			fmt.Println("purged rows:", c, "in", time.Since(start).String())
-		}
-	}
-
-	return nil
 }
 
 func (s *Sqlite) Log(data Sqlable) error {

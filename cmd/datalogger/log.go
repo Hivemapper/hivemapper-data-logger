@@ -52,7 +52,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
-		mustGetDuration(cmd, "db-log-ttl"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

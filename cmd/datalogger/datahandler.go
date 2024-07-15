@@ -19,14 +19,12 @@ type DataHandler struct {
 
 func NewDataHandler(
 	dbPath string,
-	dbLogTTL time.Duration,
 ) (*DataHandler, error) {
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.MagCreateTableQuery},
-		[]logger.AlterTableQueryFunc{sql.GnssAlterTableQuerySession, sql.GnssAlterTableQuerySessionUnfilteredAndResolved, sql.GnssAuthAlterTableQuery, sql.ImuAlterTableQuery, sql.MagAlterTableQuery},
-		[]logger.PurgeQueryFunc{sql.GnssPurgeQuery, sql.GnssAuthPurgeQuery, sql.ImuPurgeQuery, sql.MagPurgeQuery})
-	err := sqliteLogger.Init(dbLogTTL)
+		[]logger.AlterTableQueryFunc{sql.GnssAlterTableQuerySession, sql.GnssAlterTableQuerySessionUnfilteredAndResolved, sql.GnssAuthAlterTableQuery, sql.ImuAlterTableQuery, sql.MagAlterTableQuery})
+	err := sqliteLogger.Init()
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
 	}

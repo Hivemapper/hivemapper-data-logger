@@ -53,12 +53,6 @@ const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
 
 const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
-const gnssPurgeQuery string = `
-	DELETE FROM gnss WHERE rowid NOT IN (
-		SELECT rowid FROM gnss ORDER BY rowid DESC LIMIT 60000
-	);
-`
-
 func GnssCreateTableQuery() string {
 	return GnssCreateTable
 }
@@ -76,10 +70,6 @@ func GnssAlterTableQuerySession() string {
 	return `
 	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
-}
-
-func GnssPurgeQuery() string {
-	return gnssPurgeQuery
 }
 
 type GnssSqlWrapper struct {

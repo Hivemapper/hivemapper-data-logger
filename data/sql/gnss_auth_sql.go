@@ -29,22 +29,12 @@ const insertGnssAuthQuery string = `INSERT INTO gnss_auth VALUES`
 
 const insertGnssAuthFields string = `(NULL,?,?,?,?,?,?,?),`
 
-const gnssAuthPurgeQuery string = `
-DELETE FROM gnss_auth WHERE rowid NOT IN (
-	SELECT rowid FROM gnss_auth ORDER BY rowid DESC LIMIT 600
-);
-`
-
 func GnssAuthCreateTableQuery() string {
 	return GnssAuthCreateTable
 }
 
 func GnssAuthAlterTableQuery() string {
 	return GnssAuthAlterTable
-}
-
-func GnssAuthPurgeQuery() string {
-	return gnssAuthPurgeQuery
 }
 
 type GnssAuthSqlWrapper struct {
