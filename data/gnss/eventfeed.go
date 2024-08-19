@@ -73,17 +73,10 @@ func WithSkipFiltering() func(*GnssFeed) {
 	}
 }
 
-func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, timeValidThreshold string) error {
+func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n) error {
 	//todo: datafeed is ugly
 	dataFeed := neom9n.NewDataFeed(f.HandleData)
-	err := gnssDevice.Run(dataFeed, timeValidThreshold, func(now time.Time) {
-		for _, handler := range f.timeHandlers {
-			err := handler(now)
-			if err != nil {
-				fmt.Printf("handling gnss time: %s\n", err)
-			}
-		}
-	})
+	err := gnssDevice.Run(dataFeed)
 	if err != nil {
 		return fmt.Errorf("running gnss device: %w", err)
 	}
