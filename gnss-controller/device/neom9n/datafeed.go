@@ -206,11 +206,16 @@ type RF struct {
 }
 
 const (
+    diffThreshold = 200
 	ignoreThreshold = 30
+	fixThreshold = 40
 )
 
 var (
+    prevTime           time.Time
+	prevSystemTime		time.Time
 	recCounter			int64
+	fixedTimes			int64
 )
 
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
@@ -229,6 +234,28 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		} else {
 			data.TimeResolved = 1
 		}
+
+        var timeDiff, systemTimeDiff int64
+        if !prevTime.IsZero() {
+            timeDiff = data.Timestamp.Sub(prevTime).Milliseconds()
+        }
+        if !prevSystemTime.IsZero() {
+            systemTimeDiff = data.SystemTime.Sub(prevSystemTime).Milliseconds()
+        }
+
+        if timeDiff < diffThreshold && systemTimeDiff > diffThreshold {
+            data.SystemTime = prevSystemTime.Add(time.Duration(timeDiff) * time.Millisecond)
+			fixedTimes++
+			if fixedTimes > fixThreshold {
+				data.SystemTime = time.Now()
+				fixedTimes = 0
+			}
+        } else {
+			fixedTimes = 0
+		}
+
+		prevTime = data.Timestamp
+        prevSystemTime = data.SystemTime
 
 		data.Fix = fix[m.FixType]
 		if data.Ttff == 0 && data.Fix == "3D" && data.Dop.HDop < 5.0 {
