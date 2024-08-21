@@ -6,12 +6,12 @@ go 1.20
 // replace github.com/daedaleanai/ublox => github.com/streamingfast/ublox v0.0.0-20230815154721-b29363712a91
 replace github.com/daedaleanai/ublox => github.com/Hivemapper/sf-ublox v0.0.0-20240221201612-d92d22b86230
 
-replace github.com/Hivemapper/gnss-controller => ../gnss-controller
+//replace github.com/Hivemapper/gnss-controller => ../gnss-controller
 
 //replace github.com/streamingfast/imu-controller => ../imu-controller
 
 require (
-	github.com/Hivemapper/gnss-controller v1.0.3-0.20240402232423-1de9f3a3a7f8
+	github.com/Hivemapper/gnss-controller v1.0.3-0.20240819070221-78cf51b8a5c6
 	github.com/bufbuild/connect-go v1.10.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/google/uuid v1.3.1
