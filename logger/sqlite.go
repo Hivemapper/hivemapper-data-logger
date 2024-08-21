@@ -55,48 +55,48 @@ func (s *Sqlite) Init() error {
 		return fmt.Errorf("opening database: %s", err.Error())
 	}
 
-	// Enable Write-Ahead Logging
-	_, err = db.Exec("PRAGMA journal_mode=WAL;")
-	if err != nil {
-		return fmt.Errorf("setting WAL mode: %s", err.Error())
-	}
+	// // Enable Write-Ahead Logging
+	// _, err = db.Exec("PRAGMA journal_mode=WAL;")
+	// if err != nil {
+	// 	return fmt.Errorf("setting WAL mode: %s", err.Error())
+	// }
 
-	_, err = db.Exec("PRAGMA busy_timeout = 1000;")
-	if err != nil {
-		return fmt.Errorf("setting BUSY timeout: %s", err.Error())
-	}
+	// _, err = db.Exec("PRAGMA busy_timeout = 1000;")
+	// if err != nil {
+	// 	return fmt.Errorf("setting BUSY timeout: %s", err.Error())
+	// }
 
-	for _, createQuery := range s.createTableQueryFuncList {
-		if _, err := db.Exec(createQuery()); err != nil {
-			return fmt.Errorf("creating table: %s", err.Error())
-		}
-	}
+	// for _, createQuery := range s.createTableQueryFuncList {
+	// 	if _, err := db.Exec(createQuery()); err != nil {
+	// 		return fmt.Errorf("creating table: %s", err.Error())
+	// 	}
+	// }
 
-	for _, alterQuery := range s.alterTableQueryFuncList {
-		if _, err := db.Exec(alterQuery()); err != nil {
-			fmt.Println("field exists:", err.Error())
-		}
-	}
+	// for _, alterQuery := range s.alterTableQueryFuncList {
+	// 	if _, err := db.Exec(alterQuery()); err != nil {
+	// 		fmt.Println("field exists:", err.Error())
+	// 	}
+	// }
 
-	fmt.Println("WAL checkpoint 1")
-	_, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
-	if err != nil {
-		return fmt.Errorf("checkpoint: %s", err.Error())
-	}
+	// fmt.Println("WAL checkpoint 1")
+	// _, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
+	// if err != nil {
+	// 	return fmt.Errorf("checkpoint: %s", err.Error())
+	// }
 
-	fmt.Println("Vacuum DB")
-	_, err = db.Exec("VACUUM")
-	if err != nil {
-		return fmt.Errorf("VACUUM: %s", err.Error())
-	}
+	// fmt.Println("Vacuum DB")
+	// _, err = db.Exec("VACUUM")
+	// if err != nil {
+	// 	return fmt.Errorf("VACUUM: %s", err.Error())
+	// }
 
-	fmt.Println("WAL checkpoint 2")
-	_, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
-	if err != nil {
-		return fmt.Errorf("checkpoint: %s", err.Error())
-	}
+	// fmt.Println("WAL checkpoint 2")
+	// _, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
+	// if err != nil {
+	// 	return fmt.Errorf("checkpoint: %s", err.Error())
+	// }
 
-	fmt.Println("database initialized")
+	// fmt.Println("database initialized")
 
 	s.DB = db
 
