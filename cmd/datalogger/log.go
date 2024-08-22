@@ -170,7 +170,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 
 	go func() {
-		err = gnssEventFeed.Run(gnssDevice, mustGetString(cmd, "time-valid-threshold"))
+		err = gnssEventFeed.Run(gnssDevice)
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}
