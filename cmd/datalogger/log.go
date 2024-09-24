@@ -45,6 +45,7 @@ func init() {
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
+	LogCmd.Flags().Bool("gnss-enabled", true, "enable / disable gnss logging")
 	LogCmd.Flags().Bool("json-logs-enabled", false, "enable logging sensor data into json files")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
@@ -124,25 +125,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
-	err = gnssDevice.Init(nil)
-	if err != nil {
-		return fmt.Errorf("initializing neom9n: %w", err)
-	}
-
-	//directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
-	//orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
-	//tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
-
-	// TODO: implement replay image feed
-	//imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
-	//go func() {
-	//	err := imagesFeed.Run()
-	//	if err != nil {
-	//		panic(fmt.Errorf("running image feed: %w", err))
-	//	}
-	//}()
-
 	rawImuEventFeed := imu.NewRawFeed(
 		imuDevice,
 		//tiltCorrectedAccelerationEventFeed.HandleRawFeed,
@@ -155,26 +137,35 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
-	var options []gnss.Option
-	if mustGetBool(cmd, "skip-filtering") {
-		options = append(options, gnss.WithSkipFiltering())
-	}
-	gnssEventFeed := gnss.NewGnssFeed(
-		[]gnss.GnssDataHandler{
-			dataHandler.HandlerGnssData,
-			//directionEventFeed.HandleGnssData,
-			eventServer.HandleGnssData,
-		},
-		nil,
-		options...,
-	)
-
-	go func() {
-		err = gnssEventFeed.Run(gnssDevice)
+	gnssEnabled := mustGetBool(cmd, "gnss-enabled")
+	if gnssEnabled {
+		gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
+		err = gnssDevice.Init(nil)
 		if err != nil {
-			panic(fmt.Errorf("running gnss event feed: %w", err))
+			return fmt.Errorf("initializing neom9n: %w", err)
 		}
-	}()
+	
+		var options []gnss.Option
+		if mustGetBool(cmd, "skip-filtering") {
+			options = append(options, gnss.WithSkipFiltering())
+		}
+		gnssEventFeed := gnss.NewGnssFeed(
+			[]gnss.GnssDataHandler{
+				dataHandler.HandlerGnssData,
+				//directionEventFeed.HandleGnssData,
+				eventServer.HandleGnssData,
+			},
+			nil,
+			options...,
+		)
+	
+		go func() {
+			err = gnssEventFeed.Run(gnssDevice)
+			if err != nil {
+				panic(fmt.Errorf("running gnss event feed: %w", err))
+			}
+		}()
+	}
 
 	if mustGetBool(cmd, "enable-magnetometer") {
 		magnetometerEventFeed := magnetometer.NewRawFeed(
