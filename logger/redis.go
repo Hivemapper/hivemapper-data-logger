@@ -35,6 +35,14 @@ func (s *Redis) Init(logTTL time.Duration) error {
 	})
 	fmt.Println("Getting context")
 	s.ctx = context.Background()
+
+	// Test the connection with a PING command
+	pong, err := s.DB.Ping(s.ctx).Result()
+	if err != nil {
+		fmt.Printf("Could not connect to Redis: %v\n", err)
+		return fmt.Errorf("ping pong failed")
+	}
+	fmt.Println("Redis connected:", pong)
 	s.ttl = logTTL
 	fmt.Println("Redis logger initialized")
 	return nil

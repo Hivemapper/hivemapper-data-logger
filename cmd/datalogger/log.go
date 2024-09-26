@@ -71,6 +71,17 @@ func init() {
 	RootCmd.AddCommand(LogCmd)
 }
 
+// fmt.Println("Starting data logger-------------------------------")
+// redisLogger := logger.NewRedis()
+// err := redisLogger.Init(30 * time.Minute)
+// if err != nil {
+// 	return fmt.Errorf("initializing redis logger database: %w", err)
+// }
+
+// redisLogger.LogImuData([]byte("{\"time\":\"2021-09-01 12:00:00.00000\",\"x\":1.0,\"y\":2.0,\"z\":3.0,\"gx\":4.0,\"gy\":5.0,\"gz\":6.0,\"temperature\":7.0}"))
+
+// return nil
+
 func logRun(cmd *cobra.Command, _ []string) error {
 	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
 	if err != nil {
