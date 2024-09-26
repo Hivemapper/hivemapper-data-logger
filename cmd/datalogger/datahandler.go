@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 type DataHandler struct {
 	sqliteLogger      *logger.Sqlite
+	redisLogger       *logger.Redis
 	gnssJsonLogger    *logger.JsonFile
 	imuJsonLogger     *logger.JsonFile
 	gnssData          *neom9n.Data
@@ -43,6 +45,12 @@ func NewDataHandler(
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
 	}
 
+	redisLogger := logger.NewRedis()
+	err = redisLogger.Init(dbLogTTL)
+	if err != nil {
+		return nil, fmt.Errorf("initializing redis logger database: %w", err)
+	}
+
 	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
 	err = gnssJsonLogger.Init(false)
 	if err != nil {
@@ -57,6 +65,7 @@ func NewDataHandler(
 
 	return &DataHandler{
 		sqliteLogger:    sqliteLogger,
+		redisLogger:     redisLogger,
 		gnssJsonLogger:  gnssJsonLogger,
 		imuJsonLogger:   imuJsonLogger,
 		jsonLogsEnabled: jsonLogsEnabled,
@@ -160,6 +169,14 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
+	}
+	jsondata, err := json.Marshal(imuDataWrapper)
+	if err != nil {
+		return fmt.Errorf("marshalling imu data to json: %w", err)
+	}
+	err = h.redisLogger.LogImuData(jsondata)
+	if err != nil {
+		return fmt.Errorf("logging raw imu data to redis: %w", err)
 	}
 	return nil
 }

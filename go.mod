@@ -8,6 +8,7 @@ replace github.com/daedaleanai/ublox => ./sf-ublox
 
 // hack: find a better way to do this
 replace github.com/Hivemapper/gnss-controller => ./gnss-controller
+
 replace github.com/streamingfast/imu-controller => ./imu-controller
 
 require (
@@ -26,6 +27,12 @@ require (
 	go.mongodb.org/mongo-driver v1.12.1
 	google.golang.org/protobuf v1.31.0
 	modernc.org/sqlite v1.26.0
+)
+
+require (
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/go-redis/redis/v8 v8.11.5 // indirect
 )
 
 require (
