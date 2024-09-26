@@ -1,0 +1,157 @@
+syntax = "proto3";
+option go_package=".;storage";
+
+message ImuData {
+    message AccelerometerData {
+        double x = 1;
+        double y = 2;
+        double z = 3;
+    }
+    message GyroscopeData {
+        double x = 1;
+        double y = 2;
+        double z = 3;
+    }
+
+    string system_time = 1;
+    AccelerometerData accelerometer = 2;
+    GyroscopeData gyroscope = 3;
+    double temperature = 4;
+    string time = 5; // is this needed?
+}
+
+message MagnetometerData {
+    string system_time = 1;
+    double x = 2;
+    double y = 3;
+    double z = 4;
+}
+
+
+
+// type Data struct {
+// 	Ttff               int64       `json:"ttff"`
+// 	SystemTime         time.Time   `json:"systemtime"`
+// 	ActualSystemTime   time.Time   `json:"actual_systemtime"`
+// 	Timestamp          time.Time   `json:"timestamp"`
+// 	Fix                string      `json:"fix"`
+// 	Latitude           float64     `json:"latitude"`
+// 	UnfilteredLatitude float64     `json:"unfiltered_latitude"`
+// 	Longitude          float64     `json:"longitude"`
+// 	UnfilteredLongitude float64    `json:"unfiltered_longitude"`
+// 	Altitude           float64     `json:"height"`
+// 	Heading            float64     `json:"heading"`
+// 	Speed              float64     `json:"speed"`
+// 	Dop                *Dop        `json:"dop"`
+// 	Satellites         *Satellites `json:"satellites"`
+// 	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
+// 	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+// 	RF                 *RF         `json:"rf,omitempty"`
+// 	SpeedAccuracy      float64     `json:"speed_accuracy"`
+// 	HeadingAccuracy    float64     `json:"heading_accuracy"`
+// 	TimeResolved	   int         `json:"time_resolved"`
+// 	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
+// 	VerticalAccuracy   float64     `json:"vertical_accuracy"`
+
+// 	startTime       time.Time
+// 	GGA             string         `json:"gga"`
+// 	RxmMeasx        *ubx.RxmMeasx  `json:"rxm_measx"`
+// 	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
+// 	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
+// 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
+// }
+
+// type Dop struct {
+// 	GDop float64 `json:"gdop"`
+// 	HDop float64 `json:"hdop"`
+// 	PDop float64 `json:"pdop"`
+// 	TDop float64 `json:"tdop"`
+// 	VDop float64 `json:"vdop"`
+// 	XDop float64 `json:"xdop"`
+// 	YDop float64 `json:"ydop"`
+// }
+
+// type Satellites struct {
+// 	Seen int `json:"seen"`
+// 	Used int `json:"used"`
+// }
+
+// type RF struct {
+// 	JammingState string `json:"jamming_state"`
+// 	AntStatus    string `json:"ant_status"`
+// 	AntPower     string `json:"ant_power"`
+// 	PostStatus   uint32 `json:"post_status"`
+// 	NoisePerMS   uint16 `json:"noise_per_ms"`
+// 	AgcCnt       uint16 `json:"agc_cnt"`
+// 	JamInd       uint8  `json:"jam_ind"`
+// 	OfsI         int8   `json:"ofs_i"`
+// 	MagI         byte   `json:"mag_i"`
+// 	OfsQ         int8   `json:"ofs_q"`
+// 	MagQ         byte   `json:"mag_q"`
+// }
+
+message GnssData {
+
+    message Dop {
+        double gdop = 1;
+        double hdop = 2;
+        double pdop = 3;
+        double tdop = 4;
+        double vdop = 5;
+        double xdop = 6;
+        double ydop = 7;
+    }
+
+    message Satellites {
+        int32 seen = 1;
+        int32 used = 2;
+    }
+
+    message RF {
+        string jamming_state = 1;
+        string ant_status = 2;
+        string ant_power = 3;
+        uint32 post_status = 4;
+        uint32 noise_per_ms = 5;
+        uint32 agc_cnt = 6;
+        uint32 jam_ind = 7;
+        int32 ofs_i = 8;
+        int32 mag_i = 9;
+        int32 ofs_q = 10;
+        int32 mag_q = 11;
+    }
+
+
+    int64 ttff = 1;
+    string system_time = 2;
+    string actual_system_time = 3;
+    string timestamp = 4;
+    string fix = 5;
+    double latitude = 6;
+    double unfiltered_latitude = 7;
+    double longitude = 8;
+    double unfiltered_longitude = 9;
+    double altitude = 10;
+    double heading = 11;
+    double speed = 12;
+    Dop dop = 13;
+    Satellites satellites = 14;
+    double sep = 15;
+    double eph = 16;
+    RF rf = 17;
+    double speed_accuracy = 18;
+    double heading_accuracy = 19;
+    int32 time_resolved = 20;
+    double horizontal_accuracy = 21;
+    double vertical_accuracy = 22;
+    string gga = 23;
+    // missing measx
+}
+
+message GnssAuthData {
+    string system_time = 1;
+    string actual_system_time = 2;
+    string timestamp = 3;
+    string gnss_sec_ecsign = 4; // todo make into message
+    string gnss_sec_ecsign_buffer = 5; // todo make into message
+}

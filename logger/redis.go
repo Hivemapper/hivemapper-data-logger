@@ -8,9 +8,13 @@ import (
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
+	storage "github.com/Hivemapper/hivemapper-data-logger/proto-out"
 	"github.com/go-redis/redis/v8"
 	"github.com/streamingfast/imu-controller/device/iim42652"
+	"google.golang.org/protobuf/encoding/prototext"
 )
+
+const UseJson = false
 
 type MagnetometerWrapper struct {
 	System_time time.Time `json:"system_time"`
@@ -47,16 +51,6 @@ func NewMagnetometerWrapper(system_time time.Time, mag_x float64, mag_y float64,
 }
 
 type Redis struct {
-	// lock sync.Mutex
-	// DB                       *sql.DB
-	// file                     string
-	// doInsert                 bool
-	// purgeQueryFuncList       []PurgeQueryFunc
-	// createTableQueryFuncList []CreateTableQueryFunc
-	// alterTableQueryFuncList []AlterTableQueryFunc
-
-	// logs chan Sqlable
-
 	DB  *redis.Client
 	ctx context.Context
 }
@@ -85,32 +79,80 @@ func (s *Redis) Init() error {
 }
 
 func (s *Redis) LogImuData(imudata ImuDataWrapper2) error {
+
 	// Serialize to json
-	jsondata, err := json.Marshal(imudata)
-	if err != nil {
-		return err
+
+	var data []byte = nil
+	if UseJson {
+		jsondata, err := json.Marshal(imudata)
+		data = jsondata
+		if err != nil {
+			return err
+		}
+	} else {
+		// create imu proto
+		newdata := storage.ImuData{
+			SystemTime: imudata.System_time.String(),
+			Accelerometer: &storage.ImuData_AccelerometerData{
+				X: imudata.Accel.X,
+				Y: imudata.Accel.Y,
+				Z: imudata.Accel.Z,
+			},
+			Gyroscope: &storage.ImuData_GyroscopeData{
+				X: imudata.Gyro.X,
+				Y: imudata.Gyro.Y,
+				Z: imudata.Gyro.Z,
+			},
+			Temperature: imudata.Temp,
+			Time:        imudata.Time.String(),
+		}
+		// serialize the data
+		protodata, err := prototext.Marshal(&newdata)
+		if err != nil {
+			return err
+		}
+		data = protodata
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "accelerometer_data", jsondata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "imu_data", data).Err(); err != nil {
 		return err
 	}
 
-	if err := s.DB.LTrim(s.ctx, "accelerometer_data", 0, 1000).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "imu_data", 0, 1000).Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *Redis) LogMagnetometerData(magdata MagnetometerWrapper) error {
-	// Serialize to json
-	jsondata, err := json.Marshal(magdata)
-	if err != nil {
-		return err
+
+	var data []byte = nil
+	if UseJson {
+		// Serialize to json
+		jsondata, err := json.Marshal(magdata)
+		data = jsondata
+		if err != nil {
+			return err
+		}
+	} else {
+		// create magnetometer proto
+		newdata := storage.MagnetometerData{
+			SystemTime: magdata.System_time.String(),
+			X:          magdata.Mag_x,
+			Y:          magdata.Mag_y,
+			Z:          magdata.Mag_z,
+		}
+		// serialize the data
+		protodata, err := prototext.Marshal(&newdata)
+		if err != nil {
+			return err
+		}
+		data = protodata
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "magnetometer_data", jsondata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "magnetometer_data", data).Err(); err != nil {
 		return err
 	}
 	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, 1000).Err(); err != nil {
@@ -120,14 +162,34 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerWrapper) error {
 }
 
 func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
-	// Serialize to json
-	jsondata, err := json.Marshal(gnssdata)
-	if err != nil {
-		return err
+	var data []byte = nil
+	if UseJson {
+		// Serialize to json
+		jsondata, err := json.Marshal(gnssdata)
+		data = jsondata
+		if err != nil {
+			return err
+		}
+	} else {
+		// Create gnss proto
+		newdata := storage.GnssData{
+			Ttff:      gnssdata.Ttff,
+			Fix:       gnssdata.Fix,
+			Latitude:  gnssdata.Latitude,
+			Longitude: gnssdata.Longitude,
+			Altitude:  gnssdata.Altitude,
+			Speed:     gnssdata.Speed,
+		}
+		// serialize the data
+		protodata, err := prototext.Marshal(&newdata)
+		if err != nil {
+			return err
+		}
+		data = protodata
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "gnss_data", jsondata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "gnss_data", data).Err(); err != nil {
 		return err
 	}
 	if err := s.DB.LTrim(s.ctx, "gnss_data", 0, 1000).Err(); err != nil {
@@ -137,14 +199,20 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 }
 
 func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
-	// Serialize to json
-	jsondata, err := json.Marshal(gnssAuthData)
-	if err != nil {
-		return err
+	var data []byte = nil
+	if UseJson {
+		// Serialize to json
+		jsondata, err := json.Marshal(gnssAuthData)
+		data = jsondata
+		if err != nil {
+			return err
+		}
+	} else {
+		// Use protobuf
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "gnss_auth_data", jsondata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "gnss_auth_data", data).Err(); err != nil {
 		return err
 	}
 	if err := s.DB.LTrim(s.ctx, "gnss_auth_data", 0, 1000).Err(); err != nil {
