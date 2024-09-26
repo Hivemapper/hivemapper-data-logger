@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -46,7 +45,7 @@ func NewDataHandler(
 	}
 
 	redisLogger := logger.NewRedis()
-	err = redisLogger.Init(dbLogTTL)
+	err = redisLogger.Init()
 	if err != nil {
 		return nil, fmt.Errorf("initializing redis logger database: %w", err)
 	}
@@ -105,11 +104,19 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 		if err != nil {
 			return fmt.Errorf("logging gnss data to json: %w", err)
 		}
+		err = h.redisLogger.LogGnssData(*data)
+		if err != nil {
+			return fmt.Errorf("logging gnss data to redis: %w", err)
+		}
 	} else {
 		if h.gnssAuthCount%60 == 0 {
 			err := h.sqliteLogger.Log(sql.NewGnssAuthSqlWrapper(data))
 			if err != nil {
 				return fmt.Errorf("logging gnss auth data to sqlite: %w", err)
+			}
+			err = h.redisLogger.LogGnssAuthData(*data)
+			if err != nil {
+				return fmt.Errorf("logging gnss data to redis: %w", err)
 			}
 		}
 		h.gnssAuthCount += 1
@@ -157,6 +164,13 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}
+
+	magDataWrapper := logger.NewMagnetometerWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
+	err = h.redisLogger.LogMagnetometerData(*magDataWrapper)
+	if err != nil {
+		return fmt.Errorf("logging magnetometer data to redis: %w", err)
+	}
+
 	return nil
 }
 
@@ -170,11 +184,9 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
-	jsondata, err := json.Marshal(imuDataWrapper)
-	if err != nil {
-		return fmt.Errorf("marshalling imu data to json: %w", err)
-	}
-	err = h.redisLogger.LogImuData(jsondata)
+
+	imuDataWrapper2 := logger.NewImuDataWrapper2(time.Now(), temperature, acceleration, angularRate)
+	err = h.redisLogger.LogImuData(*imuDataWrapper2)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to redis: %w", err)
 	}
