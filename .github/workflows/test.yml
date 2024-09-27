@@ -24,6 +24,7 @@ jobs:
     - name: Build
       run: GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
 
+  # Make sure committed protobuf files match the generated ones
   test-protoc:
     runs-on: ubuntu-latest
     steps:
@@ -37,12 +38,12 @@ jobs:
     - name: Install protoc
       uses: arduino/setup-protoc@v3
 
-    - name: Install Protoc-Gen-Go
+    - name: Install protoc-gen-go
       run: |
         go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
         go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 
-    - name: Generate Go code
+    - name: Generate protobuf code
       run: |
         mkdir -p proto-out-new
         protoc --go_out=./proto-out-new --go-grpc_out=require_unimplemented_servers=false:./proto-out-new --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
