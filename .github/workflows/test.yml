@@ -24,6 +24,9 @@ jobs:
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
 
+    - name: Install Protoc-Gen-Go
+      run: go get google.golang.org/protobuf/cmd/protoc-gen-go
+
     - name: Build
       run: |
         protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
