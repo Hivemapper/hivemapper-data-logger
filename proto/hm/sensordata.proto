@@ -5,7 +5,6 @@ option go_package=".;sensordata";
 // the go code by running the following command: 
 //   protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
 
-
 message ImuData {
     message AccelerometerData {
         double x = 1;
@@ -32,116 +31,7 @@ message MagnetometerData {
     double z = 4;
 }
 
-
-
-// type Data struct {
-// 	Ttff               int64       `json:"ttff"`
-// 	SystemTime         time.Time   `json:"systemtime"`
-// 	ActualSystemTime   time.Time   `json:"actual_systemtime"`
-// 	Timestamp          time.Time   `json:"timestamp"`
-// 	Fix                string      `json:"fix"`
-// 	Latitude           float64     `json:"latitude"`
-// 	UnfilteredLatitude float64     `json:"unfiltered_latitude"`
-// 	Longitude          float64     `json:"longitude"`
-// 	UnfilteredLongitude float64    `json:"unfiltered_longitude"`
-// 	Altitude           float64     `json:"height"`
-// 	Heading            float64     `json:"heading"`
-// 	Speed              float64     `json:"speed"`
-// 	Dop                *Dop        `json:"dop"`
-// 	Satellites         *Satellites `json:"satellites"`
-// 	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
-// 	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
-// 	RF                 *RF         `json:"rf,omitempty"`
-// 	SpeedAccuracy      float64     `json:"speed_accuracy"`
-// 	HeadingAccuracy    float64     `json:"heading_accuracy"`
-// 	TimeResolved	   int         `json:"time_resolved"`
-// 	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
-// 	VerticalAccuracy   float64     `json:"vertical_accuracy"`
-
-// 	startTime       time.Time
-// 	GGA             string         `json:"gga"`
-// 	RxmMeasx        *ubx.RxmMeasx  `json:"rxm_measx"`
-// 	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
-// 	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
-// 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
-// }
-
-// type Dop struct {
-// 	GDop float64 `json:"gdop"`
-// 	HDop float64 `json:"hdop"`
-// 	PDop float64 `json:"pdop"`
-// 	TDop float64 `json:"tdop"`
-// 	VDop float64 `json:"vdop"`
-// 	XDop float64 `json:"xdop"`
-// 	YDop float64 `json:"ydop"`
-// }
-
-// type Satellites struct {
-// 	Seen int `json:"seen"`
-// 	Used int `json:"used"`
-// }
-
-// type RF struct {
-// 	JammingState string `json:"jamming_state"`
-// 	AntStatus    string `json:"ant_status"`
-// 	AntPower     string `json:"ant_power"`
-// 	PostStatus   uint32 `json:"post_status"`
-// 	NoisePerMS   uint16 `json:"noise_per_ms"`
-// 	AgcCnt       uint16 `json:"agc_cnt"`
-// 	JamInd       uint8  `json:"jam_ind"`
-// 	OfsI         int8   `json:"ofs_i"`
-// 	MagI         byte   `json:"mag_i"`
-// 	OfsQ         int8   `json:"ofs_q"`
-// 	MagQ         byte   `json:"mag_q"`
-// }
-
-
-// type RxmMeasx struct {
-//     Version         byte              `json:"version"`
-//     Reserved1       [3]byte           `json:"reserved_1"`
-//     GpsTOW_ms       uint32            `json:"gps_tow_ms"`
-//     GloTOW_ms       uint32            `json:"glo_tow_ms"`
-//     BdsTOW_ms       uint32            `json:"bds_tow_ms"`
-//     Reserved2       [4]byte           `json:"reserved_2"`
-//     QzssTOW_ms      uint32            `json:"qzss_tow_ms"`
-//     GpsTOWacc_msl4  uint16            `json:"gps_to_wacc_msl4"`
-//     GloTOWacc_msl4  uint16            `json:"glo_to_wacc_msl4"`
-//     BdsTOWacc_msl4  uint16            `json:"bds_to_wacc_msl4"`
-//     Reserved3       [2]byte           `json:"reserved_3"`
-//     QzssTOWacc_msl4 uint16            `json:"qzss_to_wacc_msl4"`
-//     NumSV           byte              `len:"SV" json:"num_sv"` // Number of satellites in repeated block
-//     Flags           RxmMeasxFlags     `json:"flags"`
-//     Reserved4       [8]byte           `json:"reserved_4"`
-//     SV              []*RxmMeasxSVType `json:"sv_list"`
-// }
-
-
-// type RxmMeasxSVType struct {
-//     GnssId          byte    `json:"gnss_id"`
-//     SvId            byte    `json:"sv_id"`
-//     CNo             byte    `json:"c_no"`
-//     MpathIndic      byte    `json:"mpath_indic"`
-//     DopplerMS_m_s   int32   `json:"doppler_ms_m_s"`
-//     DopplerHz_hz    int32   `json:"doppler_hz_hz"`
-//     WholeChips      uint16  `json:"whole_chips"`
-//     FracChips       uint16  `json:"frac_chips"`
-//     CodePhase_msl21 uint32  `json:"code_phase_msl_21"`
-//     IntCodePhase_ms byte    `json:"int_code_phase_ms"`
-//     PseuRangeRMSErr byte    `json:"pseu_range_rms_err"`
-//     Reserved5       [2]byte `json:"reserved_5"`
-// }
-
-// type SecEcsign struct {
-// 	Version        uint8
-// 	Reserved0      uint8
-// 	MsgNum         uint16
-// 	FinalHash      [32]byte
-// 	SessionId      [24]byte
-// 	EcdsaSignature [48]byte
-// }
-
 message GnssData {
-
     message Dop {
         double gdop = 1;
         double hdop = 2;
