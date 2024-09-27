@@ -29,6 +29,7 @@ jobs:
 
     - name: Build
       run: |
+        export PATH="$PATH:$(go env GOPATH)/bin"
         protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
         GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
 
