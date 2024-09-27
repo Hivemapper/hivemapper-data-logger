@@ -1,6 +1,11 @@
 syntax = "proto3";
 option go_package=".;sensordata";
 
+// NOTE: If you make changes to this file, you need to regenerate
+// the go code by running the following command: 
+//   protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
+
+
 message ImuData {
     message AccelerometerData {
         double x = 1;
