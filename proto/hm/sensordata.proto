@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package=".;storage";
+option go_package=".;sensordata";
 
 message ImuData {
     message AccelerometerData {
@@ -90,6 +90,51 @@ message MagnetometerData {
 // 	MagQ         byte   `json:"mag_q"`
 // }
 
+
+// type RxmMeasx struct {
+//     Version         byte              `json:"version"`
+//     Reserved1       [3]byte           `json:"reserved_1"`
+//     GpsTOW_ms       uint32            `json:"gps_tow_ms"`
+//     GloTOW_ms       uint32            `json:"glo_tow_ms"`
+//     BdsTOW_ms       uint32            `json:"bds_tow_ms"`
+//     Reserved2       [4]byte           `json:"reserved_2"`
+//     QzssTOW_ms      uint32            `json:"qzss_tow_ms"`
+//     GpsTOWacc_msl4  uint16            `json:"gps_to_wacc_msl4"`
+//     GloTOWacc_msl4  uint16            `json:"glo_to_wacc_msl4"`
+//     BdsTOWacc_msl4  uint16            `json:"bds_to_wacc_msl4"`
+//     Reserved3       [2]byte           `json:"reserved_3"`
+//     QzssTOWacc_msl4 uint16            `json:"qzss_to_wacc_msl4"`
+//     NumSV           byte              `len:"SV" json:"num_sv"` // Number of satellites in repeated block
+//     Flags           RxmMeasxFlags     `json:"flags"`
+//     Reserved4       [8]byte           `json:"reserved_4"`
+//     SV              []*RxmMeasxSVType `json:"sv_list"`
+// }
+
+
+// type RxmMeasxSVType struct {
+//     GnssId          byte    `json:"gnss_id"`
+//     SvId            byte    `json:"sv_id"`
+//     CNo             byte    `json:"c_no"`
+//     MpathIndic      byte    `json:"mpath_indic"`
+//     DopplerMS_m_s   int32   `json:"doppler_ms_m_s"`
+//     DopplerHz_hz    int32   `json:"doppler_hz_hz"`
+//     WholeChips      uint16  `json:"whole_chips"`
+//     FracChips       uint16  `json:"frac_chips"`
+//     CodePhase_msl21 uint32  `json:"code_phase_msl_21"`
+//     IntCodePhase_ms byte    `json:"int_code_phase_ms"`
+//     PseuRangeRMSErr byte    `json:"pseu_range_rms_err"`
+//     Reserved5       [2]byte `json:"reserved_5"`
+// }
+
+// type SecEcsign struct {
+// 	Version        uint8
+// 	Reserved0      uint8
+// 	MsgNum         uint16
+// 	FinalHash      [32]byte
+// 	SessionId      [24]byte
+// 	EcdsaSignature [48]byte
+// }
+
 message GnssData {
 
     message Dop {
@@ -103,8 +148,8 @@ message GnssData {
     }
 
     message Satellites {
-        int32 seen = 1;
-        int32 used = 2;
+        int64 seen = 1;
+        int64 used = 2;
     }
 
     message RF {
@@ -121,6 +166,48 @@ message GnssData {
         int32 mag_q = 11;
     }
 
+    message RxmMeasxSVType {
+        int32 gnss_id = 1;
+        int32 sv_id = 2;
+        int32 c_no = 3;
+        int32 mpath_indic = 4;
+        int32 doppler_ms_m_s = 5;
+        int32 doppler_hz_hz = 6;
+        uint32 whole_chips = 7;
+        uint32 frac_chips = 8;
+        int32 code_phase_msl_21 = 9;
+        int32 int_code_phase_ms = 10;
+        int32 pseu_range_rms_err = 11;
+        bytes reserved5 = 12;
+    }
+
+    message RxmMeasx {
+        int32 version = 1;
+        bytes reserved1 = 2;
+        uint32 gps_tow_ms = 3;
+        uint32 glo_tow_ms = 4;
+        uint32 bds_tow_ms = 5;
+        bytes reserved2 = 6;
+        uint32 qzss_tow_ms = 7;
+        uint32 gps_tow_acc_msl4 = 8;
+        uint32 glo_tow_acc_msl4 = 9;
+        uint32 bds_tow_acc_msl4 = 10;
+        bytes reserved3 = 11;
+        uint32 qzss_tow_acc_msl4 = 12;
+        int32 num_sv = 13;
+        int32 flags = 14;
+        bytes reserved4 = 15;
+        repeated RxmMeasxSVType sv = 16;
+    }
+
+    message UbxSecEcsign {
+        uint32 version = 1;
+        bytes reserved0 = 2;
+        uint32 msg_num = 3;
+        bytes final_hash = 4;
+        bytes session_id = 5;
+        bytes ecdsa_signature = 6;
+    }
 
     int64 ttff = 1;
     string system_time = 2;
@@ -145,13 +232,7 @@ message GnssData {
     double horizontal_accuracy = 21;
     double vertical_accuracy = 22;
     string gga = 23;
-    // missing measx
-}
-
-message GnssAuthData {
-    string system_time = 1;
-    string actual_system_time = 2;
-    string timestamp = 3;
-    string gnss_sec_ecsign = 4; // todo make into message
-    string gnss_sec_ecsign_buffer = 5; // todo make into message
+    RxmMeasx rxm_measx = 24;
+    UbxSecEcsign sec_ecsign = 25;
+    string sec_ecsign_buffer = 26;
 }

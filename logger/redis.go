@@ -8,7 +8,7 @@ import (
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	storage "github.com/Hivemapper/hivemapper-data-logger/proto-out"
+	sensordata "github.com/Hivemapper/hivemapper-data-logger/proto-out"
 	"github.com/go-redis/redis/v8"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -91,14 +91,14 @@ func (s *Redis) LogImuData(imudata ImuDataWrapper2) error {
 		}
 	} else {
 		// create imu proto
-		newdata := storage.ImuData{
+		newdata := sensordata.ImuData{
 			SystemTime: imudata.System_time.String(),
-			Accelerometer: &storage.ImuData_AccelerometerData{
+			Accelerometer: &sensordata.ImuData_AccelerometerData{
 				X: imudata.Accel.X,
 				Y: imudata.Accel.Y,
 				Z: imudata.Accel.Z,
 			},
-			Gyroscope: &storage.ImuData_GyroscopeData{
+			Gyroscope: &sensordata.ImuData_GyroscopeData{
 				X: imudata.Gyro.X,
 				Y: imudata.Gyro.Y,
 				Z: imudata.Gyro.Z,
@@ -137,7 +137,7 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerWrapper) error {
 		}
 	} else {
 		// create magnetometer proto
-		newdata := storage.MagnetometerData{
+		newdata := sensordata.MagnetometerData{
 			SystemTime: magdata.System_time.String(),
 			X:          magdata.Mag_x,
 			Y:          magdata.Mag_y,
@@ -172,13 +172,55 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 		}
 	} else {
 		// Create gnss proto
-		newdata := storage.GnssData{
-			Ttff:      gnssdata.Ttff,
-			Fix:       gnssdata.Fix,
-			Latitude:  gnssdata.Latitude,
-			Longitude: gnssdata.Longitude,
-			Altitude:  gnssdata.Altitude,
-			Speed:     gnssdata.Speed,
+		newdata := sensordata.GnssData{
+			Ttff:             gnssdata.Ttff,
+			SystemTime:       gnssdata.SystemTime.String(),
+			ActualSystemTime: gnssdata.ActualSystemTime.String(),
+			Timestamp:        gnssdata.Timestamp.String(),
+			Fix:              gnssdata.Fix,
+			Latitude:         gnssdata.Latitude,
+			Longitude:        gnssdata.Longitude,
+			Altitude:         gnssdata.Altitude,
+			Heading:          gnssdata.Heading,
+			Speed:            gnssdata.Speed,
+			Dop: &sensordata.GnssData_Dop{
+				Hdop: gnssdata.Dop.HDop,
+				Vdop: gnssdata.Dop.VDop,
+				Tdop: gnssdata.Dop.TDop,
+				Gdop: gnssdata.Dop.GDop,
+				Pdop: gnssdata.Dop.PDop,
+				Xdop: gnssdata.Dop.XDop,
+				Ydop: gnssdata.Dop.YDop,
+			},
+			Satellites: &sensordata.GnssData_Satellites{
+				Seen: int64(gnssdata.Satellites.Seen),
+				Used: int64(gnssdata.Satellites.Used),
+			},
+			Sep: gnssdata.Sep,
+			Eph: gnssdata.Eph,
+			Rf: &sensordata.GnssData_RF{
+				JammingState: gnssdata.RF.JammingState,
+				AntStatus:    gnssdata.RF.AntStatus,
+				AntPower:     gnssdata.RF.AntPower,
+				PostStatus:   gnssdata.RF.PostStatus,
+				NoisePerMs:   uint32(gnssdata.RF.NoisePerMS),
+				AgcCnt:       uint32(gnssdata.RF.AgcCnt),
+				JamInd:       uint32(gnssdata.RF.JamInd),
+				OfsI:         int32(gnssdata.RF.OfsI),
+				MagI:         int32(gnssdata.RF.MagI),
+				OfsQ:         int32(gnssdata.RF.OfsQ),
+				MagQ:         int32(gnssdata.RF.MagQ),
+			},
+			SpeedAccuracy:      gnssdata.SpeedAccuracy,
+			HeadingAccuracy:    gnssdata.HeadingAccuracy,
+			HorizontalAccuracy: gnssdata.HorizontalAccuracy,
+			VerticalAccuracy:   gnssdata.VerticalAccuracy,
+			Gga:                gnssdata.GGA,
+			RxmMeasx: &sensordata.GnssData_RxmMeasx{
+				GpsTowMs: gnssdata.RxmMeasx.GpsTOW_ms,
+				GloTowMs: gnssdata.RxmMeasx.GloTOW_ms,
+				BdsTowMs: gnssdata.RxmMeasx.BdsTOW_ms,
+			},
 		}
 		// serialize the data
 		protodata, err := prototext.Marshal(&newdata)
@@ -208,7 +250,23 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 			return err
 		}
 	} else {
-		// Use protobuf
+		// Create gnss auth proto
+		newdata := sensordata.GnssData{
+			SystemTime: gnssAuthData.SystemTime.String(),
+			SecEcsign: &sensordata.GnssData_UbxSecEcsign{
+				Version:        uint32(gnssAuthData.SecEcsign.Version),
+				MsgNum:         uint32(gnssAuthData.SecEcsign.MsgNum),
+				FinalHash:      gnssAuthData.SecEcsign.FinalHash[:],
+				SessionId:      gnssAuthData.SecEcsign.SessionId[:],
+				EcdsaSignature: gnssAuthData.SecEcsign.EcdsaSignature[:],
+			},
+			SecEcsignBuffer: gnssAuthData.SecEcsignBuffer,
+		}
+		protodata, err := prototext.Marshal(&newdata)
+		if err != nil {
+			return err
+		}
+		data = protodata
 	}
 
 	// Push the JSON data to the Redis list
