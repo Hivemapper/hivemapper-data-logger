@@ -21,18 +21,7 @@ jobs:
       with:
         go-version: ${{ matrix.version }}
 
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v3
-
-    - name: Install Protoc-Gen-Go
-      run: |
-        go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
-        go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
-
     - name: Build
-      run: |
-        mkdir -p proto-out
-        protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
-        GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
+      run: GOOS=linux GOARCH=arm64 go build ./cmd/datalogger
 
     # TODO: add tests?
