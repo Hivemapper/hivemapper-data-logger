@@ -25,7 +25,8 @@ jobs:
       uses: arduino/setup-protoc@v3
 
     - name: Install Protoc-Gen-Go
-      run: go get google.golang.org/protobuf/cmd/protoc-gen-go
+      run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
 
     - name: Build
       run: |
