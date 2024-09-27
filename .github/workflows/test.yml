@@ -44,8 +44,10 @@ jobs:
 
     - name: Generate Go code
       run: |
-        protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
+        mkdir -p proto-out-new
+        protoc --go_out=./proto-out-new --go-grpc_out=require_unimplemented_servers=false:./proto-out-new --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
 
+    # ignore the first 5 lines, the versions will be different, but that's fine
     - name: Compare to committed files
       run: |
-        git diff --exit-code
+        diff <(sed '1,5d' proto-out/sensordata.pb.go) <(sed '1,5d' proto-out-new/sensordata.pb.go)
