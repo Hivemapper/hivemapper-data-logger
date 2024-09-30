@@ -89,6 +89,7 @@ func (d *Data) Clone() Data {
 		HorizontalAccuracy: d.HorizontalAccuracy,
 		VerticalAccuracy:   d.VerticalAccuracy,
 		GGA:                d.GGA,
+		Snr:				d.Snr,
 	}
 
 	if d.RF != nil {
@@ -312,6 +313,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		}
 		if data.Satellites.Used > 0 {
 			data.Snr = float64(snr) / float64(data.Satellites.Used)
+			fmt.Println("Final value: ", data.Snr)
 		}
 	case *ubx.MonRf:
 		b := m.RFBlocks[0]
