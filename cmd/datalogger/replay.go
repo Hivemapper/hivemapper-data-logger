@@ -101,6 +101,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		mustGetString(cmd, "imu-json-destination-folder"),
 		mustGetDuration(cmd, "imu-json-save-interval"),
 		mustGetBool(cmd, "json-logs-enabled"),
+		mustGetBool(cmd, "enable-redis-logs"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

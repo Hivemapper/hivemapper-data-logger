@@ -68,6 +68,9 @@ func init() {
 	// Magnetometer
 	LogCmd.Flags().Bool("enable-magnetometer", false, "enable reading from magnetometer")
 
+	// Redis
+	LogCmd.Flags().Bool("enable-redis-logs", false, "enable redis logging")
+
 	RootCmd.AddCommand(LogCmd)
 }
 
@@ -119,6 +122,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetString(cmd, "imu-json-destination-folder"),
 		mustGetDuration(cmd, "imu-json-save-interval"),
 		mustGetBool(cmd, "json-logs-enabled"),
+		mustGetBool(cmd, "enable-redis-logs"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
