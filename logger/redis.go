@@ -58,7 +58,7 @@ type Redis struct {
 
 func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int) *Redis {
 	return &Redis{
-		maxImuEntries:      maxGnssEntries,
+		maxImuEntries:      maxImuEntries,
 		maxMagEntries:      maxMagEntries,
 		maxGnssEntries:     maxGnssEntries,
 		maxGnssAuthEntries: maxGnssAuthEntries,
@@ -112,7 +112,7 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 		return err
 	}
 
-	if err := s.DB.LTrim(s.ctx, "imu_data", 0, 1000).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "imu_data", 0, int64(s.maxImuEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -136,7 +136,7 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 	if err := s.DB.LPush(s.ctx, "magnetometer_data", protodata).Err(); err != nil {
 		return err
 	}
-	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, 1000).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, int64(s.maxMagEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -204,7 +204,7 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 	if err := s.DB.LPush(s.ctx, "gnss_data", protodata).Err(); err != nil {
 		return err
 	}
-	if err := s.DB.LTrim(s.ctx, "gnss_data", 0, 1000).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "gnss_data", 0, int64(s.maxGnssEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -232,7 +232,7 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 	if err := s.DB.LPush(s.ctx, "gnss_auth_data", protodata).Err(); err != nil {
 		return err
 	}
-	if err := s.DB.LTrim(s.ctx, "gnss_auth_data", 0, 1000).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "gnss_auth_data", 0, int64(s.maxGnssAuthEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
