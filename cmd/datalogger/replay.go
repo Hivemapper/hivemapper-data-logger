@@ -102,6 +102,10 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		mustGetDuration(cmd, "imu-json-save-interval"),
 		mustGetBool(cmd, "json-logs-enabled"),
 		mustGetBool(cmd, "enable-redis-logs"),
+		mustGetInt(cmd, "max-redis-imu-entries"),
+		mustGetInt(cmd, "max-redis-mag-entries"),
+		mustGetInt(cmd, "max-redis-gnss-entries"),
+		mustGetInt(cmd, "max-redis-gnss-auth-entries"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

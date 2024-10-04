@@ -63,3 +63,19 @@ func mustGetBool(cmd *cobra.Command, flagName string) bool {
 	}
 	return val
 }
+
+func getBoolOrDefault(cmd *cobra.Command, flagName string) bool {
+	val, err := cmd.Flags().GetBool(flagName)
+	if err != nil {
+		return val
+	}
+	return val
+}
+
+func getIntOrDefault(cmd *cobra.Command, flagName string) int {
+	val, err := cmd.Flags().GetInt(flagName)
+	if err != nil {
+		return val
+	}
+	return val
+}

@@ -35,6 +35,10 @@ func NewDataHandler(
 	imuSaveInterval time.Duration,
 	jsonLogsEnabled bool,
 	redisLogsEnabled bool,
+	maxRedisImuEntries int,
+	maxRedisMagEntries int,
+	maxRedisGnssEntries int,
+	maxRedisGnssAuthEntries int,
 ) (*DataHandler, error) {
 
 	sqliteLogger := logger.NewSqlite(
@@ -49,7 +53,7 @@ func NewDataHandler(
 
 	var redisLogger *logger.Redis = nil
 	if redisLogsEnabled {
-		redisLogger = logger.NewRedis()
+		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries)
 		err = redisLogger.Init()
 		if err != nil {
 			return nil, fmt.Errorf("initializing redis logger database: %w", err)
@@ -177,7 +181,7 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}
 
-	magDataWrapper := logger.NewMagnetometerWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
+	magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
 	if h.redisLogsEnabled {
 		err = h.redisLogger.LogMagnetometerData(*magDataWrapper)
 		if err != nil {
@@ -199,7 +203,7 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
 
-	imuDataWrapper2 := logger.NewImuDataWrapper2(time.Now(), temperature, acceleration, angularRate)
+	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now(), temperature, acceleration, angularRate)
 	if h.redisLogsEnabled {
 		err = h.redisLogger.LogImuData(*imuDataWrapper2)
 		if err != nil {
