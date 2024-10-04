@@ -72,13 +72,13 @@ func GnssAlterTableQuerySessionUnfilteredAndResolved() string {
 `
 }
 
-func GnssAlterTableQuerySession() string {
+func GnssAlterTableQueryCno() string {
 	return `
-	ALTER TABLE gnss ADD COLUMN snr REAL NOT NULL DEFAULT 0;
+	ALTER TABLE gnss ADD COLUMN cno REAL NOT NULL DEFAULT 0;
 `
 }
 
-func GnssAlterTableQuerySnr() string {
+func GnssAlterTableQuerySession() string {
 	return `
 	ALTER TABLE gnss ADD COLUMN session TEXT NOT NULL DEFAULT '';
 `
@@ -157,6 +157,6 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		0.0,
 		0.0,
 		w.gnssData.TimeResolved,
-		w.gnssData.Snr,
+		w.gnssData.Cno,
 	}
 }
