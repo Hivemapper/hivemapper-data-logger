@@ -49,7 +49,7 @@ const GnssCreateTable string = `
 	create index if not exists gnss_time_idx on gnss(system_time);
 `
 
-const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss VALUES`
+const insertGnssRawQuery string = `INSERT OR IGNORE INTO gnss (id, system_time, time, fix, ttff, latitude, longitude, altitude, speed, heading, satellites_seen, satellites_used, eph, horizontal_accuracy, vertical_accuracy, heading_accuracy, speed_accuracy, hdop, vdop, xdop, ydop, tdop, pdop, gdop, rf_jamming_state, rf_ant_status, rf_ant_power, rf_post_status, rf_noise_per_ms, rf_agc_cnt, rf_jam_ind, rf_ofs_i, rf_mag_i, rf_ofs_q, gga, rxm_measx, session, actual_system_time, unfiltered_latitude, unfiltered_longitude, time_resolved, cno) VALUES`
 
 const insertGnssRawFields string = `(NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),`
 
