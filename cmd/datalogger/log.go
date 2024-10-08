@@ -68,6 +68,13 @@ func init() {
 	// Magnetometer
 	LogCmd.Flags().Bool("enable-magnetometer", false, "enable reading from magnetometer")
 
+	// Redis
+	LogCmd.Flags().Bool("enable-redis-logs", false, "enable redis logging")
+	LogCmd.Flags().Int("max-redis-imu-entries", 1000, "max imu entries in redis")
+	LogCmd.Flags().Int("max-redis-mag-entries", 1000, "max mag entries in redis")
+	LogCmd.Flags().Int("max-redis-gnss-entries", 1000, "max gnss entries in redis")
+	LogCmd.Flags().Int("max-redis-gnss-auth-entries", 1000, "max gnss auth entries in redis")
+
 	RootCmd.AddCommand(LogCmd)
 }
 
@@ -119,6 +126,11 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetString(cmd, "imu-json-destination-folder"),
 		mustGetDuration(cmd, "imu-json-save-interval"),
 		mustGetBool(cmd, "json-logs-enabled"),
+		getBoolOrDefault(cmd, "enable-redis-logs"),
+		getIntOrDefault(cmd, "max-redis-imu-entries"),
+		getIntOrDefault(cmd, "max-redis-mag-entries"),
+		getIntOrDefault(cmd, "max-redis-gnss-entries"),
+		getIntOrDefault(cmd, "max-redis-gnss-auth-entries"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

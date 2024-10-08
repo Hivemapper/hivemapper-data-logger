@@ -16,11 +16,13 @@ import (
 
 type DataHandler struct {
 	sqliteLogger      *logger.Sqlite
+	redisLogger       *logger.Redis
 	gnssJsonLogger    *logger.JsonFile
 	imuJsonLogger     *logger.JsonFile
 	gnssData          *neom9n.Data
 	lastImageFileName string
 	jsonLogsEnabled   bool
+	redisLogsEnabled  bool
 	gnssAuthCount     int
 }
 
@@ -32,7 +34,13 @@ func NewDataHandler(
 	imuJsonDestFolder string,
 	imuSaveInterval time.Duration,
 	jsonLogsEnabled bool,
+	redisLogsEnabled bool,
+	maxRedisImuEntries int,
+	maxRedisMagEntries int,
+	maxRedisGnssEntries int,
+	maxRedisGnssAuthEntries int,
 ) (*DataHandler, error) {
+
 	sqliteLogger := logger.NewSqlite(
 		dbPath,
 		[]logger.CreateTableQueryFunc{sql.GnssCreateTableQuery, sql.GnssAuthCreateTableQuery, sql.ImuCreateTableQuery, sql.ErrorLogsCreateTableQuery, magnetometer.CreateTableQuery},
@@ -41,6 +49,15 @@ func NewDataHandler(
 	err := sqliteLogger.Init(dbLogTTL)
 	if err != nil {
 		return nil, fmt.Errorf("initializing sqlite logger database: %w", err)
+	}
+
+	var redisLogger *logger.Redis = nil
+	if redisLogsEnabled {
+		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries)
+		err = redisLogger.Init()
+		if err != nil {
+			return nil, fmt.Errorf("initializing redis logger database: %w", err)
+		}
 	}
 
 	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
@@ -56,10 +73,12 @@ func NewDataHandler(
 	}
 
 	return &DataHandler{
-		sqliteLogger:    sqliteLogger,
-		gnssJsonLogger:  gnssJsonLogger,
-		imuJsonLogger:   imuJsonLogger,
-		jsonLogsEnabled: jsonLogsEnabled,
+		sqliteLogger:     sqliteLogger,
+		redisLogger:      redisLogger,
+		gnssJsonLogger:   gnssJsonLogger,
+		imuJsonLogger:    imuJsonLogger,
+		jsonLogsEnabled:  jsonLogsEnabled,
+		redisLogsEnabled: redisLogsEnabled,
 	}, err
 }
 
@@ -96,11 +115,24 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 		if err != nil {
 			return fmt.Errorf("logging gnss data to json: %w", err)
 		}
+
+		if h.redisLogsEnabled {
+			err = h.redisLogger.LogGnssData(*data)
+			if err != nil {
+				return fmt.Errorf("logging gnss data to redis: %w", err)
+			}
+		}
 	} else {
 		if h.gnssAuthCount%60 == 0 {
 			err := h.sqliteLogger.Log(sql.NewGnssAuthSqlWrapper(data))
 			if err != nil {
 				return fmt.Errorf("logging gnss auth data to sqlite: %w", err)
+			}
+			if h.redisLogsEnabled {
+				err = h.redisLogger.LogGnssAuthData(*data)
+				if err != nil {
+					return fmt.Errorf("logging gnss data to redis: %w", err)
+				}
 			}
 		}
 		h.gnssAuthCount += 1
@@ -148,6 +180,15 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	if err != nil {
 		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
 	}
+
+	magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
+	if h.redisLogsEnabled {
+		err = h.redisLogger.LogMagnetometerData(*magDataWrapper)
+		if err != nil {
+			return fmt.Errorf("logging magnetometer data to redis: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -160,6 +201,14 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
+	}
+
+	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now(), temperature, acceleration, angularRate)
+	if h.redisLogsEnabled {
+		err = h.redisLogger.LogImuData(*imuDataWrapper2)
+		if err != nil {
+			return fmt.Errorf("logging raw imu data to redis: %w", err)
+		}
 	}
 	return nil
 }
