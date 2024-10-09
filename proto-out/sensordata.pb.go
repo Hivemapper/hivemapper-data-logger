@@ -528,7 +528,6 @@ func (x *NavDop) GetEdop() uint32 {
 	return 0
 }
 
-// convert the above into a protobuf message
 type NavSat struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -608,7 +607,6 @@ func (x *NavSat) GetSvs() []*NavSat_Svs {
 	return nil
 }
 
-// convert the above into a protobuf message
 type NavPvt struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -912,7 +910,6 @@ func (x *NavPvt) GetMagAccDege2() uint32 {
 	return 0
 }
 
-// convert the above into a protobuf message
 type MonRf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -984,7 +981,6 @@ func (x *MonRf) GetRfBlocks() []*MonRf_RFBlock {
 	return nil
 }
 
-// convert the above into a protobuf message
 type RxmMeasx struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
