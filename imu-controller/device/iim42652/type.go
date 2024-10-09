@@ -81,6 +81,11 @@ var (
 
 	RegisterOffsetUser0 = &Register{Bank: Bank4, Address: 0x77} // MPUREG_OFFSET_USER_0_B4
 	RegisterOffsetUser4 = &Register{Bank: Bank4, Address: 0x7B} // MPUREG_OFFSET_USER_4_B4
+
+	// FSYNC related registers
+	RegisterTmstFsyncH  = &Register{Bank0, 0x2B}
+	RegisterIntfConfig5 = &Register{Bank1, 0x7B}
+	RegisterFsyncConfig = &Register{Bank0, 0x62}
 )
 
 const (
