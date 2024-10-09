@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
+	"github.com/Hivemapper/gnss-controller/message"
 	"github.com/rosshemsley/kalman"
 	"github.com/rosshemsley/kalman/models"
 )
@@ -73,10 +74,10 @@ func WithSkipFiltering() func(*GnssFeed) {
 	}
 }
 
-func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n) error {
+func (f *GnssFeed) Run(gnssDevice *neom9n.Neom9n, redisFeed message.UbxMessageHandler, redisLogsEnabled bool) error {
 	//todo: datafeed is ugly
 	dataFeed := neom9n.NewDataFeed(f.HandleData)
-	err := gnssDevice.Run(dataFeed)
+	err := gnssDevice.Run(dataFeed, redisFeed, redisLogsEnabled)
 	if err != nil {
 		return fmt.Errorf("running gnss device: %w", err)
 	}

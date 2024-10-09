@@ -182,7 +182,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 
 	go func() {
-		err = gnssEventFeed.Run(gnssDevice)
+		fmt.Println("redislogger: ", dataHandler.redisLogger, "enabled: ", dataHandler.redisLogsEnabled)
+		err = gnssEventFeed.Run(gnssDevice, dataHandler.redisLogger, dataHandler.redisLogsEnabled)
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}
