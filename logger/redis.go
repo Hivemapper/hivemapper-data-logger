@@ -243,9 +243,6 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 	return nil
 }
 
-type RedisFeed struct {
-}
-
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	fmt.Println("RedisFeed HandleUbxMessage")
 	systemTime := time.Now()
