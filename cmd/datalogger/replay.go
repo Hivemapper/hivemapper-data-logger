@@ -106,6 +106,7 @@ func replayE(cmd *cobra.Command, _ []string) error {
 		mustGetInt(cmd, "max-redis-mag-entries"),
 		mustGetInt(cmd, "max-redis-gnss-entries"),
 		mustGetInt(cmd, "max-redis-gnss-auth-entries"),
+		getBoolOrDefault(cmd, "redis-log-pbtxt"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)

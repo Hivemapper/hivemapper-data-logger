@@ -161,7 +161,7 @@ func (n *Neom9n) delConfig(key uint32, description string) {
 	time.Sleep(100 * time.Millisecond)
 }
 
-func (n *Neom9n) Run(dataFeed *DataFeed) error {
+func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, redisLogsEnabled bool) error {
 	now := time.Time{}
 	loadAll := true
 
@@ -191,6 +191,19 @@ func (n *Neom9n) Run(dataFeed *DataFeed) error {
 	// so we must register a composite class instead of ubx.SecEcsign
 	n.handlersRegistry.RegisterHandler(message.UbxSecEcsignWithBuffer, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.NneaGGA, dataFeed)
+
+	if redisLogsEnabled {
+		fmt.Println("Registering redis handlers")
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, redisFeed)
+		if n.measxEnabled {
+			n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
+		}
+	} else {
+		fmt.Println("Redis handler not set")
+	}
 
 	if err := <-n.decoderDone; err != nil {
 		return err
