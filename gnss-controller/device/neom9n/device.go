@@ -128,11 +128,6 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	return nil
 }
 
-func redisHandler(data interface{}) error {
-	fmt.Println("Redis handler")
-	return nil
-}
-
 func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 	n.output <- &ubx.CfgValSet{
 		Version: 0x00,
@@ -165,14 +160,6 @@ func (n *Neom9n) delConfig(key uint32, description string) {
 	fmt.Println("Deleted config:", description)
 	time.Sleep(100 * time.Millisecond)
 }
-
-// type RedisFeed struct {
-// }
-
-// func (r *RedisFeed) HandleUbxMessage(msg interface{}) error {
-// 	fmt.Println("RedisFeed HandleUbxMessage")
-// 	return nil
-// }
 
 func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, redisLogsEnabled bool) error {
 	now := time.Time{}

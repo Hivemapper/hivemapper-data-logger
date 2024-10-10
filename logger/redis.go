@@ -12,6 +12,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 )
 
 type MagnetometerRedisWrapper struct {
@@ -55,14 +56,16 @@ type Redis struct {
 	maxMagEntries      int
 	maxGnssEntries     int
 	maxGnssAuthEntries int
+	logProtoText       bool
 }
 
-func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int) *Redis {
+func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int, logProtoText bool) *Redis {
 	return &Redis{
 		maxImuEntries:      maxImuEntries,
 		maxMagEntries:      maxMagEntries,
 		maxGnssEntries:     maxGnssEntries,
 		maxGnssAuthEntries: maxGnssAuthEntries,
+		logProtoText:       logProtoText,
 	}
 }
 
@@ -103,7 +106,7 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 		Time:        imudata.Time.String(),
 	}
 	// serialize the data
-	protodata, err := prototext.Marshal(&newdata)
+	protodata, err := s.Marshal(&newdata)
 	if err != nil {
 		return err
 	}
@@ -128,7 +131,7 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 		Z:          magdata.Mag_z,
 	}
 	// serialize the data
-	protodata, err := prototext.Marshal(&newdata)
+	protodata, err := s.Marshal(&newdata)
 	if err != nil {
 		return err
 	}
@@ -200,7 +203,7 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 	}
 
 	// serialize the data
-	protodata, err := prototext.Marshal(&newdata)
+	protodata, err := s.Marshal(&newdata)
 	if err != nil {
 		return err
 	}
@@ -228,7 +231,7 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 		},
 		SecEcsignBuffer: gnssAuthData.SecEcsignBuffer,
 	}
-	protodata, err := prototext.Marshal(&newdata)
+	protodata, err := s.Marshal(&newdata)
 	if err != nil {
 		return err
 	}
@@ -243,8 +246,20 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 	return nil
 }
 
+func (s *Redis) Marshal(message proto.Message) ([]byte, error) {
+	var data []byte
+	var err error
+
+	if s.logProtoText {
+		data, err = prototext.Marshal(message)
+	} else {
+		data, err = proto.Marshal(message)
+	}
+
+	return data, err
+}
+
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
-	fmt.Println("RedisFeed HandleUbxMessage")
 	systemTime := time.Now()
 	var protodata []byte = nil
 	var err error
@@ -257,7 +272,6 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 
 	switch m := msg.(type) {
 	case *ubx.NavPvt:
-		fmt.Println("NavPvt")
 		redisKey = "NavPvt"
 		// serialize as proto
 		protomessage := sensordata.NavPvt{
@@ -294,9 +308,8 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagDecDege2:  int32(m.MagDec_dege2),
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
-		protodata, err = prototext.Marshal(&protomessage)
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavDop:
-		fmt.Println("NavDop")
 		redisKey = "NavDop"
 		// serialize as proto
 		protomessage := sensordata.NavDop{
@@ -310,11 +323,9 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Ndop:       uint32(m.NDOP),
 			Edop:       uint32(m.EDOP),
 		}
-		protodata, err = prototext.Marshal(&protomessage)
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSat:
-		fmt.Println("NavSat")
 		redisKey = "NavSat"
-		fmt.Println("numsvs", m.NumSvs)
 		protomessage := sensordata.NavSat{
 			SystemTime: systemTime.String(),
 			ItowMs:     m.ITOW_ms,
@@ -333,9 +344,8 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				Flags:    uint32(sv.Flags),
 			}
 		}
-		protodata, err = prototext.Marshal(&protomessage)
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.MonRf:
-		fmt.Println("MonRf")
 		redisKey = "MonRf"
 		protomessage := sensordata.MonRf{
 			SystemTime: systemTime.String(),
@@ -359,9 +369,8 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				MagQ:       uint32(block.MagQ),
 			}
 		}
-		protodata, err = prototext.Marshal(&protomessage)
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.RxmMeasx:
-		fmt.Println("RxmMeasx")
 		redisKey = "RxmMeasx"
 		protomessage := sensordata.RxmMeasx{
 			SystemTime:     systemTime.String(),
@@ -393,7 +402,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				PseuRangeRmsErr: uint32(sv.PseuRangeRMSErr),
 			}
 		}
-		protodata, err = prototext.Marshal(&protomessage)
+		protodata, err = s.Marshal(&protomessage)
 	}
 
 	if protodata == nil {
@@ -405,7 +414,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 		return err
 	}
 
-	// Push the JSON data to the Redis list
+	// Push the proto data to the Redis list
 	if err := s.DB.LPush(s.ctx, redisKey, protodata).Err(); err != nil {
 		return err
 	}

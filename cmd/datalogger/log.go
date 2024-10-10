@@ -74,6 +74,7 @@ func init() {
 	LogCmd.Flags().Int("max-redis-mag-entries", 1000, "max mag entries in redis")
 	LogCmd.Flags().Int("max-redis-gnss-entries", 1000, "max gnss entries in redis")
 	LogCmd.Flags().Int("max-redis-gnss-auth-entries", 1000, "max gnss auth entries in redis")
+	LogCmd.Flags().Bool("redis-log-pbtxt", false, "enable logging sensor data into redis in pbtxt format")
 
 	RootCmd.AddCommand(LogCmd)
 }
@@ -131,6 +132,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		getIntOrDefault(cmd, "max-redis-mag-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-auth-entries"),
+		getBoolOrDefault(cmd, "redis-log-pbtxt"),
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
@@ -182,7 +184,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 
 	go func() {
-		fmt.Println("redislogger: ", dataHandler.redisLogger, "enabled: ", dataHandler.redisLogsEnabled)
 		err = gnssEventFeed.Run(gnssDevice, dataHandler.redisLogger, dataHandler.redisLogsEnabled)
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
