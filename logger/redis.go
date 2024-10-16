@@ -91,19 +91,19 @@ func (s *Redis) Init() error {
 func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 	// create imu proto
 	newdata := sensordata.ImuData{
-		SystemTime: "foobar",
+		SystemTime: imudata.System_time.String(),
 		Accelerometer: &sensordata.ImuData_AccelerometerData{
-			X: 1,
-			Y: 2,
-			Z: 4,
+			X: imudata.Accel.X,
+			Y: imudata.Accel.Y,
+			Z: imudata.Accel.Z,
 		},
 		Gyroscope: &sensordata.ImuData_GyroscopeData{
-			X: 4,
-			Y: 2,
-			Z: 1,
+			X: imudata.Gyro.X,
+			Y: imudata.Gyro.Y,
+			Z: imudata.Gyro.Z,
 		},
-		Temperature: 5,
-		Time:        "test",
+		Temperature: imudata.Temp,
+		Time:        imudata.Time.String(),
 	}
 	// serialize the data
 	protodata, err := s.Marshal(&newdata)
