@@ -91,19 +91,19 @@ func (s *Redis) Init() error {
 func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 	// create imu proto
 	newdata := sensordata.ImuData{
-		SystemTime: imudata.System_time.String(),
+		SystemTime: "foobar",
 		Accelerometer: &sensordata.ImuData_AccelerometerData{
-			X: imudata.Accel.X,
-			Y: imudata.Accel.Y,
-			Z: imudata.Accel.Z,
+			X: 1,
+			Y: 2,
+			Z: 4,
 		},
 		Gyroscope: &sensordata.ImuData_GyroscopeData{
-			X: imudata.Gyro.X,
-			Y: imudata.Gyro.Y,
-			Z: imudata.Gyro.Z,
+			X: 4,
+			Y: 2,
+			Z: 1,
 		},
-		Temperature: imudata.Temp,
-		Time:        imudata.Time.String(),
+		Temperature: 5,
+		Time:        "test",
 	}
 	// serialize the data
 	protodata, err := s.Marshal(&newdata)
@@ -192,6 +192,7 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 		HorizontalAccuracy: gnssdata.HorizontalAccuracy,
 		VerticalAccuracy:   gnssdata.VerticalAccuracy,
 		Gga:                gnssdata.GGA,
+		Cno:                gnssdata.Cno,
 	}
 
 	if gnssdata.RxmMeasx != nil {
