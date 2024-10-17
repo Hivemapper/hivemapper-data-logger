@@ -149,16 +149,18 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 	// Create gnss proto
 	newdata := sensordata.GnssData{
-		Ttff:             gnssdata.Ttff,
-		SystemTime:       gnssdata.SystemTime.String(),
-		ActualSystemTime: gnssdata.ActualSystemTime.String(),
-		Timestamp:        gnssdata.Timestamp.String(),
-		Fix:              gnssdata.Fix,
-		Latitude:         gnssdata.Latitude,
-		Longitude:        gnssdata.Longitude,
-		Altitude:         gnssdata.Altitude,
-		Heading:          gnssdata.Heading,
-		Speed:            gnssdata.Speed,
+		Ttff:                gnssdata.Ttff,
+		SystemTime:          gnssdata.SystemTime.String(),
+		ActualSystemTime:    gnssdata.ActualSystemTime.String(),
+		Timestamp:           gnssdata.Timestamp.String(),
+		Fix:                 gnssdata.Fix,
+		Latitude:            gnssdata.Latitude,
+		UnfilteredLatitude:  gnssdata.UnfilteredLatitude,
+		Longitude:           gnssdata.Longitude,
+		UnfilteredLongitude: gnssdata.UnfilteredLongitude,
+		Altitude:            gnssdata.Altitude,
+		Heading:             gnssdata.Heading,
+		Speed:               gnssdata.Speed,
 		Dop: &sensordata.GnssData_Dop{
 			Hdop: gnssdata.Dop.HDop,
 			Vdop: gnssdata.Dop.VDop,
@@ -189,9 +191,11 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 		},
 		SpeedAccuracy:      gnssdata.SpeedAccuracy,
 		HeadingAccuracy:    gnssdata.HeadingAccuracy,
+		TimeResolved:       int32(gnssdata.TimeResolved),
 		HorizontalAccuracy: gnssdata.HorizontalAccuracy,
 		VerticalAccuracy:   gnssdata.VerticalAccuracy,
 		Gga:                gnssdata.GGA,
+		Cno:                gnssdata.Cno,
 	}
 
 	if gnssdata.RxmMeasx != nil {
