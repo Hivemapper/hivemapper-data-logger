@@ -191,6 +191,7 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 		},
 		SpeedAccuracy:      gnssdata.SpeedAccuracy,
 		HeadingAccuracy:    gnssdata.HeadingAccuracy,
+		TimeResolved:       int32(gnssdata.TimeResolved),
 		HorizontalAccuracy: gnssdata.HorizontalAccuracy,
 		VerticalAccuracy:   gnssdata.VerticalAccuracy,
 		Gga:                gnssdata.GGA,
