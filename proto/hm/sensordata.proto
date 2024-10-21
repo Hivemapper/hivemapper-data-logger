@@ -130,6 +130,7 @@ message GnssData {
     RxmMeasx rxm_measx = 24;
     UbxSecEcsign sec_ecsign = 25;
     string sec_ecsign_buffer = 26;
+    double cno = 27;
 }
 
 /// Low Level UBX Messages
