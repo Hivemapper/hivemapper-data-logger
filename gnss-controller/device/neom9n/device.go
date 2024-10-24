@@ -115,6 +115,18 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(807469057, uint16(128), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
+	n.setConfig(0x20910084, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_COV_UART1")
+	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
+	n.setConfig(0x2091069e, []byte{0x01}, "CFG-MSGOUT-UBX_MON_SYS_UART1")
+	n.setConfig(0x20910635, []byte{0x01}, "CFG-MSGOUT-UBX_SEC_SIG_UART1")
+	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
+	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
+	n.setConfig(0x40050002, uint32(50000), "CFG-TP-PERIOD_TP1")
+	n.setConfig(0x40050003, uint32(50000), "CFG-TP-PERIOD_LOCK_TP1")
+	n.setConfig(0x40050004, uint32(5000), "CFG-TP-LEN_TP1")
+	n.setConfig(0x40050005, uint32(5000), "CFG-TP-LEN_LOCK_TP1")
+	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
 		initPos := &ubx.MgaIniPos_llh3{
