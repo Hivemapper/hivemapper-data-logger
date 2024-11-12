@@ -299,6 +299,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			HeightMm:     int32(m.Height_mm),
 			HmslMm:       int32(m.HMSL_mm),
 			HAccMm:       uint32(m.HAcc_mm),
+			VAccMm:       uint32(m.VAcc_mm),
 			VelNMmS:      int32(m.VelN_mm_s),
 			VelEMmS:      int32(m.VelE_mm_s),
 			VelDMmS:      int32(m.VelD_mm_s),
