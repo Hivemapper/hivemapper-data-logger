@@ -38,6 +38,7 @@ type Data struct {
 	Satellites         *Satellites `json:"satellites"`
 	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	Cno				   float64     `json:"cno"`
 	RF                 *RF         `json:"rf,omitempty"`
 	SpeedAccuracy      float64     `json:"speed_accuracy"`
 	HeadingAccuracy    float64     `json:"heading_accuracy"`
@@ -88,6 +89,7 @@ func (d *Data) Clone() Data {
 		HorizontalAccuracy: d.HorizontalAccuracy,
 		VerticalAccuracy:   d.VerticalAccuracy,
 		GGA:                d.GGA,
+		Cno:				d.Cno,
 	}
 
 	if d.RF != nil {
@@ -301,10 +303,16 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	case *ubx.NavSat:
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
+		data.Cno = 0
+		cno := 0.0
 		for _, sv := range m.Svs {
 			if sv.Flags&ubx.NavSatSvUsed != 0x00 {
 				data.Satellites.Used++
+				cno += float64(sv.Cno_dbhz)
 			}
+		}
+		if data.Satellites.Used > 0 {
+			data.Cno = float64(cno) / float64(data.Satellites.Used)
 		}
 	case *ubx.MonRf:
 		b := m.RFBlocks[0]
