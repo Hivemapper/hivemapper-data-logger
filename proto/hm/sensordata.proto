@@ -204,8 +204,8 @@ message NavPvt {
 message NavCov {
     uint32 itow_ms = 1;
     uint32 version = 2;
-    uint32 posCovValid = 3;
-    uint32 velCovValid = 4;
+    uint32 pos_cov_valid = 3;
+    uint32 vel_cov_valid = 4;
     double pos_cov_n_n = 5;
     double pos_cov_n_e = 6;
     double pos_cov_n_d = 7;
