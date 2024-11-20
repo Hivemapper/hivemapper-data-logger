@@ -41,11 +41,11 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			return fmt.Errorf("getting temperature: %w", err)
 		}
 
-		fsync, err := f.imu.GetFsync()
-		if err != nil {
-			return fmt.Errorf("getting fsync: %w", err)
-		}
-		fmt.Println("fsync: ", fsync)
+		// fsync, err := f.imu.GetFsync()
+		// if err != nil {
+		// 	return fmt.Errorf("getting fsync: %w", err)
+		// }
+		// fmt.Println("fsync: ", fsync)
 
 		for _, handler := range f.handlers {
 			err := handler(

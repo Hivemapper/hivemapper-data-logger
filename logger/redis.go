@@ -329,6 +329,62 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Edop:       uint32(m.EDOP),
 		}
 		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavCov:
+		redisKey = "NavCov"
+		// serialize as proto
+		protomessage := sensordata.NavCov{
+			ItowMs:      m.ITOW_ms,
+			Version:     uint32(m.Version),
+			PosCovValid: uint32(m.PosCovValid),
+			VelCovValid: uint32(m.VelCovValid),
+			PosCovNN:    float64(m.PosCovNN_m2),
+			PosCovNE:    float64(m.PosCovNE_m2),
+			PosCovND:    float64(m.PosCovND_m2),
+			PosCovEE:    float64(m.PosCovEE_m2),
+			PosCovED:    float64(m.PosCovED_m2),
+			PosCovDD:    float64(m.PosCovDD_m2),
+			VelCovNN:    float64(m.VelCovNN_m2_s2),
+			VelCovNE:    float64(m.VelCovNE_m2_s2),
+			VelCovND:    float64(m.VelCovND_m2_s2),
+			VelCovEE:    float64(m.VelCovEE_m2_s2),
+			VelCovED:    float64(m.VelCovED_m2_s2),
+			VelCovDD:    float64(m.VelCovDD_m2_s2),
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavPosecef:
+		redisKey = "NavPocecef"
+		// serialize as proto
+		protomessage := sensordata.NavPosecef{
+			ItowMs:  m.ITOW_ms,
+			EcefXCm: int32(m.EcefX_cm),
+			EcefYCm: int32(m.EcefY_cm),
+			EcefZCm: int32(m.EcefZ_cm),
+			PAccCm:  uint32(m.PAcc_cm),
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavTimegps:
+		redisKey = "NavTimegps"
+		// serialize as proto
+		protomessage := sensordata.NavTimegps{
+			ItowMs: uint32(m.ITOW_ms),
+			FtowNs: int32(m.FTOW_ns),
+			Week:   int32(m.Week),
+			LeapS:  int32(m.LeapS_s),
+			Valid:  uint32(m.Valid),
+			TAccNs: uint32(m.TAcc_ns),
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavVelecef:
+		redisKey = "NavVelecef"
+		// serialize as proto
+		protomessage := sensordata.NavVelecef{
+			ItowMs:    uint32(m.ITOW_ms),
+			EcefVxCmS: int32(m.EcefVX_cm_s),
+			EcefVyCmS: int32(m.EcefVY_cm_s),
+			EcefVzCmS: int32(m.EcefVZ_cm_s),
+			SAccCmS:   uint32(m.SAcc_cm_s),
+		}
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSat:
 		redisKey = "NavSat"
 		protomessage := sensordata.NavSat{

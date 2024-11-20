@@ -116,6 +116,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	n.setConfig(0x20910084, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_COV_UART1")
+	n.setConfig(0x20910025, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_POSECEF_UART1")
+	n.setConfig(0x20910048, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1")
+	n.setConfig(0x2091003e, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_VELECEF_UART1")
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091069e, []byte{0x01}, "CFG-MSGOUT-UBX_MON_SYS_UART1")
 	n.setConfig(0x20910635, []byte{0x01}, "CFG-MSGOUT-UBX_SEC_SIG_UART1")
@@ -192,6 +195,10 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 
 	fmt.Println("Registering logger ubx message handlers")
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavCov, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPosecef, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, dataFeed)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
@@ -207,6 +214,10 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	if redisLogsEnabled {
 		fmt.Println("Registering redis handlers")
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavCov, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavPosecef, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, redisFeed)

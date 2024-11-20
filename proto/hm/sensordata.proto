@@ -201,6 +201,50 @@ message NavPvt {
     uint32 mag_acc_dege2 = 33;
 }
 
+message NavCov {
+    uint32 itow_ms = 1;
+    uint32 version = 2;
+    uint32 posCovValid = 3;
+    uint32 velCovValid = 4;
+    double pos_cov_n_n = 5;
+    double pos_cov_n_e = 6;
+    double pos_cov_n_d = 7;
+    double pos_cov_e_e = 8;
+    double pos_cov_e_d = 9;
+    double pos_cov_d_d = 10;
+    double vel_cov_n_n = 11;
+    double vel_cov_n_e = 12;
+    double vel_cov_n_d = 13;
+    double vel_cov_e_e = 14;
+    double vel_cov_e_d = 15;
+    double vel_cov_d_d = 16;
+}
+
+message NavPosecef {
+    uint32 itow_ms = 1;
+    int32 ecef_x_cm = 2;
+    int32 ecef_y_cm = 3;
+    int32 ecef_z_cm = 4;
+    uint32 p_acc_cm = 5;
+}
+
+message NavTimegps {
+    uint32 itow_ms = 1;
+    int32 ftow_ns = 2;
+    int32 week = 3;
+    int32 leap_s = 4;
+    uint32 valid = 5;
+    uint32 t_acc_ns = 6;
+}
+
+message NavVelecef {
+    uint32 itow_ms = 1;
+    int32 ecef_vx_cm_s = 2;
+    int32 ecef_vy_cm_s = 3;
+    int32 ecef_vz_cm_s = 4;
+    uint32 s_acc_cm_s = 5;
+}
+
 message MonRf {
     message RFBlock {
         uint32 block_id = 1;
