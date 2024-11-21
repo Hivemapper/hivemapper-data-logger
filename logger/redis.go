@@ -352,7 +352,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 		}
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavPosecef:
-		redisKey = "NavPocecef"
+		redisKey = "NavPosecef"
 		// serialize as proto
 		protomessage := sensordata.NavPosecef{
 			ItowMs:  m.ITOW_ms,
