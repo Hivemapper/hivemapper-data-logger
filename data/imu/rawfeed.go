@@ -22,9 +22,9 @@ func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error
 
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
-    fmt.Println("Run imu raw feed")
+	fmt.Println("Run imu raw feed")
 
-    for {
+	for {
 		time.Sleep(25 * time.Millisecond)
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
@@ -40,6 +40,12 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		if err != nil {
 			return fmt.Errorf("getting temperature: %w", err)
 		}
+
+		// fsync, err := f.imu.GetFsync()
+		// if err != nil {
+		// 	return fmt.Errorf("getting fsync: %w", err)
+		// }
+		// fmt.Println("fsync: ", fsync)
 
 		for _, handler := range f.handlers {
 			err := handler(

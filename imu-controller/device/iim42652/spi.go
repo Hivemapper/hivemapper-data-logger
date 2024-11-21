@@ -125,6 +125,20 @@ func (i *IIM42652) Init() error {
 	//	return fmt.Errorf("failed to power on IMU devices")
 	//}
 
+	// Change Pin9 Configuration to FSYNC
+	err = i.WriteRegister(RegisterIntfConfig5, 0x2)
+	if err != nil {
+		return err
+	}
+
+	// update FSYNC CONFIG to tag FSYNC flag to Temp output LSB
+	// and clear the FSYNC flag after the UI reads the sensor
+	// register of the Temp LSB
+	err = i.WriteRegister(RegisterFsyncConfig, 0b00010010)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
