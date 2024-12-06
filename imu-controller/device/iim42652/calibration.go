@@ -1,7 +1,6 @@
 package iim42652
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -241,8 +240,6 @@ func (i *IIM42652) CalibrateGyro(maxSamples int32) (bias [3]int32, err error) {
 	if err != nil {
 		return bias, err
 	}
-
-	fmt.Println("\n\n\n\n$$$$$$$$$$$$$$$$$ GYRO CALIBRATED $$$$$$$$$$$$$$\n\n\n")
 
 	return bias, nil
 }
