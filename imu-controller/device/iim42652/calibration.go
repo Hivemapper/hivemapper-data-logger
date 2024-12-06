@@ -13,10 +13,12 @@ const (
 	bitGyroFsSelectPos         byte = 5
 	bitGyroConfig0FSSelectMask byte = (0x7 << bitGyroFsSelectPos)
 	bitGyroFSSelect2000dps     byte = (0 << bitGyroFsSelectPos)
+	bitGyroFSSelect125dps      byte = (0x4 << bitGyroFsSelectPos)
 
 	bitGyroConfig0ODRpos  byte = 0
 	bitGyroConfig0ODRMask byte = (0x0F << bitGyroConfig0ODRpos)
 	bitGyroODRSelect1KHz  byte = (0x06 << bitGyroConfig0ODRpos)
+	bitGyroODRSelect200Hz byte = (0x07 << bitGyroConfig0ODRpos)
 
 	bitGyroConfig1GyroUiFiltOrdPos   byte = 2
 	bitGyroConfig1GyroUiFiltOrdMask  byte = (0x3 << bitGyroConfig1GyroUiFiltOrdPos)
@@ -25,6 +27,16 @@ const (
 	bitGyroAccelConfig0GyroFiltPos  byte = 0
 	bitGyroAccelConfig0GyroFiltMask byte = (0x0F << bitGyroAccelConfig0GyroFiltPos)
 	bitGyroUiFiltBandwidth          byte = (0x04 << bitGyroAccelConfig0GyroFiltPos) // BW_10
+)
+
+// Accel configuration register constants.
+const (
+	bitAccelFsSelectPos         byte = 5
+	bitAccelConfig0FSSelectMask byte = (0x7 << bitAccelFsSelectPos)
+	bitAccelFSSelect4g          byte = (0x2 << bitAccelFsSelectPos)
+
+	bitAccelConfig0ODRpos  byte = 0
+	bitAccelODRSelect200Hz byte = (0x07 << bitAccelConfig0ODRpos)
 )
 
 // User register constants.
@@ -65,7 +77,7 @@ const (
 const (
 	accelOffuserMaxMg        int32 = 1000
 	gyroOffuserMaxDps        int32 = 64
-	gyroOffuserConfiguredDps int32 = 2000
+	gyroOffuserConfiguredDps int32 = 125
 )
 
 ////////////////////////////////////////////////////////////
@@ -96,10 +108,10 @@ func (i *IIM42652) initializeGyroForCalibration() error {
 	}
 
 	gyroConfig &= ^bitGyroConfig0FSSelectMask
-	gyroConfig |= bitGyroFSSelect2000dps
+	gyroConfig |= bitGyroFSSelect125dps
 
 	gyroConfig &= ^bitGyroConfig0ODRMask
-	gyroConfig |= bitGyroODRSelect1KHz
+	gyroConfig |= bitGyroODRSelect200Hz
 
 	err = i.WriteRegister(RegisterGyroscopeConfig0, gyroConfig)
 	if err != nil {

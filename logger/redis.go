@@ -385,6 +385,19 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			SAccCmS:   uint32(m.SAcc_cm_s),
 		}
 		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavStatus:
+		redisKey = "NavStatus"
+		// serialize as proto
+		protomessage := sensordata.NavStatus{
+			ItowMs:  uint32(m.ITOW_ms),
+			GpsFix:  uint32(m.GpsFix),
+			Flags:   uint32(m.Flags),
+			FixStat: uint32(m.FixStat),
+			Flags2:  uint32(m.Flags2),
+			Ttff:    uint32(m.Ttff_ms),
+			Msss:    uint32(m.Msss_ms),
+		}
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSat:
 		redisKey = "NavSat"
 		protomessage := sensordata.NavSat{
