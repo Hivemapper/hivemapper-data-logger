@@ -245,6 +245,16 @@ message NavVelecef {
     uint32 s_acc_cm_s = 5;
 }
 
+message NavStatus {
+    uint32 itow_ms = 1;
+    uint32 gps_fix = 2;
+    uint32 flags = 3;
+    uint32 fix_stat = 4;
+    uint32 flags2 = 5;
+    uint32 ttff = 6;
+    uint32 msss = 7;
+}
+
 message MonRf {
     message RFBlock {
         uint32 block_id = 1;
