@@ -139,6 +139,38 @@ func (i *IIM42652) Init() error {
 		return err
 	}
 
+	// Update Gyro rate to 200Hz +/- 125dps
+	gyroConfig, err := i.ReadRegister(RegisterGyroscopeConfig0)
+	if err != nil {
+		return err
+	}
+	gyroConfig &= ^bitGyroConfig0FSSelectMask
+	gyroConfig |= bitGyroFSSelect125dps
+
+	gyroConfig &= ^bitGyroConfig0ODRMask
+	gyroConfig |= bitGyroODRSelect200Hz
+
+	err = i.WriteRegister(RegisterGyroscopeConfig0, gyroConfig)
+	if err != nil {
+		return err
+	}
+
+	// Update Accel rate to 200Hz, +/- 4g
+	accelConfig, err := i.ReadRegister(RegisterAccelConfig)
+	if err != nil {
+		return err
+	}
+
+	accelConfig &= ^bitAccelConfig0FSSelectMask
+	accelConfig |= bitAccelFSSelect4g
+
+	accelConfig &= ^bitAccelConfig0ODRpos
+	accelConfig |= bitAccelODRSelect200Hz
+	err = i.WriteRegister(RegisterAccelConfig, accelConfig)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

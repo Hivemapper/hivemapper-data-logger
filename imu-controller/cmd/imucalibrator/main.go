@@ -139,8 +139,8 @@ func main() {
 	// configure these parameters on the device and relies on the defaults.
 	imuDevice := iim42652.NewSpi(
 		*devicePath,
-		iim42652.AccelerationSensitivityG16,
-		iim42652.GyroScalesG2000,
+		iim42652.AccelerationSensitivityG4,
+		iim42652.GyroScalesG125,
 		true,
 		false, // skip power management
 	)

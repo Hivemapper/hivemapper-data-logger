@@ -94,8 +94,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	imuDevice := iim42652.NewSpi(
 		mustGetString(cmd, "imu-dev-path"),
-		iim42652.AccelerationSensitivityG16,
-		iim42652.GyroScalesG2000,
+		iim42652.AccelerationSensitivityG4,
+		iim42652.GyroScalesG125,
 		true,
 		mustGetBool(cmd, "imu-skip-power-management"),
 	)

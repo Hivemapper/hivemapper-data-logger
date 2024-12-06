@@ -17,8 +17,8 @@ func main() {
 
 	imuDevice := iim42652.NewSpi(
 		devPath,
-		iim42652.AccelerationSensitivityG16,
-		iim42652.GyroScalesG2000,
+		iim42652.AccelerationSensitivityG4,
+		iim42652.GyroScalesG125,
 		true,
 		*skipPwrMngt,
 	)
