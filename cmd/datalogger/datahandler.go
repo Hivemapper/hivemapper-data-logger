@@ -124,6 +124,8 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 			}
 		}
 	} else {
+		fmt.Println("gnss auth data")
+		fmt.Printf("gnss auth data: %v\n", h.gnssAuthCount)
 		if h.gnssAuthCount%60 == 0 {
 			err := h.sqliteLogger.Log(sql.NewGnssAuthSqlWrapper(data))
 			if err != nil {
