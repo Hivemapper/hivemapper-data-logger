@@ -162,7 +162,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 			}
 
-			if accumulator.count < 10 {
+			if accumulator.count < log.BufferSize() {
 				continue
 			}
 
