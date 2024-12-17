@@ -46,6 +46,10 @@ func NewMagnetometerSqlWrapper(system_time time.Time, mag_x float64, mag_y float
 	}
 }
 
+func (w *MagnetometerSqlWrapper) BufferSize() int {
+	return 10;
+}
+
 func (s *MagnetometerSqlWrapper) InsertQuery() (string, string, []any) {
 	sessionID, err := session.GetSession()
 	if err != nil {
