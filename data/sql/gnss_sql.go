@@ -160,3 +160,7 @@ func (w *GnssSqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.Cno,
 	}
 }
+
+func (w *GnssSqlWrapper) BufferSize() int {
+	return 10;
+}

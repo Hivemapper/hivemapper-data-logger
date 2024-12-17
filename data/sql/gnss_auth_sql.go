@@ -62,6 +62,7 @@ func (w *GnssAuthSqlWrapper) InsertQuery() (string, string, []any) {
 	if err != nil {
 		panic(err) // Handle error if any
 	}
+
 	return insertGnssAuthQuery, insertGnssAuthFields, []any{
 		w.gnssData.SecEcsignBuffer,
 		w.gnssData.SecEcsign.MsgNum,
@@ -71,4 +72,8 @@ func (w *GnssAuthSqlWrapper) InsertQuery() (string, string, []any) {
 		time.Now().Format("2006-01-02 15:04:05.99999"),
 		sessionID,
 	}
+}
+
+func (w *GnssAuthSqlWrapper) BufferSize() int {
+	return 1
 }
