@@ -92,23 +92,21 @@ func rebuildDatabase(dumpFilePath, newDbFilePath string) error {
 	return cmd.Run()
 }
 
-func recoverDb(corruptedDB string) {
+func recoverDb(corruptedDB string) error {
 	dumpFile := corruptedDB + ".dump"
 	newDB := corruptedDB + ".recovered"
 
 	// Dump corrupted database
 	err := dumpDatabase(corruptedDB, dumpFile)
 	if err != nil {
-		log.Printf("Failed to dump database: %v\n", err)
-		return;
+		return fmt.Errorf("failed to dump database: %v", err)
 	}
 	log.Println("Database dumped successfully.")
 
 	// Rebuild database
 	err = rebuildDatabase(dumpFile, newDB)
 	if err != nil {
-		log.Printf("Failed to rebuild database: %v\n", err)
-		return;
+		return fmt.Errorf("failed to rebuild database: %v", err)
 	}
 	log.Println("Database rebuilt successfully.")
 
@@ -120,9 +118,17 @@ func recoverDb(corruptedDB string) {
 
 	// Rename new database to the original name
 	err = os.Rename(newDB, corruptedDB)
+	if err != nil {
+		log.Printf("failed to rename new database: %v\n", err)
+	}
 
 	// Remove dump file
 	err = os.Remove(dumpFile)
+	if err != nil {
+		log.Printf("failed to remove dump file: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *Sqlite) Init(logTTL time.Duration) error {
@@ -151,7 +157,15 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 		if err := db.Close(); err != nil {
 			fmt.Printf("failed to close database: %v\n", err)
 		}
-		recoverDb(s.file)
+		err = recoverDb(s.file)
+		if err != nil {
+			fmt.Printf("failed to recover database: %v\n", err)
+			// Remove the database file if it is corrupted
+			err = os.Remove(s.file)
+			err = os.Remove(s.file + "-shm")
+			err = os.Remove(s.file + "-wal")
+		}
+
 		os.Exit(1)
 	}
 
