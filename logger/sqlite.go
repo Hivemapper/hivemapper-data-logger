@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -24,7 +26,7 @@ type Sqlite struct {
 	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
-	alterTableQueryFuncList []AlterTableQueryFunc
+	alterTableQueryFuncList  []AlterTableQueryFunc
 
 	logs chan Sqlable
 }
@@ -53,12 +55,94 @@ func (s *Sqlite) InsertErrorLog(message string) {
 	s.DB.Exec("INSERT OR IGNORE INTO error_logs VALUES (NULL,?,?,?)", time.Now().Format("2006-01-02 15:04:05.99999"), "data-logger", message)
 }
 
+func dumpDatabase(dbFilePath, dumpFilePath string) error {
+	cmd := exec.Command("sqlite3", dbFilePath, ".dump")
+	output, err := os.Create(dumpFilePath)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	cmd.Stdout = output
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func rebuildDatabase(dumpFilePath, newDbFilePath string) error {
+	cmd := exec.Command("sqlite3", newDbFilePath)
+	input, err := os.Open(dumpFilePath)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+
+	cmd.Stdin = input
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func recoverDb(corruptedDB string) {
+	dumpFile := corruptedDB + ".dump"
+	newDB := corruptedDB + ".recovered"
+
+	// Dump corrupted database
+	err := dumpDatabase(corruptedDB, dumpFile)
+	if err != nil {
+		log.Fatalf("Failed to dump database: %v", err)
+	}
+	log.Println("Database dumped successfully.")
+
+	// Rebuild database
+	err = rebuildDatabase(dumpFile, newDB)
+	if err != nil {
+		log.Fatalf("Failed to rebuild database: %v", err)
+	}
+	log.Println("Database rebuilt successfully.")
+
+	log.Println("Removing corrupted database and renaming new database.")
+	// Remove corrupted database
+	err = os.Remove(corruptedDB)
+	err = os.Remove(corruptedDB + "-shm")
+	err = os.Remove(corruptedDB + "-wal")
+
+	// Rename new database to the original name
+	err = os.Rename(newDB, corruptedDB)
+
+	// Remove dump file
+	err = os.Remove(dumpFile)
+}
+
 func (s *Sqlite) Init(logTTL time.Duration) error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
+	}
+
+	// check integrity of the database
+	shouldRecover := false
+	row := db.QueryRow("PRAGMA integrity_check;")
+	var result string
+	if err := row.Scan(&result); err != nil {
+		fmt.Printf("failed to perform integrity check: %v\n", err)
+		shouldRecover = true
+	}
+	fmt.Println("Integrity Check Result:", result)
+	if result != "ok" {
+		shouldRecover = true
+	}
+
+	if shouldRecover {
+		fmt.Println("Recovering database and stopping the program.")
+		if err := db.Close(); err != nil {
+			fmt.Printf("failed to close database: %v\n", err)
+		}
+		recoverDb(s.file)
+		os.Exit(1)
 	}
 
 	// Enable Write-Ahead Logging
