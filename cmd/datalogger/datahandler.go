@@ -177,14 +177,14 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	}
 
 	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
-	// err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
-	// if err != nil {
-	// 	return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
-	// }
+	err = h.sqliteLogger.Log(magnetometer.NewMagnetometerSqlWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2]))
+	if err != nil {
+		return fmt.Errorf("logging magnetometer data to sqlite: %w", err)
+	}
 
 	magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
 	if h.redisLogsEnabled {
-		err := h.redisLogger.LogMagnetometerData(*magDataWrapper)
+		err = h.redisLogger.LogMagnetometerData(*magDataWrapper)
 		if err != nil {
 			return fmt.Errorf("logging magnetometer data to redis: %w", err)
 		}
@@ -194,12 +194,12 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	// err := h.sqliteLogger.Log(sql.NewImuSqlWrapper(temperature, acceleration, angularRate))
-	// if err != nil {
-	// 	return fmt.Errorf("logging raw imu data to sqlite: %w", err)
-	// }
+	err := h.sqliteLogger.Log(sql.NewImuSqlWrapper(temperature, acceleration, angularRate))
+	if err != nil {
+		return fmt.Errorf("logging raw imu data to sqlite: %w", err)
+	}
 	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
-	err := h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
+	err = h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
