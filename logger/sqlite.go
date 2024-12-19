@@ -56,7 +56,7 @@ func (s *Sqlite) InsertErrorLog(message string) {
 }
 
 func dumpDatabase(dbFilePath, dumpFilePath string) error {
-	cmd := exec.Command("sqlite3", dbFilePath, ".dump")
+	cmd := exec.Command("sqlite3", dbFilePath, ".recover")
 	output, err := os.Create(dumpFilePath)
 	if err != nil {
 		return err
@@ -70,6 +70,14 @@ func dumpDatabase(dbFilePath, dumpFilePath string) error {
 }
 
 func rebuildDatabase(dumpFilePath, newDbFilePath string) error {
+	// Remove the new database file if it already exists
+	if _, err := os.Stat(newDbFilePath); err == nil {
+		err = os.Remove(newDbFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing new database file: %v", err)
+		}
+	}
+
 	cmd := exec.Command("sqlite3", newDbFilePath)
 	input, err := os.Open(dumpFilePath)
 	if err != nil {
