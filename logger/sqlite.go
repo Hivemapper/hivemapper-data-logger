@@ -99,14 +99,16 @@ func recoverDb(corruptedDB string) {
 	// Dump corrupted database
 	err := dumpDatabase(corruptedDB, dumpFile)
 	if err != nil {
-		log.Fatalf("Failed to dump database: %v", err)
+		log.Printf("Failed to dump database: %v\n", err)
+		return;
 	}
 	log.Println("Database dumped successfully.")
 
 	// Rebuild database
 	err = rebuildDatabase(dumpFile, newDB)
 	if err != nil {
-		log.Fatalf("Failed to rebuild database: %v", err)
+		log.Printf("Failed to rebuild database: %v\n", err)
+		return;
 	}
 	log.Println("Database rebuilt successfully.")
 
