@@ -96,6 +96,22 @@ func recoverDb(corruptedDB string) error {
 	dumpFile := corruptedDB + ".dump"
 	newDB := corruptedDB + ".recovered"
 
+	// Remove dump file if it already exists
+	if _, err := os.Stat(dumpFile); err == nil {
+		err = os.Remove(dumpFile)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing dump file: %v", err)
+		}
+	}
+
+	// Remove recovered database file if it already exists
+	if _, err := os.Stat(newDB); err == nil {
+		err = os.Remove(newDB)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing recovered database file: %v", err)
+		}
+	}
+
 	// Dump corrupted database
 	err := dumpDatabase(corruptedDB, dumpFile)
 	if err != nil {
