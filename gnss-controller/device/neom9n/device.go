@@ -124,10 +124,10 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910635, []byte{0x01}, "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
-	n.setConfig(0x40050002, uint32(50000), "CFG-TP-PERIOD_TP1")
-	n.setConfig(0x40050003, uint32(50000), "CFG-TP-PERIOD_LOCK_TP1")
-	n.setConfig(0x40050004, uint32(5000), "CFG-TP-LEN_TP1")
-	n.setConfig(0x40050005, uint32(5000), "CFG-TP-LEN_LOCK_TP1")
+	n.setConfig(0x40050002, uint32(5000), "CFG-TP-PERIOD_TP1")
+	n.setConfig(0x40050003, uint32(5000), "CFG-TP-PERIOD_LOCK_TP1")
+	n.setConfig(0x40050004, uint32(500), "CFG-TP-LEN_TP1")
+	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
 
 	if lastPosition != nil {
