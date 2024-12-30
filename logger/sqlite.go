@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -24,7 +26,7 @@ type Sqlite struct {
 	doInsert                 bool
 	purgeQueryFuncList       []PurgeQueryFunc
 	createTableQueryFuncList []CreateTableQueryFunc
-	alterTableQueryFuncList []AlterTableQueryFunc
+	alterTableQueryFuncList  []AlterTableQueryFunc
 
 	logs chan Sqlable
 }
@@ -53,12 +55,134 @@ func (s *Sqlite) InsertErrorLog(message string) {
 	s.DB.Exec("INSERT OR IGNORE INTO error_logs VALUES (NULL,?,?,?)", time.Now().Format("2006-01-02 15:04:05.99999"), "data-logger", message)
 }
 
+func dumpDatabase(dbFilePath, dumpFilePath string) error {
+	cmd := exec.Command("sqlite3", dbFilePath, ".recover")
+	output, err := os.Create(dumpFilePath)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	cmd.Stdout = output
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func rebuildDatabase(dumpFilePath, newDbFilePath string) error {
+	// Remove the new database file if it already exists
+	if _, err := os.Stat(newDbFilePath); err == nil {
+		err = os.Remove(newDbFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing new database file: %v", err)
+		}
+	}
+
+	cmd := exec.Command("sqlite3", newDbFilePath)
+	input, err := os.Open(dumpFilePath)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+
+	cmd.Stdin = input
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func recoverDb(corruptedDB string) error {
+	dumpFile := corruptedDB + ".dump"
+	newDB := corruptedDB + ".recovered"
+
+	// Remove dump file if it already exists
+	if _, err := os.Stat(dumpFile); err == nil {
+		err = os.Remove(dumpFile)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing dump file: %v", err)
+		}
+	}
+
+	// Remove recovered database file if it already exists
+	if _, err := os.Stat(newDB); err == nil {
+		err = os.Remove(newDB)
+		if err != nil {
+			return fmt.Errorf("failed to remove existing recovered database file: %v", err)
+		}
+	}
+
+	// Dump corrupted database
+	err := dumpDatabase(corruptedDB, dumpFile)
+	if err != nil {
+		return fmt.Errorf("failed to dump database: %v", err)
+	}
+	log.Println("Database dumped successfully.")
+
+	// Rebuild database
+	err = rebuildDatabase(dumpFile, newDB)
+	if err != nil {
+		return fmt.Errorf("failed to rebuild database: %v", err)
+	}
+	log.Println("Database rebuilt successfully.")
+
+	log.Println("Removing corrupted database and renaming new database.")
+	// Remove corrupted database
+	err = os.Remove(corruptedDB)
+	err = os.Remove(corruptedDB + "-shm")
+	err = os.Remove(corruptedDB + "-wal")
+
+	// Rename new database to the original name
+	err = os.Rename(newDB, corruptedDB)
+	if err != nil {
+		log.Printf("failed to rename new database: %v\n", err)
+	}
+
+	// Remove dump file
+	err = os.Remove(dumpFile)
+	if err != nil {
+		log.Printf("failed to remove dump file: %v\n", err)
+	}
+
+	return nil
+}
+
 func (s *Sqlite) Init(logTTL time.Duration) error {
 	fmt.Println("initializing database:", s.file)
 	db, err := sql.Open("sqlite", s.file)
 
 	if err != nil {
 		return fmt.Errorf("opening database: %s", err.Error())
+	}
+
+	// check integrity of the database
+	shouldRecover := false
+	row := db.QueryRow("PRAGMA integrity_check;")
+	var result string
+	if err := row.Scan(&result); err != nil {
+		fmt.Printf("failed to perform integrity check: %v\n", err)
+		shouldRecover = true
+	}
+	fmt.Println("Integrity Check Result:", result)
+	if result != "ok" {
+		shouldRecover = true
+	}
+
+	if shouldRecover {
+		fmt.Println("Recovering database and stopping the program.")
+		if err := db.Close(); err != nil {
+			fmt.Printf("failed to close database: %v\n", err)
+		}
+		err = recoverDb(s.file)
+		if err != nil {
+			fmt.Printf("failed to recover database: %v\n", err)
+			// Remove the database file if it is corrupted
+			err = os.Remove(s.file)
+			err = os.Remove(s.file + "-shm")
+			err = os.Remove(s.file + "-wal")
+		}
+
+		os.Exit(1)
 	}
 
 	// Enable Write-Ahead Logging
@@ -162,7 +286,7 @@ func (s *Sqlite) Init(logTTL time.Duration) error {
 				accumulator.cumulatedParams = append(accumulator.cumulatedParams, params...)
 			}
 
-			if accumulator.count < 10 {
+			if accumulator.count < log.BufferSize() {
 				continue
 			}
 

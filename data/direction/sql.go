@@ -51,3 +51,7 @@ func (w *SqlWrapper) InsertQuery() (string, string, []any) {
 		w.gnssData.Speed,
 	}
 }
+
+func (w *SqlWrapper) BufferSize() int {
+	return 10;
+}
