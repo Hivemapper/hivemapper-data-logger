@@ -26,6 +26,18 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 
 	for {
 		time.Sleep(2 * time.Millisecond)
+
+		fsync, err := f.imu.GetFsync()
+		if err != nil {
+			return fmt.Errorf("getting fsync: %w", err)
+		}
+		fmt.Println("Fsync:", fsync)
+		// return early if fsync_int variable in is false
+		if !fsync.Fsync_int {
+			fmt.Println("Fsync_int is false")
+			continue
+		}
+
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
 			return fmt.Errorf("getting acceleration: %w", err)
@@ -40,12 +52,6 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		if err != nil {
 			return fmt.Errorf("getting temperature: %w", err)
 		}
-
-		// fsync, err := f.imu.GetFsync()
-		// if err != nil {
-		// 	return fmt.Errorf("getting fsync: %w", err)
-		// }
-		// fmt.Println("fsync: ", fsync)
 
 		for _, handler := range f.handlers {
 			err := handler(
