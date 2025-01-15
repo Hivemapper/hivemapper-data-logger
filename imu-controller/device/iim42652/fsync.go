@@ -6,20 +6,20 @@ import (
 
 type Fsync struct {
 	timedelta int16
-	fsync_int bool
+	Fsync_int bool
 }
 
 func NewFsync(timedelta int16, fsync_int bool) *Fsync {
 	fsync := &Fsync{
 		timedelta: timedelta,
-		fsync_int: fsync_int,
+		Fsync_int: fsync_int,
 	}
 
 	return fsync
 }
 
 func (f *Fsync) String() string {
-	return fmt.Sprintf("Fsync{FSYNC interrupt: %t, timedelta: %d}", f.fsync_int, f.timedelta)
+	return fmt.Sprintf("Fsync{FSYNC interrupt: %t, timedelta: %d}", f.Fsync_int, f.timedelta)
 }
 
 func (i *IIM42652) GetFsync() (*Fsync, error) {
