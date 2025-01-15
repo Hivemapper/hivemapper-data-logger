@@ -8,8 +8,9 @@ import (
 )
 
 type RawFeed struct {
-	imu      *iim42652.IIM42652
-	handlers []RawFeedHandler
+	imu                 *iim42652.IIM42652
+	handlers            []RawFeedHandler
+	fysnc_error_counter int
 }
 
 func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
@@ -29,14 +30,18 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 
 		fsync, err := f.imu.GetFsync()
 		if err != nil {
-			return fmt.Errorf("getting fsync: %w", err)
+			return fmt.Errorf("[ERROR] error getting fsync: %w", err)
 		}
-		fmt.Println("Fsync:", fsync)
 		// return early if fsync_int variable in is false
 		if !fsync.Fsync_int {
-			fmt.Println("Fsync_int is false")
+			f.fysnc_error_counter++
+			if f.fysnc_error_counter > 15000 {
+				fmt.Println("[ERROR] 15,000 repeated fsync errors. Fsync is not being set.")
+				f.fysnc_error_counter = 0
+			}
 			continue
 		}
+		f.fysnc_error_counter = 0
 
 		acceleration, err := f.imu.GetAcceleration()
 		if err != nil {
