@@ -26,8 +26,6 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
 
 	for {
-		time.Sleep(2 * time.Millisecond)
-
 		fsync, err := f.imu.GetFsync()
 		if err != nil {
 			return fmt.Errorf("[ERROR] error getting fsync: %w", err)
