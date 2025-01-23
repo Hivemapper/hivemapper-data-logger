@@ -41,7 +41,7 @@ func NewAcceleration(x, y, z int16, sensitivity AccelerationSensitivity) *Accele
 }
 
 func (a *Acceleration) String() string {
-	return fmt.Sprintf("Acceleration{camX:%.5f, camY:%.5f, camZ: %.5f, totalMagn: %.5f}", a.Z, a.X, a.Y, a.TotalMagnitude)
+	return fmt.Sprintf("Acceleration{camX:%.5f, camY:%.5f, camZ: %.5f, totalMagn: %.5f}", a.X, a.Y, a.Z, a.TotalMagnitude)
 }
 
 func (a *Acceleration) CamX() float64 {

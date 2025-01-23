@@ -112,7 +112,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(546374149, value, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
 	n.setConfig(0x2091034b, []byte{0x01}, "CFG-MSGOUT-UBX_SEC_ECSIGN_UART1")
 
-	n.setConfig(807469057, uint16(128), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
+	n.setConfig(807469057, uint16(100), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(807469058, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	n.setConfig(0x20910084, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_COV_UART1")
