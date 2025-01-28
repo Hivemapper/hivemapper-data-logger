@@ -11,7 +11,6 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
-	"github.com/Hivemapper/hivemapper-data-logger/download"
 	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
 	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/gorilla/handlers"
@@ -138,7 +137,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"), dataHandler.sqliteLogger.InsertErrorLog)
+	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
 	err = gnssDevice.Init(nil)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
@@ -233,10 +232,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	headers := handlers.AllowedHeaders([]string{"Content-Type"})
 	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	router := gmux.NewRouter().StrictSlash(true)
-
-	down := download.NewDownload(dataHandler.sqliteLogger)
-	router.HandleFunc("/rawData", down.GetRawData)
-	router.HandleFunc("/debug/download", down.GetDatabaseFiles)
 
 	err = http.ListenAndServe(httpListenAddr, handlers.CORS(origins, headers, methods)(router))
 	fmt.Printf("Starting http server on %s ...\n", httpListenAddr)

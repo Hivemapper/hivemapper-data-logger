@@ -25,7 +25,7 @@ type Neom9n struct {
 	errorCallback      message.ErrorCallback
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, errorCallback message.ErrorCallback) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now(),
 		config: &serial.Config{
@@ -39,7 +39,6 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRa
 		mgaOfflineFilePath: mgaOfflineFilePath,
 		output:             make(chan ubx.Message),
 		measxEnabled:       measxEnabled,
-		errorCallback:      errorCallback,
 	}
 
 	return n
