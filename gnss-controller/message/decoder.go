@@ -97,9 +97,7 @@ func encodeBuffer(buffer [][]byte) string {
 	return b64.StdEncoding.EncodeToString(flattened)
 }
 
-type ErrorCallback func(errorMessage string)
-
-func (d *Decoder) Decode(stream *serial.Port, config *serial.Config, errorCallback ErrorCallback) chan error {
+func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error {
 	done := make(chan error)
 	var ubxDecoder *ublox.Decoder
 
@@ -146,7 +144,6 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config, errorCallba
 					break
 				}
 				fmt.Println("WARNING: error decoding ubx", err)
-				errorCallback(err.Error())
 				initializeDecoder()
 				continue
 			}
@@ -192,7 +189,6 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config, errorCallba
 			d.registry.ForEachHandler(reflect.TypeOf(msg), func(handler UbxMessageHandler) {
 				err := handler.HandleUbxMessage(msg)
 				if err != nil {
-					errorCallback(err.Error())
 					done <- err
 				}
 			})
