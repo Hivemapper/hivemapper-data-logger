@@ -2,6 +2,7 @@ package message
 
 import (
 	"crypto/sha256"
+	"time"
 
 	"encoding/hex"
 	"fmt"
@@ -143,7 +144,7 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 					done <- nil
 					break
 				}
-				fmt.Println("WARNING: error decoding ubx", err)
+				fmt.Println("WARNING: error decoding ubx", err, time.Now())
 				initializeDecoder()
 				continue
 			}
