@@ -20,14 +20,16 @@ import (
 
 type Decoder struct {
 	*shutter.Shutter
-	registry *HandlerRegistry
-	queue    [][]byte
+	registry            *HandlerRegistry
+	queue               [][]byte
+	MessageAcknowledged bool
 }
 
 func NewDecoder(registry *HandlerRegistry) *Decoder {
 	return &Decoder{
-		Shutter:  shutter.New(),
-		registry: registry,
+		Shutter:             shutter.New(),
+		registry:            registry,
+		MessageAcknowledged: false,
 	}
 }
 
@@ -152,6 +154,9 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 			}
 			if cfg, ok := msg.(*ubx.CfgValGet); ok {
 				fmt.Println("CFG:", cfg)
+			}
+			if _, ok := msg.(*ubx.AckAck); ok {
+				d.MessageAcknowledged = true
 			}
 			if nack, ok := msg.(*ubx.AckNak); ok {
 				fmt.Println("NACK:", nack, hex.EncodeToString([]byte{nack.ClsID, nack.MsgID}))

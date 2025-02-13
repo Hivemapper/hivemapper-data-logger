@@ -22,6 +22,7 @@ type Neom9n struct {
 	mgaOfflineFilePath string
 	decoderDone        chan error
 	measxEnabled       bool
+	ackWaitCounter     int
 }
 
 func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool) *Neom9n {
@@ -150,6 +151,11 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x209100c8, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_GSV_SPI")
 	n.setConfig(0x209100c9, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_GLL_I2C")
 	n.setConfig(0x209100cd, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_GLL_SPI")
+	n.setConfig(0x10740002, []byte{0x00}, "CFG-UART1OUTPROT-NMEA")
+	n.setConfig(0x10720001, []byte{0x00}, "CFG-I2COUTPROT-UBX")
+	n.setConfig(0x10720002, []byte{0x00}, "CFG-I2COUTPROT-NMEA")
+	n.setConfig(0x107a0001, []byte{0x00}, "CFG-SPIOUTPROT-UBX")
+	n.setConfig(0x107a0002, []byte{0x00}, "CFG-SPIOUTPROT-NMEA")
 	n.setConfig(0x2091038c, []byte{0x00}, "CFG-MSGOUT-UBX_MON_SPAN_UART1")
 	n.setConfig(0x20910061, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_TIMELS_UART1")
 
@@ -178,7 +184,19 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 		},
 	}
 	fmt.Println("Set config:", description, "value:", value)
-	time.Sleep(100 * time.Millisecond)
+	// wait for ACK message from decoder before sending next message
+	n.ackWaitCounter = 0
+	for n.ackWaitCounter < 30 {
+		if n.decoder.MessageAcknowledged {
+			n.decoder.MessageAcknowledged = false
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+		n.ackWaitCounter++
+	}
+	if n.ackWaitCounter == 30 {
+		fmt.Println("Set config not acknowledged")
+	}
 }
 
 // func (n *Neom9n) getConfig(key uint32) {
