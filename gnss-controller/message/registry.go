@@ -18,9 +18,11 @@ var UbxMsgNavPosecef = reflect.TypeOf(&ubx.NavPosecef{})
 var UbxMsgNavTimegps = reflect.TypeOf(&ubx.NavTimegps{})
 var UbxMsgNavVelecef = reflect.TypeOf(&ubx.NavVelecef{})
 var UbxMsgNavStatus = reflect.TypeOf(&ubx.NavStatus{})
+var UbxMsgNavEoe = reflect.TypeOf(&ubx.NavEoe{})
 var UbxMsgMgaAckData = reflect.TypeOf(&ubx.MgaAckData0{})
 var UbxMsgMonRf = reflect.TypeOf(&ubx.MonRf{})
 var UbxRxmMeasx = reflect.TypeOf(&ubx.RxmMeasx{})
+var UbxRxmRawx = reflect.TypeOf(&ubx.RxmRawx{})
 var UbxSecEcsignWithBuffer = reflect.TypeOf(&SecEcsignWithBuffer{})
 
 type HandlerRegistry struct {

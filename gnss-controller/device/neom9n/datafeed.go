@@ -48,6 +48,7 @@ type Data struct {
 	startTime       time.Time
 	GGA             string         `json:"gga"`
 	RxmMeasx        *ubx.RxmMeasx  `json:"rxm_measx"`
+	RxmRawx         *ubx.RxmRawx   `json:"rxm_rawx"`
 	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
 	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
@@ -207,15 +208,13 @@ type RF struct {
 }
 
 const (
-	diffThreshold   = 200
-	ignoreThreshold = 30
-	fixThreshold    = 40
+	diffThreshold = 200
+	fixThreshold  = 40
 )
 
 var (
 	prevTime       time.Time
 	prevSystemTime time.Time
-	recCounter     int64
 	fixedTimes     int64
 	prevItowMs     uint32
 )
@@ -299,12 +298,6 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Dop.XDop = float64(m.EDOP) * 0.01
 		data.Dop.YDop = float64(m.NDOP) * 0.01
 
-		// we receive NavDop at the end so we handleData here
-		clone := data.Clone()
-		recCounter++
-		if recCounter > ignoreThreshold {
-			df.HandleData(&clone)
-		}
 	case *ubx.NavSat:
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
@@ -339,9 +332,13 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	case *message.SecEcsignWithBuffer:
 		data.SecEcsign = m.SecEcsign
 		data.SecEcsignBuffer = m.Base64MessageBuffer
-		if recCounter > ignoreThreshold {
-			df.HandleData(data)
-		}
+		df.HandleData(data)
+	case *ubx.RxmRawx:
+		data.RxmRawx = m
+	case *ubx.NavEoe:
+		// we receive NavEoe message at the end of epoch so handle data here
+		clone := data.Clone()
+		df.HandleData(&clone)
 	}
 
 	return nil
