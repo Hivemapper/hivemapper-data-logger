@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/daedaleanai/ublox"
-	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/streamingfast/shutter"
 	"github.com/tarm/serial"
@@ -139,6 +138,9 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 			//todo: signature and computed hash need to be sent with the new data (in the datafeed)
 			//todo: add signature and hash to the json log file in the data logger ...
 			msg, frame, err := ubxDecoder.Decode()
+			if msg == nil {
+				continue
+			}
 			if err != nil {
 				if err == io.EOF {
 					done <- nil
@@ -147,9 +149,6 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				fmt.Println("WARNING: error decoding ubx", err, time.Now())
 				initializeDecoder()
 				continue
-			}
-			if txt, ok := msg.(*nmea.TXT); ok {
-				fmt.Println("TXT:", txt.Text)
 			}
 			if cfg, ok := msg.(*ubx.CfgValGet); ok {
 				fmt.Println("CFG:", cfg)

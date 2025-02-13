@@ -234,7 +234,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	// We need to pass a buffer along with ubx.SecEcsign to the data handler,
 	// so we must register a composite class instead of ubx.SecEcsign
 	n.handlersRegistry.RegisterHandler(message.UbxSecEcsignWithBuffer, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.NneaGGA, dataFeed)
 
 	if redisLogsEnabled {
 		fmt.Println("Registering redis handlers")

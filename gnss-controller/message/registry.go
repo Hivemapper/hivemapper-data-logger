@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/daedaleanai/ublox/nmea"
-
 	"github.com/daedaleanai/ublox/ubx"
 )
 
@@ -24,9 +22,6 @@ var UbxMsgMgaAckData = reflect.TypeOf(&ubx.MgaAckData0{})
 var UbxMsgMonRf = reflect.TypeOf(&ubx.MonRf{})
 var UbxRxmMeasx = reflect.TypeOf(&ubx.RxmMeasx{})
 var UbxSecEcsignWithBuffer = reflect.TypeOf(&SecEcsignWithBuffer{})
-
-var NneaText = reflect.TypeOf(&nmea.TXT{})
-var NneaGGA = reflect.TypeOf(&nmea.GGA{})
 
 type HandlerRegistry struct {
 	lock     sync.Mutex
