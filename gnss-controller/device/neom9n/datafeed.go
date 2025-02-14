@@ -284,7 +284,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.HorizontalAccuracy = float64(m.HAcc_mm) / 1000
 		data.VerticalAccuracy = float64(m.VAcc_mm) / 1000
 
-		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 100 {
+		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 125 {
 			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs, "ms (", prevItowMs, ",", m.ITOW_ms, ")")
 		}
 		prevItowMs = m.ITOW_ms

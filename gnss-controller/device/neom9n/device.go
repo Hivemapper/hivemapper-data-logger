@@ -103,8 +103,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x10110025, []byte{0x01}, "CFG-NAVSPG-ACKAIDING") // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 
 	// set nominal rate of measurements -> navigation solution update rate
-	n.setConfig(0x30210001, uint16(100), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
-	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
+	measurement_frequency := 8
+	n.setConfig(0x30210001, uint16(1000/measurement_frequency), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
+	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                                      // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	// set critical navigation messages to match solution epoch rate
 	n.setConfig(0x20910007, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
@@ -118,9 +119,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
 
 	// non critical messages set to 1 Hz
-	n.setConfig(0x2091035a, uint8(10), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
-	n.setConfig(0x20910635, uint8(10), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
-	n.setConfig(0x2091069e, []byte{0x01}, "CFG-MSGOUT-UBX_MON_SYS_UART1")
+	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
+	n.setConfig(0x20910635, uint8(measurement_frequency), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
@@ -158,6 +158,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x107a0002, []byte{0x00}, "CFG-SPIOUTPROT-NMEA")
 	n.setConfig(0x2091038c, []byte{0x00}, "CFG-MSGOUT-UBX_MON_SPAN_UART1")
 	n.setConfig(0x20910061, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_TIMELS_UART1")
+	n.setConfig(0x2091069e, []byte{0x00}, "CFG-MSGOUT-UBX_MON_SYS_UART1")
 
 	if lastPosition != nil {
 		fmt.Println("last position:", lastPosition)
