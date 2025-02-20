@@ -48,7 +48,6 @@ type Data struct {
 	startTime       time.Time
 	GGA             string         `json:"gga"`
 	RxmMeasx        *ubx.RxmMeasx  `json:"rxm_measx"`
-	RxmRawx         *ubx.RxmRawx   `json:"rxm_rawx"`
 	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
 	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
@@ -333,8 +332,6 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.SecEcsign = m.SecEcsign
 		data.SecEcsignBuffer = m.Base64MessageBuffer
 		df.HandleData(data)
-	case *ubx.RxmRawx:
-		data.RxmRawx = m
 	case *ubx.NavEoe:
 		// we receive NavEoe message at the end of epoch so handle data here
 		clone := data.Clone()

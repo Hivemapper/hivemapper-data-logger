@@ -247,7 +247,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
 	n.handlersRegistry.RegisterHandler(message.UbxMsgNavEoe, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxRxmRawx, dataFeed)
 	if n.measxEnabled {
 		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
 	}
@@ -267,7 +266,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, redisFeed)
-		n.handlersRegistry.RegisterHandler(message.UbxRxmRawx, redisFeed)
 		if n.measxEnabled {
 			n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
 		}

@@ -477,14 +477,9 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			}
 		}
 		protodata, err = s.Marshal(&protomessage)
-	case *ubx.RxmRawx:
-		redisKey = "RxmRawx"
-		// todo : pass RxmRawx data through redis
-		// remove "RxmRawx" for ignored key in check below.
-		// protodata, err = s.Marshal(&protomessage)
 	}
 
-	if protodata == nil && redisKey != "RxmRawx" {
+	if protodata == nil {
 		println("Redis key skipped:", redisKey)
 		return nil
 	}
