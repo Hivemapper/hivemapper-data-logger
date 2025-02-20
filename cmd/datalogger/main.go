@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,6 +20,11 @@ func rootRun(cmd *cobra.Command, args []string) error {
 }
 
 func main() {
+
+	go func() {
+		http.ListenAndServe("192.168.197.55:8080", nil)
+	}()
+
 	if err := RootCmd.Execute(); err != nil {
 		panic(err)
 	}
