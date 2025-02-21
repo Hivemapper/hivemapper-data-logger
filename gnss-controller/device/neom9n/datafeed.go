@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/message"
-	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 )
 
@@ -22,29 +21,29 @@ type Position struct {
 }
 
 type Data struct {
-	Ttff               int64       `json:"ttff"`
-	SystemTime         time.Time   `json:"systemtime"`
-	ActualSystemTime   time.Time   `json:"actual_systemtime"`
-	Timestamp          time.Time   `json:"timestamp"`
-	Fix                string      `json:"fix"`
-	Latitude           float64     `json:"latitude"`
-	UnfilteredLatitude float64     `json:"unfiltered_latitude"`
-	Longitude          float64     `json:"longitude"`
-	UnfilteredLongitude float64    `json:"unfiltered_longitude"`
-	Altitude           float64     `json:"height"`
-	Heading            float64     `json:"heading"`
-	Speed              float64     `json:"speed"`
-	Dop                *Dop        `json:"dop"`
-	Satellites         *Satellites `json:"satellites"`
-	Sep                float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
-	Eph                float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
-	Cno				   float64     `json:"cno"`
-	RF                 *RF         `json:"rf,omitempty"`
-	SpeedAccuracy      float64     `json:"speed_accuracy"`
-	HeadingAccuracy    float64     `json:"heading_accuracy"`
-	TimeResolved	   int         `json:"time_resolved"`
-	HorizontalAccuracy float64     `json:"horizontal_accuracy"`
-	VerticalAccuracy   float64     `json:"vertical_accuracy"`
+	Ttff                int64       `json:"ttff"`
+	SystemTime          time.Time   `json:"systemtime"`
+	ActualSystemTime    time.Time   `json:"actual_systemtime"`
+	Timestamp           time.Time   `json:"timestamp"`
+	Fix                 string      `json:"fix"`
+	Latitude            float64     `json:"latitude"`
+	UnfilteredLatitude  float64     `json:"unfiltered_latitude"`
+	Longitude           float64     `json:"longitude"`
+	UnfilteredLongitude float64     `json:"unfiltered_longitude"`
+	Altitude            float64     `json:"height"`
+	Heading             float64     `json:"heading"`
+	Speed               float64     `json:"speed"`
+	Dop                 *Dop        `json:"dop"`
+	Satellites          *Satellites `json:"satellites"`
+	Sep                 float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
+	Eph                 float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
+	Cno                 float64     `json:"cno"`
+	RF                  *RF         `json:"rf,omitempty"`
+	SpeedAccuracy       float64     `json:"speed_accuracy"`
+	HeadingAccuracy     float64     `json:"heading_accuracy"`
+	TimeResolved        int         `json:"time_resolved"`
+	HorizontalAccuracy  float64     `json:"horizontal_accuracy"`
+	VerticalAccuracy    float64     `json:"vertical_accuracy"`
 
 	startTime       time.Time
 	GGA             string         `json:"gga"`
@@ -56,18 +55,18 @@ type Data struct {
 
 func (d *Data) Clone() Data {
 	clone := Data{
-		Ttff:       d.Ttff,
-		SystemTime: d.SystemTime,
-		ActualSystemTime: d.ActualSystemTime,
-		Timestamp:  d.Timestamp,
-		Fix:        d.Fix,
-		Latitude:   d.Latitude,
-		UnfilteredLatitude: d.UnfilteredLatitude,
-		Longitude:  d.Longitude,
+		Ttff:                d.Ttff,
+		SystemTime:          d.SystemTime,
+		ActualSystemTime:    d.ActualSystemTime,
+		Timestamp:           d.Timestamp,
+		Fix:                 d.Fix,
+		Latitude:            d.Latitude,
+		UnfilteredLatitude:  d.UnfilteredLatitude,
+		Longitude:           d.Longitude,
 		UnfilteredLongitude: d.UnfilteredLongitude,
-		Altitude:   d.Altitude,
-		Heading:    d.Heading,
-		Speed:      d.Speed,
+		Altitude:            d.Altitude,
+		Heading:             d.Heading,
+		Speed:               d.Speed,
 		Dop: &Dop{
 			GDop: d.Dop.GDop,
 			HDop: d.Dop.HDop,
@@ -83,13 +82,13 @@ func (d *Data) Clone() Data {
 		},
 		Sep:                d.Sep,
 		Eph:                d.Eph,
-		TimeResolved: 	 	d.TimeResolved,
+		TimeResolved:       d.TimeResolved,
 		SpeedAccuracy:      d.SpeedAccuracy,
 		HeadingAccuracy:    d.HeadingAccuracy,
 		HorizontalAccuracy: d.HorizontalAccuracy,
 		VerticalAccuracy:   d.VerticalAccuracy,
 		GGA:                d.GGA,
-		Cno:				d.Cno,
+		Cno:                d.Cno,
 	}
 
 	if d.RF != nil {
@@ -171,9 +170,9 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 	return &DataFeed{
 		HandleData: handleData,
 		Data: &Data{
-			SystemTime: noTime,
+			SystemTime:       noTime,
 			ActualSystemTime: noTime,
-			Timestamp:  noTime,
+			Timestamp:        noTime,
 			Dop: &Dop{
 				GDop: 99.99,
 				HDop: 99.99,
@@ -183,9 +182,9 @@ func NewDataFeed(handleData func(data *Data)) *DataFeed {
 				XDop: 99.99,
 				YDop: 99.99,
 			},
-			Satellites: &Satellites{},
+			Satellites:   &Satellites{},
 			TimeResolved: 0,
-			RF:         &RF{},
+			RF:           &RF{},
 		},
 	}
 }
@@ -208,22 +207,20 @@ type RF struct {
 }
 
 const (
-    diffThreshold = 200
-	ignoreThreshold = 30
-	fixThreshold = 40
+	diffThreshold = 200
+	fixThreshold  = 40
 )
 
 var (
-    prevTime           time.Time
-	prevSystemTime		time.Time
-	recCounter			int64
-	fixedTimes			int64
+	prevTime       time.Time
+	prevSystemTime time.Time
+	fixedTimes     int64
 	prevItowMs     uint32
 )
 
 func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	data := df.Data
- 
+
 	switch m := msg.(type) {
 	case *ubx.NavPvt:
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
@@ -238,27 +235,27 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 			data.TimeResolved = 1
 		}
 
-        var timeDiff, systemTimeDiff int64
-        if !prevTime.IsZero() {
-            timeDiff = data.Timestamp.Sub(prevTime).Milliseconds()
-        }
-        if !prevSystemTime.IsZero() {
-            systemTimeDiff = data.SystemTime.Sub(prevSystemTime).Milliseconds()
-        }
+		var timeDiff, systemTimeDiff int64
+		if !prevTime.IsZero() {
+			timeDiff = data.Timestamp.Sub(prevTime).Milliseconds()
+		}
+		if !prevSystemTime.IsZero() {
+			systemTimeDiff = data.SystemTime.Sub(prevSystemTime).Milliseconds()
+		}
 
-        if timeDiff < diffThreshold && systemTimeDiff > diffThreshold {
-            data.SystemTime = prevSystemTime.Add(time.Duration(timeDiff) * time.Millisecond)
+		if timeDiff < diffThreshold && systemTimeDiff > diffThreshold {
+			data.SystemTime = prevSystemTime.Add(time.Duration(timeDiff) * time.Millisecond)
 			fixedTimes++
 			if fixedTimes > fixThreshold {
 				data.SystemTime = time.Now()
 				fixedTimes = 0
 			}
-        } else {
+		} else {
 			fixedTimes = 0
 		}
 
 		prevTime = data.Timestamp
-        prevSystemTime = data.SystemTime
+		prevSystemTime = data.SystemTime
 
 		data.Fix = fix[m.FixType]
 		if data.Ttff == 0 && data.Fix == "3D" && data.Dop.HDop < 5.0 {
@@ -286,7 +283,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.HorizontalAccuracy = float64(m.HAcc_mm) / 1000
 		data.VerticalAccuracy = float64(m.VAcc_mm) / 1000
 
-		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 100 {
+		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 125 {
 			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs, "ms (", prevItowMs, ",", m.ITOW_ms, ")")
 		}
 		prevItowMs = m.ITOW_ms
@@ -300,12 +297,6 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Dop.XDop = float64(m.EDOP) * 0.01
 		data.Dop.YDop = float64(m.NDOP) * 0.01
 
-		// we receive NavDop at the end so we handleData here
-		clone := data.Clone()
-		recCounter++
-		if recCounter > ignoreThreshold {
-			df.HandleData(&clone)
-		}
 	case *ubx.NavSat:
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
@@ -340,11 +331,11 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 	case *message.SecEcsignWithBuffer:
 		data.SecEcsign = m.SecEcsign
 		data.SecEcsignBuffer = m.Base64MessageBuffer
-		if recCounter > ignoreThreshold {
-			df.HandleData(data)
-		}
-	case *nmea.GGA:
-		data.GGA = m.Raw
+		df.HandleData(data)
+	case *ubx.NavEoe:
+		// we receive NavEoe message at the end of epoch so handle data here
+		clone := data.Clone()
+		df.HandleData(&clone)
 	}
 
 	return nil

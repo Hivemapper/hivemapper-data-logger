@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 )
 
@@ -84,12 +83,10 @@ func (d *Decoder) Decode() (msg interface{}, bytes []byte, err error) {
 	}
 
 	switch d.s.Bytes()[0] {
-	case '$':
-		msg, err := nmea.Decode(d.s.Bytes())
-		return msg, d.s.Bytes(), err
 	case 0xB5:
 		msg, err := ubx.Decode(d.s.Bytes())
 		return msg, d.s.Bytes(), err
 	}
-	panic("impossible frame")
+	return nil, nil, err
+
 }
