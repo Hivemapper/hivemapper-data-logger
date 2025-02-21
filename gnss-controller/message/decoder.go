@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/daedaleanai/ublox"
-	"github.com/daedaleanai/ublox/nmea"
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/streamingfast/shutter"
 	"github.com/tarm/serial"
@@ -21,14 +20,16 @@ import (
 
 type Decoder struct {
 	*shutter.Shutter
-	registry *HandlerRegistry
-	queue    [][]byte
+	registry            *HandlerRegistry
+	queue               [][]byte
+	MessageAcknowledged bool
 }
 
 func NewDecoder(registry *HandlerRegistry) *Decoder {
 	return &Decoder{
-		Shutter:  shutter.New(),
-		registry: registry,
+		Shutter:             shutter.New(),
+		registry:            registry,
+		MessageAcknowledged: false,
 	}
 }
 
@@ -139,6 +140,9 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 			//todo: signature and computed hash need to be sent with the new data (in the datafeed)
 			//todo: add signature and hash to the json log file in the data logger ...
 			msg, frame, err := ubxDecoder.Decode()
+			if msg == nil {
+				continue
+			}
 			if err != nil {
 				if err == io.EOF {
 					done <- nil
@@ -148,11 +152,11 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				initializeDecoder()
 				continue
 			}
-			if txt, ok := msg.(*nmea.TXT); ok {
-				fmt.Println("TXT:", txt.Text)
-			}
 			if cfg, ok := msg.(*ubx.CfgValGet); ok {
 				fmt.Println("CFG:", cfg)
+			}
+			if _, ok := msg.(*ubx.AckAck); ok {
+				d.MessageAcknowledged = true
 			}
 			if nack, ok := msg.(*ubx.AckNak); ok {
 				fmt.Println("NACK:", nack, hex.EncodeToString([]byte{nack.ClsID, nack.MsgID}))
