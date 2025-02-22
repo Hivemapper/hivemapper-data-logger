@@ -22,13 +22,13 @@ func (f *Fsync) String() string {
 	return fmt.Sprintf("Fsync{FSYNC interrupt: %t, timedelta: %d}", f.Fsync_int, f.timedelta)
 }
 
-func (i *IIM42652) GetFsync() (*Fsync, error) {
+func (i *IIM42652) GetFsync() (int16, bool, error) {
 	i.registerLock.Lock()
 	defer i.registerLock.Unlock()
 
 	err := i.setBank(RegisterTmstFsyncH.Bank)
 	if err != nil {
-		return nil, fmt.Errorf("setting bank %s: %w", RegisterTmstFsyncH.Bank.String(), err)
+		return 0, false, fmt.Errorf("setting bank %s: %w", RegisterTmstFsyncH.Bank.String(), err)
 	}
 
 	// read three bytes starting at Bank 0, Register 2B
@@ -36,14 +36,18 @@ func (i *IIM42652) GetFsync() (*Fsync, error) {
 	result := make([]byte, 4)
 	msg[0] = ReadMask | byte(RegisterTmstFsyncH.Address)
 	if err := i.connection.Tx(msg, result); err != nil {
-		return nil, fmt.Errorf("reading to SPI port: %w", err)
+		return 0, false, fmt.Errorf("reading to SPI port: %w", err)
 	}
 
-	timedelta := int16(result[1])<<8 | int16(result[2])
+	// timedelta := int16(result[1])<<8 | int16(result[2])
 	// read only bit 7 which is the UI_FSYNC_INT
-	var mask byte = 1 << 6
-	var fsync_int bool = (result[3] & mask) != 0
+	// var mask byte = 1 << 6
+	// var fsync_int bool = (result[3] & mask) != 0
 
-	fsync := NewFsync(timedelta, fsync_int)
-	return fsync, nil
+	// fsync := NewFsync(timedelta, fsync_int)
+	// fsync := NewFsync(timedelta, (result[3]&(1<<6)) != 0)
+
+	// fsync := NewFsync(int16(result[1])<<8|int16(result[2]), (result[3]&(1<<6)) != 0)
+
+	return int16(result[1])<<8 | int16(result[2]), (result[3] & (1 << 6)) != 0, nil
 }

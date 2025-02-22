@@ -22,7 +22,7 @@ func rootRun(cmd *cobra.Command, args []string) error {
 func main() {
 
 	go func() {
-		http.ListenAndServe("192.168.197.55:8080", nil)
+		http.ListenAndServe("192.168.197.55:6060", nil)
 	}()
 
 	if err := RootCmd.Execute(); err != nil {
