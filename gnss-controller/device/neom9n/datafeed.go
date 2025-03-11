@@ -2,6 +2,7 @@ package neom9n
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/message"
@@ -38,6 +39,7 @@ type Data struct {
 	Sep                 float64     `json:"sep"` // Estimated Spherical (3D) Position Error in meters. Guessed to be 95% confidence, but many GNSS receivers do not specify, so certainty unknown.
 	Eph                 float64     `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
 	Cno                 float64     `json:"cno"`
+	PosConfidence       float64     `json:"pos_confidence"`
 	RF                  *RF         `json:"rf,omitempty"`
 	SpeedAccuracy       float64     `json:"speed_accuracy"`
 	HeadingAccuracy     float64     `json:"heading_accuracy"`
@@ -301,15 +303,23 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		data.Satellites.Seen = int(m.NumSvs)
 		data.Satellites.Used = 0
 		data.Cno = 0
+		data.PosConfidence = 0
 		cno := 0.0
+		max_residual := 0.0
 		for _, sv := range m.Svs {
 			if sv.Flags&ubx.NavSatSvUsed != 0x00 {
 				data.Satellites.Used++
 				cno += float64(sv.Cno_dbhz)
+				if math.Abs(float64(sv.PrRes_me1)*0.1) > max_residual {
+					max_residual = math.Abs(float64(sv.PrRes_me1) * 0.1)
+				}
 			}
 		}
 		if data.Satellites.Used > 0 {
 			data.Cno = float64(cno) / float64(data.Satellites.Used)
+
+			// compute confidence as y = 1.05^-|x| where x is the maximum residual [m]
+			data.PosConfidence = math.Pow(1.05, -max_residual)
 		}
 	case *ubx.MonRf:
 		b := m.RFBlocks[0]

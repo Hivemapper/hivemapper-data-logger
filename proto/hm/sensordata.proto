@@ -131,6 +131,7 @@ message GnssData {
     UbxSecEcsign sec_ecsign = 25;
     string sec_ecsign_buffer = 26;
     double cno = 27;
+    double pos_confidence = 28;
 }
 
 /// Low Level UBX Messages
