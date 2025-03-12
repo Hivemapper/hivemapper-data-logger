@@ -91,6 +91,7 @@ func (d *Data) Clone() Data {
 		VerticalAccuracy:   d.VerticalAccuracy,
 		GGA:                d.GGA,
 		Cno:                d.Cno,
+		PosConfidence:      d.PosConfidence,
 	}
 
 	if d.RF != nil {
