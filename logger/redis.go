@@ -196,6 +196,7 @@ func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
 		VerticalAccuracy:   gnssdata.VerticalAccuracy,
 		Gga:                gnssdata.GGA,
 		Cno:                gnssdata.Cno,
+		PosConfidence:      gnssdata.PosConfidence,
 	}
 
 	if gnssdata.RxmMeasx != nil {
