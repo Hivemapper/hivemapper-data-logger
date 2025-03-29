@@ -117,6 +117,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	n.setConfig(0x20910016, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
@@ -130,12 +131,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
 
 	// add raw measurements
-	value := []byte{0x00} // default off for MEASX
-	if n.measxEnabled {
-		value = []byte{0x01}
-	}
-	n.setConfig(0x20910205, value, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	n.setConfig(0x209102a5, uint8(1), "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	n.setConfig(0x20910205, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
+	n.setConfig(0x209102a5, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
 	// turn off unneeded messages that are default on
 	n.setConfig(0x209100ab, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_RMC_I2C")
