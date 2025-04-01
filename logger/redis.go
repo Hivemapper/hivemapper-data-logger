@@ -478,6 +478,55 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			}
 		}
 		protodata, err = s.Marshal(&protomessage)
+	case *ubx.RxmRawx:
+		redisKey = "RxmRawx"
+		protomessage := sensordata.RxmRawx{
+			SystemTime: systemTime.String(),
+			RcvTowS:    m.RcvTow_s,
+			Week:       uint32(m.Week_weeks),
+			LeapS:      uint32(m.LeapS_s),
+			NumMeas:    uint32(m.NumMeas),
+			RecStat:    uint32(m.RecStat),
+			Version:    uint32(m.Version),
+		}
+		protomessage.Meas = make([]*sensordata.RxmRawx_RxmRawxMeasType, len(m.Meas))
+		for i, meas := range m.Meas {
+			protomessage.Meas[i] = &sensordata.RxmRawx_RxmRawxMeasType{
+				PrMes:             meas.PrMes_m,
+				CpMes:             meas.CpMes_cycles,
+				DoMes:             float64(meas.DoMes_hz),
+				GnssId:            uint32(meas.GnssId),
+				SvId:              uint32(meas.SvId),
+				SigId:             uint32(meas.SigId),
+				FreqId:            uint32(meas.FreqId),
+				LocktimeMs:        uint32(meas.Locktime_ms),
+				PrStdevM_1E2_2N:   uint32(meas.PrStdev_m),
+				CpStdevCycles_4E3: uint32(meas.CpStdev_cycles),
+				DoStdevHz_2E3_2N:  uint32(meas.DoStdev_hz),
+				TrkStat:           uint32(meas.TrkStat),
+			}
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.RxmSfrbx:
+		redisKey = "RxmSfrbx"
+		protomessage := sensordata.RxmSfrbx{
+			SystemTime: systemTime.String(),
+			GnssId:     uint32(m.GnssId),
+			SvId:       uint32(m.SvId),
+			SigId:      uint32(m.Reserved1),
+			FreqId:     uint32(m.FreqId),
+			NumWords:   uint32(m.NumWords),
+			Chn:        uint32(m.Chn),
+			Version:    uint32(m.Version),
+		}
+		protomessage.WordBlock = make([]*sensordata.RxmSfrbx_WordBlock, len(m.Words))
+		for i, word := range m.Words {
+			// Note: this is a byte array, so we will just pass the bytes directly
+			protomessage.WordBlock[i] = &sensordata.RxmSfrbx_WordBlock{
+				Dwrd: uint32(word.Dwrd), // 32-bit word
+			}
+		}
+		protodata, err = s.Marshal(&protomessage)
 	}
 
 	if protodata == nil {

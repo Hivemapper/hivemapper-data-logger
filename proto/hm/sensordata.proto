@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package=".;sensordata";
 
 // NOTE: If you make changes to this file, you need to regenerate
-// the go code by running the following command: 
+// the go code by running the following command:
 //   protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
 
 message ImuData {
@@ -306,4 +306,44 @@ message RxmMeasx {
     uint32 num_sv = 11;
     uint32 flags = 12;
     repeated RxmMeasxSVType sv = 13;
+}
+
+message RxmRawx {
+    message RxmRawxMeasType {
+        double pr_mes = 1;
+        double cp_mes = 2;
+        double do_mes = 3;
+        uint32 gnss_id = 4;
+        uint32 sv_id = 5;
+        uint32 sig_id = 6;
+        uint32 freq_id = 7;
+        uint32 locktime_ms = 8;
+        uint32 pr_stdev_m_1e2_2n = 9;
+        uint32 cp_stdev_cycles_4e3 = 10;
+        uint32 do_stdev_hz_2e3_2n = 11;
+        uint32 trk_stat = 12;
+    }
+    string system_time = 1;
+    double rcv_tow_s = 2;
+    uint32 week = 3;
+    uint32 leap_s = 4;
+    uint32 num_meas = 5;
+    uint32 rec_stat = 6;
+    uint32 version = 7;
+    repeated RxmRawxMeasType meas = 8;
+}
+
+message RxmSfrbx {
+    message WordBlock {
+        uint32 dwrd = 1;
+    }
+    string system_time = 1;
+    uint32 gnss_id = 2;
+    uint32 sv_id = 3;
+    uint32 sig_id = 4;
+    uint32 freq_id = 5;
+    uint32 num_words = 6;
+    uint32 chn = 7;
+    uint32 version = 8;
+    repeated WordBlock word_block = 9;
 }
