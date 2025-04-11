@@ -318,10 +318,11 @@ message RxmRawx {
         uint32 sig_id = 6;
         uint32 freq_id = 7;
         uint32 locktime_ms = 8;
-        uint32 pr_stdev_m_1e2_2n = 9;
-        uint32 cp_stdev_cycles_4e3 = 10;
-        uint32 do_stdev_hz_2e3_2n = 11;
-        uint32 trk_stat = 12;
+        uint32 cno_dbhz = 9;
+        uint32 pr_stdev_m_1e2_2n = 10;
+        uint32 cp_stdev_cycles_4e3 = 11;
+        uint32 do_stdev_hz_2e3_2n = 12;
+        uint32 trk_stat = 13;
     }
     string system_time = 1;
     double rcv_tow_s = 2;

@@ -500,6 +500,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				SigId:             uint32(meas.SigId),
 				FreqId:            uint32(meas.FreqId),
 				LocktimeMs:        uint32(meas.Locktime_ms),
+				CnoDbhz:           uint32(meas.Cno_dbhz),
 				PrStdevM_1E2_2N:   uint32(meas.PrStdev_m),
 				CpStdevCycles_4E3: uint32(meas.CpStdev_cycles),
 				DoStdevHz_2E3_2N:  uint32(meas.DoStdev_hz),
