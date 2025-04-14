@@ -103,7 +103,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x10110025, []byte{0x01}, "CFG-NAVSPG-ACKAIDING") // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 
 	// set nominal rate of measurements -> navigation solution update rate
-	measurement_frequency := 5
+	measurement_frequency := 4
 	n.setConfig(0x30210001, uint16(1000/measurement_frequency), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                                      // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
@@ -114,14 +114,14 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910025, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_POSECEF_UART1")
 	n.setConfig(0x20910048, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1")
 	n.setConfig(0x2091003e, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_VELECEF_UART1")
-	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
+	n.setConfig(0x2091017e, []byte{0x00}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
-	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	n.setConfig(0x20910346, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
 	n.setConfig(0x20910016, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
-	n.setConfig(0x20910635, uint8(measurement_frequency), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
+	n.setConfig(0x20910635, uint8(0), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
@@ -131,7 +131,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
 
 	// add raw measurements
-	n.setConfig(0x20910205, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
+	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
 	n.setConfig(0x209102a5, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
