@@ -33,10 +33,11 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		// return early if fsync_int variable in is false
 		if !fsync.Fsync_int {
 			f.fysnc_error_counter++
-			if f.fysnc_error_counter > 15000 {
-				fmt.Println("[ERROR] 15,000 repeated fsync errors. Fsync is not being set.")
+			if f.fysnc_error_counter > 60000 {
+				fmt.Println("[ERROR] 60,000 repeated fsync errors. Fsync is not being set.")
 				f.fysnc_error_counter = 0
 			}
+			time.Sleep(5 * time.Millisecond)
 			continue
 		}
 		f.fysnc_error_counter = 0
