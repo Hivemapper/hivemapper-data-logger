@@ -1570,6 +1570,350 @@ func (v CfgNavx51AopCfg) String() string {
 	return strings.Join(b, ",")
 }
 
+// Message ubx-cfg-nmea (3 versions)
+
+// CfgNmea (Get/set) NMEA protocol configuration (deprecated)
+// Class/Id 0x06 0x17 (4 bytes)
+// This message version is provided for backwards compatibility only. Use the last version listed below instead (its fields are backwards compatible with this version, it just has extra fields defined). Get/set the NMEA protocol configuration. See section NMEA Protocol Configuration for a detailed description of the configuration effects on NMEA output.
+type CfgNmea struct {
+	Filter      CfgNmeaFilter // filter flags
+	NmeaVersion byte          // 0x23: NMEA version 2.3 0x21: NMEA version 2.1
+	NumSV       byte          // Maximum number of SVs to report per TalkerId. 0: unlimited 8: 8 SVs 12: 12 SVs 16: 16 SVs
+	Flags       CfgNmeaFlags  // flags
+}
+
+func (CfgNmea) classID() uint16 { return 0x1706 }
+
+type CfgNmeaFilter byte
+
+const (
+	CfgNmeaPosFilt       CfgNmeaFilter = 0x1  // Enable position output for failed or invalid fixes
+	CfgNmeaMskPosFilt    CfgNmeaFilter = 0x2  // Enable position output for invalid fixes
+	CfgNmeaTimeFilt      CfgNmeaFilter = 0x4  // Enable time output for invalid times
+	CfgNmeaDateFilt      CfgNmeaFilter = 0x8  // Enable date output for invalid dates
+	CfgNmeaGpsOnlyFilter CfgNmeaFilter = 0x10 // Restrict output to GPS satellites only
+	CfgNmeaTrackFilt     CfgNmeaFilter = 0x20 // Enable COG output even if COG is frozen
+)
+
+type CfgNmeaFlags byte
+
+const (
+	CfgNmeaCompat   CfgNmeaFlags = 0x1 // enable compatibility mode. This might be needed for certain applications when customer's NMEA parser expects a fixed number of digits in position coordinates.
+	CfgNmeaConsider CfgNmeaFlags = 0x2 // enable considering mode.
+)
+
+func (v CfgNmeaFilter) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "PosFilt")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "MskPosFilt")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "TimeFilt")
+	}
+	v &^= 0x4
+	if v&0x8 != 0 {
+		b = append(b, "DateFilt")
+	}
+	v &^= 0x8
+	if v&0x10 != 0 {
+		b = append(b, "GpsOnlyFilter")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "TrackFilt")
+	}
+	v &^= 0x20
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+func (v CfgNmeaFlags) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "Compat")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "Consider")
+	}
+	v &^= 0x2
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+// CfgNmea1 (Get/set) NMEA protocol configuration V0 (deprecated)
+// Class/Id 0x06 0x17 (12 bytes)
+// This message version is provided for backwards compatibility only. Use the last version listed below instead (its fields are backwards compatible with this version, it just has extra fields defined). Get/set the NMEA protocol configuration. See section NMEA Protocol Configuration for a detailed description of the configuration effects on NMEA output.
+type CfgNmea1 struct {
+	Filter       CfgNmea1Filter       // filter flags
+	NmeaVersion  byte                 // 0x23: NMEA version 2.3 0x21: NMEA version 2.1
+	NumSV        byte                 // Maximum number of SVs to report per TalkerId. 0: unlimited 8: 8 SVs 12: 12 SVs 16: 16 SVs
+	Flags        CfgNmea1Flags        // flags
+	GnssToFilter CfgNmea1GnssToFilter // Filters out satellites based on their GNSS. If a bitfield is enabled, the corresponding satellites will be not output.
+	SvNumbering  byte                 // Configures the display of satellites that do not have an NMEA-defined value. Note: this does not apply to satellites with an unknown ID. 0: Strict - Satellites are not output 1: Extended - Use proprietary numbering (see Satellite Numbering)
+	MainTalkerId byte                 // By default the main Talker ID (i.e. the Talker ID used for all messages other than GSV) is determined by the GNSS assignment of the receiver's channels (see UBX-CFG-GNSS). This field enables the main Talker ID to be overridden. 0: Main Talker ID is not overridden 1: Set main Talker ID to 'GP' 2: Set main Talker ID to 'GL' 3: Set main Talker ID to 'GN' 4: Set main Talker ID to 'GA' 5: Set main Talker ID to 'GB' 6: Set main Talker ID to 'GQ' (available in NMEA 4.11 or later)
+	GsvTalkerId  byte                 // By default the Talker ID for GSV messages is GNSS-specific (as defined by NMEA). This field enables the GSV Talker ID to be overridden. 0: Use GNSS-specific Talker ID (as defined by NMEA) 1: Use the main Talker ID
+	Version      byte                 // Message version (0x00 for this version)
+}
+
+func (CfgNmea1) classID() uint16 { return 0x1706 }
+
+type CfgNmea1Filter byte
+
+const (
+	CfgNmea1PosFilt       CfgNmea1Filter = 0x1  // Enable position output for failed or invalid fixes
+	CfgNmea1MskPosFilt    CfgNmea1Filter = 0x2  // Enable position output for invalid fixes
+	CfgNmea1TimeFilt      CfgNmea1Filter = 0x4  // Enable time output for invalid times
+	CfgNmea1DateFilt      CfgNmea1Filter = 0x8  // Enable date output for invalid dates
+	CfgNmea1GpsOnlyFilter CfgNmea1Filter = 0x10 // Restrict output to GPS satellites only
+	CfgNmea1TrackFilt     CfgNmea1Filter = 0x20 // Enable COG output even if COG is frozen
+)
+
+type CfgNmea1Flags byte
+
+const (
+	CfgNmea1Compat   CfgNmea1Flags = 0x1 // enable compatibility mode. This might be needed for certain applications when customer's NMEA parser expects a fixed number of digits in position coordinates.
+	CfgNmea1Consider CfgNmea1Flags = 0x2 // enable considering mode.
+)
+
+type CfgNmea1GnssToFilter uint32
+
+const (
+	CfgNmea1Gps     CfgNmea1GnssToFilter = 0x1  // Disable reporting of GPS satellites
+	CfgNmea1Sbas    CfgNmea1GnssToFilter = 0x2  // Disable reporting of SBAS satellites
+	CfgNmea1Galileo CfgNmea1GnssToFilter = 0x4  // Disable reporting of Galileo satellites
+	CfgNmea1Qzss    CfgNmea1GnssToFilter = 0x10 // Disable reporting of QZSS satellites
+	CfgNmea1Glonass CfgNmea1GnssToFilter = 0x20 // Disable reporting of GLONASS satellites
+	CfgNmea1Beidou  CfgNmea1GnssToFilter = 0x40 // Disable reporting of BeiDou satellites
+)
+
+func (v CfgNmea1Filter) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "PosFilt")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "MskPosFilt")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "TimeFilt")
+	}
+	v &^= 0x4
+	if v&0x8 != 0 {
+		b = append(b, "DateFilt")
+	}
+	v &^= 0x8
+	if v&0x10 != 0 {
+		b = append(b, "GpsOnlyFilter")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "TrackFilt")
+	}
+	v &^= 0x20
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+func (v CfgNmea1Flags) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "Compat")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "Consider")
+	}
+	v &^= 0x2
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+func (v CfgNmea1GnssToFilter) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "Gps")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "Sbas")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "Galileo")
+	}
+	v &^= 0x4
+	if v&0x10 != 0 {
+		b = append(b, "Qzss")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "Glonass")
+	}
+	v &^= 0x20
+	if v&0x40 != 0 {
+		b = append(b, "Beidou")
+	}
+	v &^= 0x40
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+// CfgNmea2 (Get/set) Extended NMEA protocol configuration V1
+// Class/Id 0x06 0x17 (20 bytes)
+// Get/set the NMEA protocol configuration. See section NMEA Protocol Configuration for a detailed description of the configuration effects on NMEA output.
+type CfgNmea2 struct {
+	Filter       CfgNmea2Filter       // filter flags
+	NmeaVersion  byte                 // 0x4b: NMEA version 4.11 (not available in all products) 0x41: NMEA version 4.10 (not available in all products) 0x40: NMEA version 4.0 (not available in all products) 0x23: NMEA version 2.3 0x21: NMEA version 2.1
+	NumSV        byte                 // Maximum number of SVs to report per TalkerId. 0: unlimited 8: 8 SVs 12: 12 SVs 16: 16 SVs
+	Flags        CfgNmea2Flags        // flags
+	GnssToFilter CfgNmea2GnssToFilter // Filters out satellites based on their GNSS. If a bitfield is enabled, the corresponding satellites will be not output.
+	SvNumbering  byte                 // Configures the display of satellites that do not have an NMEA-defined value. Note: this does not apply to satellites with an unknown ID. 0: Strict - Satellites are not output 1: Extended - Use proprietary numbering (see Satellite Numbering)
+	MainTalkerId byte                 // By default the main Talker ID (i.e. the Talker ID used for all messages other than GSV) is determined by the GNSS assignment of the receiver's channels (see UBX-CFG-GNSS). This field enables the main Talker ID to be overridden. 0: Main Talker ID is not overridden 1: Set main Talker ID to 'GP' 2: Set main Talker ID to 'GL' 3: Set main Talker ID to 'GN' 4: Set main Talker ID to 'GA' 5: Set main Talker ID to 'GB' 6: Set main Talker ID to 'GQ' (available in NMEA 4.11 or later)
+	GsvTalkerId  byte                 // By default the Talker ID for GSV messages is GNSS-specific (as defined by NMEA). This field enables the GSV Talker ID to be overridden. 0: Use GNSS-specific Talker ID (as defined by NMEA) 1: Use the main Talker ID
+	Version      byte                 // Message version (0x01 for this version)
+	BdsTalkerId  [2]byte              // Sets the two characters that should be used for the BeiDou Talker ID. If these are set to zero, then the default BeiDou Talker ID will be used.
+	Reserved1    [6]byte              // Reserved
+}
+
+func (CfgNmea2) classID() uint16 { return 0x1706 }
+
+type CfgNmea2Filter byte
+
+const (
+	CfgNmea2PosFilt       CfgNmea2Filter = 0x1  // Enable position output for failed or invalid fixes
+	CfgNmea2MskPosFilt    CfgNmea2Filter = 0x2  // Enable position output for invalid fixes
+	CfgNmea2TimeFilt      CfgNmea2Filter = 0x4  // Enable time output for invalid times
+	CfgNmea2DateFilt      CfgNmea2Filter = 0x8  // Enable date output for invalid dates
+	CfgNmea2GpsOnlyFilter CfgNmea2Filter = 0x10 // Restrict output to GPS satellites only
+	CfgNmea2TrackFilt     CfgNmea2Filter = 0x20 // Enable COG output even if COG is frozen
+)
+
+type CfgNmea2Flags byte
+
+const (
+	CfgNmea2Compat   CfgNmea2Flags = 0x1 // enable compatibility mode. This might be needed for certain applications when customer's NMEA parser expects a fixed number of digits in position coordinates.
+	CfgNmea2Consider CfgNmea2Flags = 0x2 // enable considering mode.
+	CfgNmea2Limit82  CfgNmea2Flags = 0x4 // enable strict limit to 82 characters maximum.
+	CfgNmea2HighPrec CfgNmea2Flags = 0x8 // enable high precision mode. This flag cannot be set in conjunction with either compatibility mode or Limit82 mode (not supported in protocol versions less than 20.01).
+)
+
+type CfgNmea2GnssToFilter uint32
+
+const (
+	CfgNmea2Gps     CfgNmea2GnssToFilter = 0x1  // Disable reporting of GPS satellites
+	CfgNmea2Sbas    CfgNmea2GnssToFilter = 0x2  // Disable reporting of SBAS satellites
+	CfgNmea2Galileo CfgNmea2GnssToFilter = 0x4  // Disable reporting of Galileo satellites
+	CfgNmea2Qzss    CfgNmea2GnssToFilter = 0x10 // Disable reporting of QZSS satellites
+	CfgNmea2Glonass CfgNmea2GnssToFilter = 0x20 // Disable reporting of GLONASS satellites
+	CfgNmea2Beidou  CfgNmea2GnssToFilter = 0x40 // Disable reporting of BeiDou satellites
+)
+
+func (v CfgNmea2Filter) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "PosFilt")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "MskPosFilt")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "TimeFilt")
+	}
+	v &^= 0x4
+	if v&0x8 != 0 {
+		b = append(b, "DateFilt")
+	}
+	v &^= 0x8
+	if v&0x10 != 0 {
+		b = append(b, "GpsOnlyFilter")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "TrackFilt")
+	}
+	v &^= 0x20
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+func (v CfgNmea2Flags) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "Compat")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "Consider")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "Limit82")
+	}
+	v &^= 0x4
+	if v&0x8 != 0 {
+		b = append(b, "HighPrec")
+	}
+	v &^= 0x8
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+func (v CfgNmea2GnssToFilter) String() string {
+	var b []string
+	if v&0x1 != 0 {
+		b = append(b, "Gps")
+	}
+	v &^= 0x1
+	if v&0x2 != 0 {
+		b = append(b, "Sbas")
+	}
+	v &^= 0x2
+	if v&0x4 != 0 {
+		b = append(b, "Galileo")
+	}
+	v &^= 0x4
+	if v&0x10 != 0 {
+		b = append(b, "Qzss")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "Glonass")
+	}
+	v &^= 0x20
+	if v&0x40 != 0 {
+		b = append(b, "Beidou")
+	}
+	v &^= 0x40
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
 // Message ubx-cfg-odo
 
 // CfgOdo (Get/set) Odometer, low-speed COG engine settings
@@ -6322,7 +6666,7 @@ type NavPvt struct {
 	HeadAcc_dege5 uint32       // [1e-5 deg] Heading accuracy estimate (both motion and vehicle)
 	PDOP          uint16       // Position DOP
 	Flags3        NavPvtFlags3 // Additional flags
-	Reserved1     [5]byte      // Reserved
+	Reserved1     [4]byte      // Reserved
 	HeadVeh_dege5 int32        // [1e-5 deg] Heading of vehicle (2-D), this is only valid when headVehValid is set, otherwise the output is set to the heading of motion
 	MagDec_dege2  int16        // [1e-2 deg] Magnetic declination. Only supported in ADR 4.10 and later.
 	MagAcc_dege2  uint16       // [1e-2 deg] Magnetic declination accuracy. Only supported in ADR 4.10 and later.
@@ -6344,6 +6688,7 @@ type NavPvtFlags byte
 const (
 	NavPvtGnssFixOK    NavPvtFlags = 0x1  // 1 = valid fix (i.e within DOP & accuracy masks)
 	NavPvtDiffSoln     NavPvtFlags = 0x2  // 1 = differential corrections were applied
+	NavPvtPsmState     NavPvtFlags = 0x1c // Power save mode state (see Power management section in the integration manual for details. • 0 = PSM is not active • 1 = Enabled (an intermediate state before Acquisition state • 2 = Acquisition • 3 = Tracking • 4 = Power Optimized Tracking • 5 = Inactive
 	NavPvtHeadVehValid NavPvtFlags = 0x20 // 1 = heading of vehicle is valid, only set if the receiver is in sensor fusion mode
 	NavPvtCarrSoln     NavPvtFlags = 0xc0 // Carrier phase range solution status: 0: no carrier phase range solution 1: carrier phase range solution with floating ambiguities 2: carrier phase range solution with fixed ambiguities (not supported in protocol versions less than 20)
 )
@@ -6356,10 +6701,13 @@ const (
 	NavPvtConfirmedTime NavPvtFlags2 = 0x80 // 1 = UTC Time of Day could be confirmed (see Time Validity section for details)
 )
 
-type NavPvtFlags3 byte
+type NavPvtFlags3 uint16
 
 const (
-	NavPvtInvalidLlh NavPvtFlags3 = 0x1 // 1 = Invalid lon, lat, height and hMSL
+	NavPvtInvalidLlh        NavPvtFlags3 = 0x1    // 1 = Invalid lon, lat, height and hMSL
+	NavPvtLastCorrectionAge NavPvtFlags3 = 0x1e   // Age of the most recently received differential correction: • 0 = Not available • 1 = Age between 0 and 1 second • 2 = Age between 1 (inclusive) and 2 seconds • 3 = Age between 2 (inclusive) and 5 seconds • 4 = Age between 5 (inclusive) and 10 seconds • 5 = Age between 10 (inclusive) and 15 seconds • 6 = Age between 15 (inclusive) and 20 seconds • 7 = Age between 20 (inclusive) and 30 seconds • 8 = Age between 30 (inclusive) and 45 seconds • 9 = Age between 45 (inclusive) and 60 seconds • 10 = Age between 60 (inclusive) and 90 seconds • 11 = Age between 90 (inclusive) and 120 seconds • >=12 = Age greater or equal than 120 seconds
+	NavPvtAuthTime          NavPvtFlags3 = 0x2000 // Flag that indicates if the output time has been validated against an external trusted time source • 0 = Time is not authenticated • 1 = Time is authenticated
+	NavPvtNmaFixStatus      NavPvtFlags3 = 0x4000 // Flag assigned to a fix that has been computed mixing satellites with data authenticated through Navigation Message Authentication (NMA) methods and satellites using unauthenticated data. The fix is flagged as Verified when internal cross-checks validates the unauthenticated signals against the authenticated ones. Note that Not Verified status u-blox F10 SPG 6.00 - Interface description does not imply directly spoofing attacks, to identify spoofing alerts refer to UBX-SEC-SIG. • 0 = Not Verified: The mixed solution does not agree with the NMA authenticated data or the comparison could not be performed, e.g., not enough authenticated SVs to extrapolate the result or cryptographic data not decoded yet • 1 = Verified: The mixed solution agrees with the NMA authenticated data Currently, the only existing NMA method is Galileo Open Service Navigation Message Authentication (OSNMA) protocol.
 )
 
 func (v NavPvtValid) String() string {
@@ -6396,6 +6744,10 @@ func (v NavPvtFlags) String() string {
 		b = append(b, "DiffSoln")
 	}
 	v &^= 0x2
+	if v&0x1c != 0 {
+		b = append(b, fmt.Sprintf("PsmState<%b>", (v&0x1c)>>2))
+	}
+	v &^= 0x1c
 	if v&0x20 != 0 {
 		b = append(b, "HeadVehValid")
 	}
@@ -6436,6 +6788,18 @@ func (v NavPvtFlags3) String() string {
 		b = append(b, "InvalidLlh")
 	}
 	v &^= 0x1
+	if v&0x1e != 0 {
+		b = append(b, fmt.Sprintf("LastCorrectionAge<%b>", (v&0x1e)>>1))
+	}
+	v &^= 0x1e
+	if v&0x2000 != 0 {
+		b = append(b, "AuthTime")
+	}
+	v &^= 0x2000
+	if v&0x4000 != 0 {
+		b = append(b, "NmaFixStatus")
+	}
+	v &^= 0x4000
 	if v != 0 {
 		b = append(b, fmt.Sprintf("%x", uint(v)))
 	}
@@ -6553,22 +6917,24 @@ type NavSatSvsType struct {
 type NavSatFlags uint32
 
 const (
-	NavSatQualityInd   NavSatFlags = 0x7      // Signal quality indicator: 0: no signal 1: searching signal 2: signal acquired 3: signal detected but unusable 4: code locked and time synchronized 5, 6, 7: code and carrier locked and time synchronized Note: Since IMES signals are not time synchronized, a channel tracking an IMES signal can never reach a quality indicator value of higher than 3.
-	NavSatSvUsed       NavSatFlags = 0x8      // 1 = Signal in the subset specified in Signal Identifiers is currently being used for navigation
-	NavSatHealth       NavSatFlags = 0x30     // Signal health flag: 0: unknown 1: healthy 2: unhealthy
-	NavSatDiffCorr     NavSatFlags = 0x40     // 1 = differential correction data is available for this SV
-	NavSatSmoothed     NavSatFlags = 0x80     // 1 = carrier smoothed pseudorange used
-	NavSatOrbitSource  NavSatFlags = 0x700    // Orbit source: 0: no orbit information is available for this SV 1: ephemeris is used 2: almanac is used 3: AssistNow Offline orbit is used 4: AssistNow Autonomous orbit is used 5, 6, 7: other orbit information is used
-	NavSatEphAvail     NavSatFlags = 0x800    // 1 = ephemeris is available for this SV
-	NavSatAlmAvail     NavSatFlags = 0x1000   // 1 = almanac is available for this SV
-	NavSatAnoAvail     NavSatFlags = 0x2000   // 1 = AssistNow Offline data is available for this SV
-	NavSatAopAvail     NavSatFlags = 0x4000   // 1 = AssistNow Autonomous data is available for this SV
-	NavSatSbasCorrUsed NavSatFlags = 0x10000  // 1 = SBAS corrections have been used for a signal in the subset specified in Signal Identifiers
-	NavSatRtcmCorrUsed NavSatFlags = 0x20000  // 1 = RTCM corrections have been used for a signal in the subset specified in Signal Identifiers
-	NavSatSlasCorrUsed NavSatFlags = 0x40000  // 1 = QZSS SLAS corrections have been used for a signal in the subset specified in Signal Identifiers
-	NavSatPrCorrUsed   NavSatFlags = 0x100000 // 1 = Pseudorange corrections have been used for a signal in the subset specified in Signal Identifiers
-	NavSatCrCorrUsed   NavSatFlags = 0x200000 // 1 = Carrier range corrections have been used for a signal in the subset specified in Signal Identifiers
-	NavSatDoCorrUsed   NavSatFlags = 0x400000 // 1 = Range rate (Doppler) corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatQualityInd     NavSatFlags = 0x7      // Signal quality indicator: 0: no signal 1: searching signal 2: signal acquired 3: signal detected but unusable 4: code locked and time synchronized 5, 6, 7: code and carrier locked and time synchronized Note: Since IMES signals are not time synchronized, a channel tracking an IMES signal can never reach a quality indicator value of higher than 3.
+	NavSatSvUsed         NavSatFlags = 0x8      // 1 = Signal in the subset specified in Signal Identifiers is currently being used for navigation
+	NavSatHealth         NavSatFlags = 0x30     // Signal health flag: 0: unknown 1: healthy 2: unhealthy
+	NavSatDiffCorr       NavSatFlags = 0x40     // 1 = differential correction data is available for this SV
+	NavSatSmoothed       NavSatFlags = 0x80     // 1 = carrier smoothed pseudorange used
+	NavSatOrbitSource    NavSatFlags = 0x700    // Orbit source: 0: no orbit information is available for this SV 1: ephemeris is used 2: almanac is used 3: AssistNow Offline orbit is used 4: AssistNow Autonomous orbit is used 5, 6, 7: other orbit information is used
+	NavSatEphAvail       NavSatFlags = 0x800    // 1 = ephemeris is available for this SV
+	NavSatAlmAvail       NavSatFlags = 0x1000   // 1 = almanac is available for this SV
+	NavSatAnoAvail       NavSatFlags = 0x2000   // 1 = AssistNow Offline data is available for this SV
+	NavSatAopAvail       NavSatFlags = 0x4000   // 1 = AssistNow Autonomous data is available for this SV
+	NavSatSbasCorrUsed   NavSatFlags = 0x10000  // 1 = SBAS corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatRtcmCorrUsed   NavSatFlags = 0x20000  // 1 = RTCM corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatSlasCorrUsed   NavSatFlags = 0x40000  // 1 = QZSS SLAS corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatSpartnCorrUsed NavSatFlags = 0x80000  // 1 = SPARTN corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatPrCorrUsed     NavSatFlags = 0x100000 // 1 = Pseudorange corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatCrCorrUsed     NavSatFlags = 0x200000 // 1 = Carrier range corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatDoCorrUsed     NavSatFlags = 0x400000 // 1 = Range rate (Doppler) corrections have been used for a signal in the subset specified in Signal Identifiers
+	NavSatClasCorrUsed   NavSatFlags = 0x800000 // 1 = CLAS corrections have been used for a signal in the subset specified in Signal Identifiers
 )
 
 func (v NavSatFlags) String() string {
@@ -6625,6 +6991,10 @@ func (v NavSatFlags) String() string {
 		b = append(b, "SlasCorrUsed")
 	}
 	v &^= 0x40000
+	if v&0x80000 != 0 {
+		b = append(b, "SpartnCorrUsed")
+	}
+	v &^= 0x80000
 	if v&0x100000 != 0 {
 		b = append(b, "PrCorrUsed")
 	}
@@ -6637,6 +7007,10 @@ func (v NavSatFlags) String() string {
 		b = append(b, "DoCorrUsed")
 	}
 	v &^= 0x400000
+	if v&0x800000 != 0 {
+		b = append(b, "ClasCorrUsed")
+	}
+	v &^= 0x800000
 	if v != 0 {
 		b = append(b, fmt.Sprintf("%x", uint(v)))
 	}
@@ -6705,6 +7079,93 @@ func (v NavSbasService) String() string {
 		b = append(b, "Bad")
 	}
 	v &^= 0x10
+	if v != 0 {
+		b = append(b, fmt.Sprintf("%x", uint(v)))
+	}
+	return strings.Join(b, ",")
+}
+
+// Message ubx-nav-sig
+
+// NavSig (Periodic/Polled) Signal information
+// Class/Id 0x01 0x43 (8 or 12 + N*12 bytes)
+// This message displays information about signals currently tracked or searched by the receiver.
+type NavSig struct {
+	ITOW_ms   uint32            // [ms] GPS time of week of the navigation epoch. See the description of iTOW for details.
+	Version   byte              // Message version (0x00 for this version)
+	NumSigs   byte              `len:"Sigs"` // Number of signals
+	Reserved0 [2]byte           // Reserved
+	Sigs      []*NavSigSigsType // len: NumSigs
+	Reserved1 [4]byte           // Reserved
+}
+
+func (NavSig) classID() uint16 { return 0x4301 }
+
+type NavSigSigsType struct {
+	GnssId     byte           // GNSS identifier (see Satellite Numbering) for assignment
+	SvId       byte           // Satellite identifier (see Satellite Numbering) for assignment
+	SigId      byte           // New style signal identifier (see Signal Identifiers)
+	FreqId     byte           // Only used for GLONASS: This is the frequency slot + 7 (range from 0 to 13)
+	PrRes_me1  int16          // [1e-1 m] Pseudorange residual
+	Cno_dbhz   byte           // [dbHz] Carrier-to-noise density ratio (signal strength)
+	QualityInd byte           // Signal quality indicator: • 0 = no signal • 1 = searching signal • 2 = signal acquired • 3 = signal detected but unusable • 4 = code locked and time synchronized • 5, 6, 7 = code and carrier locked and time synchronized
+	CorrSource byte           // Correction source: • 0 = no corrections • 1 = SBAS corrections • 2 = BeiDou corrections • 3 = RTCM2 corrections • 4 = RTCM3 OSR corrections • 5 = RTCM3 SSR corrections • 6 = QZSS SLAS corrections • 7 = SPARTN corrections • 8 = CLAS corrections
+	IonoModel  byte           // Ionospheric model used: • 0 = no model • 1 = Klobuchar model transmitted by GPS • 2 = SBAS model • 3 = Klobuchar model transmitted by BeiDou • 8 = Iono delay derived from dual frequency observations
+	SigFlags   NavSigSigFlags // Signal related flags
+}
+
+type NavSigSigFlags uint16
+
+const (
+	NavSigHealth     NavSigSigFlags = 0x3   // Signal health flag: • 0 = unknown • 1 = healthy • 2 = unhealthy
+	NavSigPrSmoothed NavSigSigFlags = 0x4   // 1 = Pseudorange has been smoothed
+	NavSigPrUsed     NavSigSigFlags = 0x8   // 1 = Pseudorange has been used for this signal
+	NavSigCrUsed     NavSigSigFlags = 0x10  // 1 = Carrier range has been used for this signal
+	NavSigDoUsed     NavSigSigFlags = 0x20  // 1 = Range rate (Doppler) has been used for this signal
+	NavSigPrCorrUsed NavSigSigFlags = 0x40  // 1 = Pseudorange corrections have been used for this signal
+	NavSigCrCorrUsed NavSigSigFlags = 0x80  // 1 = Carrier range corrections have been used for this signal
+	NavSigDoCorrUsed NavSigSigFlags = 0x100 // 1 = Range rate (Doppler) corrections have been used for this signal
+	NavSigAuthStatus NavSigSigFlags = 0x200 // Authentication status of the navigation data used to compute the satellite's position in current navigation epoch. If the authentication fails, the navigation data is not used so the authentication status in this message can take only two values: • 0 = Unknown • 1 = Authenticated Note that currently the only data authentication function is provided by Galileo Open Service Navigation Message Authentication (OSNMA) protocol for E1 I/NAV message.
+)
+
+func (v NavSigSigFlags) String() string {
+	var b []string
+	if v&0x3 != 0 {
+		b = append(b, fmt.Sprintf("Health<%b>", (v&0x3)>>0))
+	}
+	v &^= 0x3
+	if v&0x4 != 0 {
+		b = append(b, "PrSmoothed")
+	}
+	v &^= 0x4
+	if v&0x8 != 0 {
+		b = append(b, "PrUsed")
+	}
+	v &^= 0x8
+	if v&0x10 != 0 {
+		b = append(b, "CrUsed")
+	}
+	v &^= 0x10
+	if v&0x20 != 0 {
+		b = append(b, "DoUsed")
+	}
+	v &^= 0x20
+	if v&0x40 != 0 {
+		b = append(b, "PrCorrUsed")
+	}
+	v &^= 0x40
+	if v&0x80 != 0 {
+		b = append(b, "CrCorrUsed")
+	}
+	v &^= 0x80
+	if v&0x100 != 0 {
+		b = append(b, "DoCorrUsed")
+	}
+	v &^= 0x100
+	if v&0x200 != 0 {
+		b = append(b, "AuthStatus")
+	}
+	v &^= 0x200
 	if v != 0 {
 		b = append(b, fmt.Sprintf("%x", uint(v)))
 	}
@@ -7552,39 +8013,39 @@ func (v RxmImesMediumId_2) String() string {
 // Class/Id 0x02 0x14 (44 + N*24 bytes)
 // The message payload data is, where possible and appropriate, according to the Radio Resource LCS (Location Services) Protocol (RRLP) [1]. One exception is the satellite and GNSS IDs, which here are given according to the Satellite Numbering scheme. The correct satellites have to be selected and their satellite ID translated accordingly [1, tab. A.10.14] for use in a RRLP Measure Position Response Component. Similarly, the measurement reference time of week has to be forwarded correctly (modulo 14400000 for the 24 LSB GPS measurements variant, modulo 3600000 for the 22 LSB Galileo and Additional Navigation Satelllite Systems (GANSS) measurements variant) of the RRLP measure position response to the SMLC. Reference: [1] ETSI TS 144 031 V11.0.0 (2012-10), Digital cellular telecommunications system (Phase 2+), Location Services (LCS), Mobile Station (MS) - Serving Mobile Location Centre (SMLC), Radio Resource LCS Protocol (RRLP), (3GPP TS 44.031 version 11.0.0 Release 11).
 type RxmMeasx struct {
-	Version         byte              `json:"version"`
-	Reserved1       [3]byte           `json:"reserved_1"`
-	GpsTOW_ms       uint32            `json:"gps_tow_ms"`
-	GloTOW_ms       uint32            `json:"glo_tow_ms"`
-	BdsTOW_ms       uint32            `json:"bds_tow_ms"`
-	Reserved2       [4]byte           `json:"reserved_2"`
-	QzssTOW_ms      uint32            `json:"qzss_tow_ms"`
-	GpsTOWacc_msl4  uint16            `json:"gps_to_wacc_msl4"`
-	GloTOWacc_msl4  uint16            `json:"glo_to_wacc_msl4"`
-	BdsTOWacc_msl4  uint16            `json:"bds_to_wacc_msl4"`
-	Reserved3       [2]byte           `json:"reserved_3"`
-	QzssTOWacc_msl4 uint16            `json:"qzss_to_wacc_msl4"`
-	NumSV           byte              `len:"SV" json:"num_sv"` // Number of satellites in repeated block
-	Flags           RxmMeasxFlags     `json:"flags"`
-	Reserved4       [8]byte           `json:"reserved_4"`
-	SV              []*RxmMeasxSVType `json:"sv_list"`
+	Version         byte              // Message version, currently 0x01
+	Reserved1       [3]byte           // Reserved
+	GpsTOW_ms       uint32            // [ms] GPS measurement reference time
+	GloTOW_ms       uint32            // [ms] GLONASS measurement reference time
+	BdsTOW_ms       uint32            // [ms] BeiDou measurement reference time
+	Reserved2       [4]byte           // Reserved
+	QzssTOW_ms      uint32            // [ms] QZSS measurement reference time
+	GpsTOWacc_msl4  uint16            // [2^-4 ms] GPS measurement reference time accuracy (0xffff = > 4s)
+	GloTOWacc_msl4  uint16            // [2^-4 ms] GLONASS measurement reference time accuracy (0xffff = > 4s)
+	BdsTOWacc_msl4  uint16            // [2^-4 ms] BeiDou measurement reference time accuracy (0xffff = > 4s)
+	Reserved3       [2]byte           // Reserved
+	QzssTOWacc_msl4 uint16            // [2^-4 ms] QZSS measurement reference time accuracy (0xffff = > 4s)
+	NumSV           byte              `len:"SV"` // Number of satellites in repeated block
+	Flags           RxmMeasxFlags     // Flags
+	Reserved4       [8]byte           // Reserved
+	SV              []*RxmMeasxSVType // len: NumSV
 }
 
 func (RxmMeasx) classID() uint16 { return 0x1402 }
 
 type RxmMeasxSVType struct {
-	GnssId          byte    `json:"gnss_id"`
-	SvId            byte    `json:"sv_id"`
-	CNo             byte    `json:"c_no"`
-	MpathIndic      byte    `json:"mpath_indic"`
-	DopplerMS_m_s   int32   `json:"doppler_ms_m_s"`
-	DopplerHz_hz    int32   `json:"doppler_hz_hz"`
-	WholeChips      uint16  `json:"whole_chips"`
-	FracChips       uint16  `json:"frac_chips"`
-	CodePhase_msl21 uint32  `json:"code_phase_msl_21"`
-	IntCodePhase_ms byte    `json:"int_code_phase_ms"`
-	PseuRangeRMSErr byte    `json:"pseu_range_rms_err"`
-	Reserved5       [2]byte `json:"reserved_5"`
+	GnssId          byte    // GNSS ID (see Satellite Numbering)
+	SvId            byte    // Satellite ID (see Satellite Numbering)
+	CNo             byte    // carrier noise ratio (0..63)
+	MpathIndic      byte    // multipath index (according to [1]) (0 = not measured, 1 = low, 2 = medium, 3 = high)
+	DopplerMS_m_s   int32   // [0.04 m/s] Doppler measurement
+	DopplerHz_hz    int32   // [0.2 Hz] Doppler measurement
+	WholeChips      uint16  // whole value of the code phase measurement (0..1022 for GPS)
+	FracChips       uint16  // fractional value of the code phase measurement (0..1023)
+	CodePhase_msl21 uint32  // [2^-21 ms] Code phase
+	IntCodePhase_ms byte    // [ms] Integer (part of the) code phase
+	PseuRangeRMSErr byte    // pseudorange RMS error index (according to [1]) (0..63)
+	Reserved5       [2]byte // Reserved
 }
 
 type RxmMeasxFlags byte
@@ -8718,6 +9179,17 @@ func mkMsg(classId, sz uint16, frame []byte) Message {
 			return new(CfgNavx51) // 44 44 [0]
 		}
 
+	case 0x1706:
+
+		switch sz {
+		case 4:
+			return new(CfgNmea) // 4 4 [0]
+		case 12:
+			return new(CfgNmea1) // 12 12 [0]
+		case 20:
+			return new(CfgNmea2) // 20 20 [0]
+		}
+
 	case 0x1e06:
 		return new(CfgOdo)
 
@@ -9075,6 +9547,9 @@ func mkMsg(classId, sz uint16, frame []byte) Message {
 
 	case 0x3201:
 		return new(NavSbas)
+
+	case 0x4301:
+		return new(NavSig)
 
 	case 0x4201:
 		return new(NavSlas)

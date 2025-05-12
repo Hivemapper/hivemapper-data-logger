@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package=".;sensordata";
 
 // NOTE: If you make changes to this file, you need to regenerate
-// the go code by running the following command: 
+// the go code by running the following command:
 //   protoc --go_out=./proto-out --go-grpc_out=require_unimplemented_servers=false:./proto-out --proto_path=./proto/hm -I=./proto/hm ./proto/hm/sensordata.proto
 
 message ImuData {
@@ -164,6 +164,27 @@ message NavSat {
     uint32 version = 3;
     uint32 num_svs = 4;
     repeated Svs svs = 5;
+}
+
+message NavSig {
+    message Sigs {
+        uint32 gnss_id = 1;
+        uint32 sv_id = 2;
+        uint32 sig_id = 3;
+        uint32 freq_id = 4;
+        int32 pr_res_me1 = 5;
+        uint32 cno_dbhz = 6;
+        uint32 quality_ind = 7;
+        uint32 corr_source = 8;
+        uint32 iono_model = 9;
+        uint32 sig_flags = 10;
+    }
+
+    string system_time = 1;
+    uint32 itow_ms = 2;
+    uint32 version = 3;
+    uint32 num_sigs = 4;
+    repeated Sigs sigs = 5;
 }
 
 message NavPvt {
