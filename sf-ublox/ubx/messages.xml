@@ -19971,14 +19971,14 @@ protocol for E1 I/NAV message.</Description>
               </Type>
             </Bitfield>
           </Block>
-        </Block>
-        <Block>
-          <Offset>20 + 16*N</Offset>
-          <Name>reserved1</Name>
-          <Type>U1[4]</Type>
-          <Comment>Reserved</Comment>
-          <Scale>-</Scale>
-          <Unit>-</Unit>
+          <Block>
+            <Offset>20 + 16*N</Offset>
+            <Name>reserved1</Name>
+            <Type>U1[4]</Type>
+            <Comment>Reserved</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
         </Block>
       </Payload>
       <Checksum>CK_A CK_B</Checksum>

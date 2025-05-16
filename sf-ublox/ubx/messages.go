@@ -7088,7 +7088,7 @@ func (v NavSbasService) String() string {
 // Message ubx-nav-sig
 
 // NavSig (Periodic/Polled) Signal information
-// Class/Id 0x01 0x43 (8 or 12 + N*12 bytes)
+// Class/Id 0x01 0x43 (8 + N*16 bytes)
 // This message displays information about signals currently tracked or searched by the receiver.
 type NavSig struct {
 	ITOW_ms   uint32            // [ms] GPS time of week of the navigation epoch. See the description of iTOW for details.
@@ -7096,7 +7096,6 @@ type NavSig struct {
 	NumSigs   byte              `len:"Sigs"` // Number of signals
 	Reserved0 [2]byte           // Reserved
 	Sigs      []*NavSigSigsType // len: NumSigs
-	Reserved1 [4]byte           // Reserved
 }
 
 func (NavSig) classID() uint16 { return 0x4301 }
@@ -7112,6 +7111,7 @@ type NavSigSigsType struct {
 	CorrSource byte           // Correction source: • 0 = no corrections • 1 = SBAS corrections • 2 = BeiDou corrections • 3 = RTCM2 corrections • 4 = RTCM3 OSR corrections • 5 = RTCM3 SSR corrections • 6 = QZSS SLAS corrections • 7 = SPARTN corrections • 8 = CLAS corrections
 	IonoModel  byte           // Ionospheric model used: • 0 = no model • 1 = Klobuchar model transmitted by GPS • 2 = SBAS model • 3 = Klobuchar model transmitted by BeiDou • 8 = Iono delay derived from dual frequency observations
 	SigFlags   NavSigSigFlags // Signal related flags
+	Reserved1  [4]byte        // Reserved
 }
 
 type NavSigSigFlags uint16
