@@ -13,6 +13,7 @@ type UBXMessageType reflect.Type
 var UbxMsgNavPvt = reflect.TypeOf(&ubx.NavPvt{})
 var UbxMsgNavDop = reflect.TypeOf(&ubx.NavDop{})
 var UbxMsgNavSat = reflect.TypeOf(&ubx.NavSat{})
+var UbxMsgNavSig = reflect.TypeOf(&ubx.NavSig{})
 var UbxMsgNavCov = reflect.TypeOf(&ubx.NavCov{})
 var UbxMsgNavPosecef = reflect.TypeOf(&ubx.NavPosecef{})
 var UbxMsgNavTimegps = reflect.TypeOf(&ubx.NavTimegps{})

@@ -420,6 +420,30 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			}
 		}
 		protodata, err = s.Marshal(&protomessage)
+	case *ubx.NavSig:
+		redisKey = "NavSig"
+		protomessage := sensordata.NavSig{
+			SystemTime: systemTime.String(),
+			ItowMs:     m.ITOW_ms,
+			Version:    uint32(m.Version),
+			NumSigs:    uint32(m.NumSigs),
+		}
+		protomessage.Sigs = make([]*sensordata.NavSig_Sigs, len(m.Sigs))
+		for i, sig := range m.Sigs {
+			protomessage.Sigs[i] = &sensordata.NavSig_Sigs{
+				GnssId:     uint32(sig.GnssId),
+				SvId:       uint32(sig.SvId),
+				SigId:      uint32(sig.SigId),
+				FreqId:     uint32(sig.FreqId),
+				PrResMe1:   int32(sig.PrRes_me1),
+				CnoDbhz:    uint32(sig.Cno_dbhz),
+				QualityInd: uint32(sig.QualityInd),
+				CorrSource: uint32(sig.CorrSource),
+				IonoModel:  uint32(sig.IonoModel),
+				SigFlags:   uint32(sig.SigFlags),
+			}
+		}
+		protodata, err = s.Marshal(&protomessage)
 	case *ubx.MonRf:
 		redisKey = "MonRf"
 		protomessage := sensordata.MonRf{
