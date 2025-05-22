@@ -114,9 +114,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910025, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_POSECEF_UART1")
 	n.setConfig(0x20910048, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1")
 	n.setConfig(0x2091003e, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_VELECEF_UART1")
-	n.setConfig(0x2091017e, []byte{0x00}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
+	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
-	n.setConfig(0x20910346, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
 	n.setConfig(0x20910016, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 
 	// non critical messages set to 1 Hz

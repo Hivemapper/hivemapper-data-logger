@@ -151,14 +151,14 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	return nil
 }
 
-func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
+func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature, fsync *iim42652.Fsync) error {
+	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate, fsync)
 	err := h.imuJsonLogger.Log(time.Now(), imuDataWrapper)
 	if err != nil {
 		return fmt.Errorf("logging raw imu data to json: %w", err)
 	}
 
-	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now(), temperature, acceleration, angularRate)
+	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now(), temperature, acceleration, angularRate, fsync)
 	if h.redisLogsEnabled {
 		err = h.redisLogger.LogImuData(*imuDataWrapper2)
 		if err != nil {

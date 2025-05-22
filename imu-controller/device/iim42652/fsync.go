@@ -5,21 +5,21 @@ import (
 )
 
 type Fsync struct {
-	timedelta int16
-	Fsync_int bool
+	TimeDelta int16
+	FsyncInt  bool
 }
 
-func NewFsync(timedelta int16, fsync_int bool) *Fsync {
+func NewFsync(time_delta int16, fsync_int bool) *Fsync {
 	fsync := &Fsync{
-		timedelta: timedelta,
-		Fsync_int: fsync_int,
+		TimeDelta: time_delta,
+		FsyncInt:  fsync_int,
 	}
 
 	return fsync
 }
 
 func (f *Fsync) String() string {
-	return fmt.Sprintf("Fsync{FSYNC interrupt: %t, timedelta: %d}", f.Fsync_int, f.timedelta)
+	return fmt.Sprintf("Fsync{FSYNC interrupt: %t, time_delta: %d}", f.FsyncInt, f.TimeDelta)
 }
 
 func (i *IIM42652) GetFsync() (*Fsync, error) {
@@ -39,11 +39,11 @@ func (i *IIM42652) GetFsync() (*Fsync, error) {
 		return nil, fmt.Errorf("reading to SPI port: %w", err)
 	}
 
-	timedelta := int16(result[1])<<8 | int16(result[2])
+	time_delta := int16(result[1])<<8 | int16(result[2])
 	// read only bit 7 which is the UI_FSYNC_INT
 	var mask byte = 1 << 6
 	var fsync_int bool = (result[3] & mask) != 0
 
-	fsync := NewFsync(timedelta, fsync_int)
+	fsync := NewFsync(time_delta, fsync_int)
 	return fsync, nil
 }

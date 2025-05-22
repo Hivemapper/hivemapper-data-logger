@@ -74,19 +74,33 @@ func NewGyro(x, y, z float64) *Gyro {
 	}
 }
 
+type Fsync struct {
+	TimeDelta int16 `json:"time_delta"`
+	FsyncInt  bool  `json:"fsync_int"`
+}
+
+func NewFsync(time_delta int16, fsyncInt bool) *Fsync {
+	return &Fsync{
+		TimeDelta: time_delta,
+		FsyncInt:  fsyncInt,
+	}
+}
+
 type ImuDataWrapper struct {
 	Accel *Accel    `json:"accel"`
 	Gyro  *Gyro     `json:"gyro"`
 	Temp  float64   `json:"temp"`
 	Time  time.Time `json:"time"`
+	Fsync *Fsync    `json:"fsync"`
 }
 
-func NewImuDataWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) *ImuDataWrapper {
+func NewImuDataWrapper(temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, fsync *iim42652.Fsync) *ImuDataWrapper {
 	return &ImuDataWrapper{
 		Accel: NewAccel(acceleration.X, acceleration.Y, acceleration.Z),
 		Gyro:  NewGyro(angularRate.X, angularRate.Y, angularRate.Z),
 		Time:  acceleration.Time,
 		Temp:  *temperature,
+		Fsync: NewFsync(fsync.TimeDelta, fsync.FsyncInt),
 	}
 }
 

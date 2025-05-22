@@ -20,7 +20,7 @@ func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 	}
 }
 
-type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error
+type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature, fsync *iim42652.Fsync) error
 
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
@@ -31,7 +31,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			return fmt.Errorf("[ERROR] error getting fsync: %w", err)
 		}
 		// return early if fsync_int variable in is false
-		if !fsync.Fsync_int {
+		if !fsync.FsyncInt {
 			f.fysnc_error_counter++
 			if f.fysnc_error_counter > 60000 {
 				fmt.Println("[ERROR] 60,000 repeated fsync errors. Fsync is not being set.")
@@ -62,6 +62,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now()),
 				angularRate,
 				temperature,
+				fsync,
 			)
 			if err != nil {
 				return fmt.Errorf("calling handler: %w", err)

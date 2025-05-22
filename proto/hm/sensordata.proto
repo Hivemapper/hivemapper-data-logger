@@ -16,12 +16,17 @@ message ImuData {
         double y = 2;
         double z = 3;
     }
+    message FsyncData {
+        bool fsync_int = 1;
+        int32 time_delta = 2;
+    }
 
     string system_time = 1;
     AccelerometerData accelerometer = 2;
     GyroscopeData gyroscope = 3;
     double temperature = 4;
     string time = 5; // is this needed?
+    FsyncData fsync = 6;
 }
 
 message MagnetometerData {

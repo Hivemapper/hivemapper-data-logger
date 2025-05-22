@@ -28,15 +28,17 @@ type ImuRedisWrapper struct {
 	Gyro        *Gyro     `json:"gyro"`
 	Temp        float64   `json:"temp"`
 	Time        time.Time `json:"time"`
+	Fsync       *Fsync    `json:"fsync"`
 }
 
-func NewImuRedisWrapper(system_time time.Time, temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) *ImuRedisWrapper {
+func NewImuRedisWrapper(system_time time.Time, temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, fsync *iim42652.Fsync) *ImuRedisWrapper {
 	return &ImuRedisWrapper{
 		System_time: system_time,
 		Accel:       NewAccel(acceleration.X, acceleration.Y, acceleration.Z),
 		Gyro:        NewGyro(angularRate.X, angularRate.Y, angularRate.Z),
 		Time:        acceleration.Time,
 		Temp:        *temperature,
+		Fsync:       NewFsync(fsync.TimeDelta, fsync.FsyncInt),
 	}
 }
 
@@ -104,6 +106,10 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 		},
 		Temperature: imudata.Temp,
 		Time:        imudata.Time.String(),
+		Fsync: &sensordata.ImuData_FsyncData{
+			FsyncInt:  imudata.Fsync.FsyncInt,
+			TimeDelta: int32(imudata.Fsync.TimeDelta),
+		},
 	}
 	// serialize the data
 	protodata, err := s.Marshal(&newdata)
