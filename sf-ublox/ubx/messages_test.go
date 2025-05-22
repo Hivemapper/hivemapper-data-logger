@@ -170,6 +170,7 @@ func TestNavRelposned(t *testing.T)        { testType(t, &NavRelposned{}) }
 func TestNavResetodo(t *testing.T)         { testType(t, &NavResetodo{}) }
 func TestNavSat(t *testing.T)              { testType(t, &NavSat{}) }
 func TestNavSbas(t *testing.T)             { testType(t, &NavSbas{}) }
+func TestNavSig(t *testing.T)              { testType(t, &NavSig{}) }
 func TestNavSlas(t *testing.T)             { testType(t, &NavSlas{}) }
 func TestNavSol(t *testing.T)              { testType(t, &NavSol{}) }
 func TestNavStatus(t *testing.T)           { testType(t, &NavStatus{}) }
