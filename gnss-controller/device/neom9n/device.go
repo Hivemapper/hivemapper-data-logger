@@ -124,11 +124,12 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910635, uint8(0), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
+	imu_frequency := 200
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
-	n.setConfig(0x40050002, uint32(5000), "CFG-TP-PERIOD_TP1")
-	n.setConfig(0x40050003, uint32(5000), "CFG-TP-PERIOD_LOCK_TP1")
-	n.setConfig(0x40050004, uint32(500), "CFG-TP-LEN_TP1")
-	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
+	n.setConfig(0x40050002, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_TP1")
+	n.setConfig(0x40050003, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_LOCK_TP1")
+	n.setConfig(0x40050004, uint32(100000/imu_frequency), "CFG-TP-LEN_TP1")
+	n.setConfig(0x40050005, uint32(100000/imu_frequency), "CFG-TP-LEN_LOCK_TP1")
 
 	// add raw measurements
 	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")

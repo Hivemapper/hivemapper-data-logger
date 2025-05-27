@@ -62,11 +62,10 @@ func (i *IIM42652) Init() error {
 	}
 	i.connection = c
 
-	if !i.skipPowerManagement {
-		err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
-		if err != nil {
-			return fmt.Errorf("setting up power: %w", err)
-		}
+	// power off sensors before making any changes
+	err = i.WriteRegister(RegisterPwrMgmt0, 0b00000000)
+	if err != nil {
+		return err
 	}
 
 	err = i.WriteRegister(RegisterDeviceConfig, 0x00)
@@ -74,12 +73,6 @@ func (i *IIM42652) Init() error {
 		return fmt.Errorf("setting deviceConfig: %w", err)
 	}
 	time.Sleep(time.Second)
-
-	pwrManagement, err := i.ReadRegister(RegisterPwrMgmt0)
-	if err != nil {
-		return fmt.Errorf("getting pwrManagement: %w", err)
-	}
-	fmt.Println("pwrManagement:", hex.EncodeToString([]byte{pwrManagement}))
 
 	deviceConfig, err := i.ReadRegister(RegisterDeviceConfig)
 	if err != nil {
@@ -170,6 +163,19 @@ func (i *IIM42652) Init() error {
 	if err != nil {
 		return err
 	}
+
+	if !i.skipPowerManagement {
+		err = i.SetupPower(GyroModeLowNoise | AccelerometerModeLowNoise)
+		if err != nil {
+			return fmt.Errorf("setting up power: %w", err)
+		}
+	}
+
+	pwrManagement, err := i.ReadRegister(RegisterPwrMgmt0)
+	if err != nil {
+		return fmt.Errorf("getting pwrManagement: %w", err)
+	}
+	fmt.Println("pwrManagement:", hex.EncodeToString([]byte{pwrManagement}))
 
 	return nil
 }
