@@ -90,33 +90,23 @@ func (i *IIM42652) Init() error {
 		return fmt.Errorf("setting up significant motion detection: %w", err)
 	}
 
-	//r1 := make([]byte, 2)
-	//err = c.Tx([]byte{AccelConfig0Reg, ConfigRateMask | 0x09}, r1)
-	//if err != nil {
-	//	return fmt.Errorf("setting AccelConfig0Reg: %w", err)
-	//}
-	//fmt.Println("R1:", hex.EncodeToString(r1))
-	//time.Sleep(250 * time.Millisecond)
+	// Stream-toFIFO mode
+	err = i.WriteRegister(RegisterFifoConfig, 0b10000000)
+	if err != nil {
+		return fmt.Errorf("setting RegisterFifoConfig: %w", err)
+	}
 
-	//result := make([]byte, 1)
-	//err = c.Tx([]byte{ReadMask | AccelConfig0Reg}, result)
-	//if err != nil {
-	//	return fmt.Errorf("reading AccelConfig0Reg: %w", err)
-	//}
-	//fmt.Println("WTF???:", hex.EncodeToString(result))
+	// Enable data into FIFO and not HIRES
+	err = i.WriteRegister(RegisterFifoConfig1, 0b00001111)
+	if err != nil {
+		return fmt.Errorf("setting RegisterFifoConfig1: %w", err)
+	}
 
-	//result := make([]byte, 1)
-	//err = c.Tx([]byte{ReadMask | RegisterPwrMgmt0}, result)
-	//if err != nil {
-	//	return fmt.Errorf("reading RegisterPwrMgmt0: %w", err)
-	//}
-	//fmt.Println("RegisterPwrMgmt0:", hex.EncodeToString(result))
-	//if result[0] == GyroModeLowNoise|AccelerometerModeLowNoise {
-	//	fmt.Println("IMU devices powered on!")
-	//} else {
-	//	fmt.Println("Failed to power on IMU devices...")
-	//	return fmt.Errorf("failed to power on IMU devices")
-	//}
+	// FIFO count by records,
+	err = i.WriteRegister(RegisterIntfConfig0, 0b11110000)
+	if err != nil {
+		return fmt.Errorf("setting RegisterFifoConfig1: %w", err)
+	}
 
 	// Change Pin9 Configuration to FSYNC
 	err = i.WriteRegister(RegisterIntfConfig5, 0x2)
