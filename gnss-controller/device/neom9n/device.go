@@ -124,7 +124,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910635, uint8(0), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
-	imu_frequency := 200
+	imu_frequency := 1
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
 	n.setConfig(0x40050002, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_TP1")
 	n.setConfig(0x40050003, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_LOCK_TP1")
