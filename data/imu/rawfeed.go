@@ -43,31 +43,13 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fifoChan := make(chan ImuRawData, 150) //
 
 	go func() {
-		// var count int
-		var fifoCount int
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-
-			case fifoChan := <-fifoChan:
-				// Handle FIFO data if needed
-				for _, handler := range f.handlers {
-					if err := handler(fifoChan.acceleration, fifoChan.angularRate, fifoChan.temperature, fifoChan.fsync); err != nil {
-						fmt.Printf("handler error: %v\n", err)
-					}
+		for fifodata := range fifoChan {
+			for _, handler := range f.handlers {
+				if err := handler(fifodata.acceleration, fifodata.angularRate, fifodata.temperature, fifodata.fsync); err != nil {
+					fmt.Printf("handler error: %v\n", err)
 				}
-				fifoCount++
-
-			case <-ticker.C:
-				// fmt.Printf("Handler loop frequency: %d Hz\n", count)
-				fmt.Printf("Fifo loop frequency: %d Hz\n", fifoCount)
-				// fmt.Printf("Register buffer length: %d / %d\n", len(dataChan), cap(dataChan))
-				fmt.Printf("FIFO buffer length: %d / %d\n", len(fifoChan), cap(fifoChan))
-				// count = 0
-				fifoCount = 0
 			}
+
 		}
 	}()
 
@@ -95,14 +77,14 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		validPackets := make([]iim42652.FifoImuRawData, 0, len(fifopackets))
 		for _, fifoData := range fifopackets {
 			if !fifoData.Fsync.FsyncInt && betweenFsyncs >= 200 {
-				fmt.Println("More than 200 samples between fsyncs")
-				// Discard excess samples
+				// Discard excess samples (usually only 1)
+				// fmt.Println("More than 200 samples between fsyncs")
 				continue
 			}
 			validPackets = append(validPackets, fifoData)
 
 			if fifoData.Fsync.FsyncInt {
-				fmt.Println("Between fsyncs:", betweenFsyncs)
+				// fmt.Println("Between fsyncs:", betweenFsyncs)
 				betweenFsyncs = 1
 			} else {
 				betweenFsyncs++
