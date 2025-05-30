@@ -271,7 +271,7 @@ func (s *Redis) Marshal(message proto.Message) ([]byte, error) {
 }
 
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
-	systemTime := time.Now()
+	systemTime := time.Now().UTC()
 	var protodata []byte = nil
 	var err error
 	var redisKey string = "INVALID"

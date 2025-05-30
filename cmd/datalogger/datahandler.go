@@ -158,7 +158,7 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 	// 	return fmt.Errorf("logging raw imu data to json: %w", err)
 	// }
 
-	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now(), temperature, acceleration, angularRate, fsync)
+	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate, fsync)
 	if h.redisLogsEnabled {
 		err := h.redisLogger.LogImuData(*imuDataWrapper2)
 		if err != nil {

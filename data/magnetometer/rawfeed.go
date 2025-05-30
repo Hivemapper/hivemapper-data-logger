@@ -73,7 +73,7 @@ func (f *RawFeed) Run() error {
 
 		for _, handler := range f.handlers {
 			err := handler(
-				time.Now(),
+				time.Now().UTC(),
 				mag_readings[0],
 				mag_readings[1],
 				mag_readings[2],
