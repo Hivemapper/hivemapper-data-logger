@@ -1948,6 +1948,101 @@ func (x *RxmSfrbx) GetWordBlock() []*RxmSfrbx_WordBlock {
 	return nil
 }
 
+type TimTp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SystemTime string `protobuf:"bytes,1,opt,name=system_time,json=systemTime,proto3" json:"system_time,omitempty"`
+	ItowMs     uint32 `protobuf:"varint,2,opt,name=itow_ms,json=itowMs,proto3" json:"itow_ms,omitempty"`
+	ItowSubMs  uint32 `protobuf:"varint,3,opt,name=itow_sub_ms,json=itowSubMs,proto3" json:"itow_sub_ms,omitempty"`
+	QErrPs     int32  `protobuf:"varint,4,opt,name=q_err_ps,json=qErrPs,proto3" json:"q_err_ps,omitempty"`
+	Week       uint32 `protobuf:"varint,5,opt,name=week,proto3" json:"week,omitempty"`
+	Flags      uint32 `protobuf:"varint,6,opt,name=flags,proto3" json:"flags,omitempty"`
+	RefInfo    uint32 `protobuf:"varint,7,opt,name=ref_info,json=refInfo,proto3" json:"ref_info,omitempty"`
+}
+
+func (x *TimTp) Reset() {
+	*x = TimTp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_sensordata_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimTp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimTp) ProtoMessage() {}
+
+func (x *TimTp) ProtoReflect() protoreflect.Message {
+	mi := &file_sensordata_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimTp.ProtoReflect.Descriptor instead.
+func (*TimTp) Descriptor() ([]byte, []int) {
+	return file_sensordata_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *TimTp) GetSystemTime() string {
+	if x != nil {
+		return x.SystemTime
+	}
+	return ""
+}
+
+func (x *TimTp) GetItowMs() uint32 {
+	if x != nil {
+		return x.ItowMs
+	}
+	return 0
+}
+
+func (x *TimTp) GetItowSubMs() uint32 {
+	if x != nil {
+		return x.ItowSubMs
+	}
+	return 0
+}
+
+func (x *TimTp) GetQErrPs() int32 {
+	if x != nil {
+		return x.QErrPs
+	}
+	return 0
+}
+
+func (x *TimTp) GetWeek() uint32 {
+	if x != nil {
+		return x.Week
+	}
+	return 0
+}
+
+func (x *TimTp) GetFlags() uint32 {
+	if x != nil {
+		return x.Flags
+	}
+	return 0
+}
+
+func (x *TimTp) GetRefInfo() uint32 {
+	if x != nil {
+		return x.RefInfo
+	}
+	return 0
+}
+
 type ImuData_AccelerometerData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1961,7 +2056,7 @@ type ImuData_AccelerometerData struct {
 func (x *ImuData_AccelerometerData) Reset() {
 	*x = ImuData_AccelerometerData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[16]
+		mi := &file_sensordata_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1974,7 +2069,7 @@ func (x *ImuData_AccelerometerData) String() string {
 func (*ImuData_AccelerometerData) ProtoMessage() {}
 
 func (x *ImuData_AccelerometerData) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[16]
+	mi := &file_sensordata_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2024,7 +2119,7 @@ type ImuData_GyroscopeData struct {
 func (x *ImuData_GyroscopeData) Reset() {
 	*x = ImuData_GyroscopeData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[17]
+		mi := &file_sensordata_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2037,7 +2132,7 @@ func (x *ImuData_GyroscopeData) String() string {
 func (*ImuData_GyroscopeData) ProtoMessage() {}
 
 func (x *ImuData_GyroscopeData) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[17]
+	mi := &file_sensordata_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2086,7 +2181,7 @@ type ImuData_FsyncData struct {
 func (x *ImuData_FsyncData) Reset() {
 	*x = ImuData_FsyncData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[18]
+		mi := &file_sensordata_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2099,7 +2194,7 @@ func (x *ImuData_FsyncData) String() string {
 func (*ImuData_FsyncData) ProtoMessage() {}
 
 func (x *ImuData_FsyncData) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[18]
+	mi := &file_sensordata_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2146,7 +2241,7 @@ type GnssData_Dop struct {
 func (x *GnssData_Dop) Reset() {
 	*x = GnssData_Dop{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[19]
+		mi := &file_sensordata_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2159,7 +2254,7 @@ func (x *GnssData_Dop) String() string {
 func (*GnssData_Dop) ProtoMessage() {}
 
 func (x *GnssData_Dop) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[19]
+	mi := &file_sensordata_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2236,7 +2331,7 @@ type GnssData_Satellites struct {
 func (x *GnssData_Satellites) Reset() {
 	*x = GnssData_Satellites{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[20]
+		mi := &file_sensordata_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2249,7 +2344,7 @@ func (x *GnssData_Satellites) String() string {
 func (*GnssData_Satellites) ProtoMessage() {}
 
 func (x *GnssData_Satellites) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[20]
+	mi := &file_sensordata_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2300,7 +2395,7 @@ type GnssData_RF struct {
 func (x *GnssData_RF) Reset() {
 	*x = GnssData_RF{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[21]
+		mi := &file_sensordata_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2313,7 +2408,7 @@ func (x *GnssData_RF) String() string {
 func (*GnssData_RF) ProtoMessage() {}
 
 func (x *GnssData_RF) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[21]
+	mi := &file_sensordata_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2428,7 +2523,7 @@ type GnssData_RxmMeasxSVType struct {
 func (x *GnssData_RxmMeasxSVType) Reset() {
 	*x = GnssData_RxmMeasxSVType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[22]
+		mi := &file_sensordata_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2441,7 +2536,7 @@ func (x *GnssData_RxmMeasxSVType) String() string {
 func (*GnssData_RxmMeasxSVType) ProtoMessage() {}
 
 func (x *GnssData_RxmMeasxSVType) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[22]
+	mi := &file_sensordata_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2567,7 +2662,7 @@ type GnssData_RxmMeasx struct {
 func (x *GnssData_RxmMeasx) Reset() {
 	*x = GnssData_RxmMeasx{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[23]
+		mi := &file_sensordata_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2580,7 +2675,7 @@ func (x *GnssData_RxmMeasx) String() string {
 func (*GnssData_RxmMeasx) ProtoMessage() {}
 
 func (x *GnssData_RxmMeasx) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[23]
+	mi := &file_sensordata_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2724,7 +2819,7 @@ type GnssData_UbxSecEcsign struct {
 func (x *GnssData_UbxSecEcsign) Reset() {
 	*x = GnssData_UbxSecEcsign{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[24]
+		mi := &file_sensordata_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2737,7 +2832,7 @@ func (x *GnssData_UbxSecEcsign) String() string {
 func (*GnssData_UbxSecEcsign) ProtoMessage() {}
 
 func (x *GnssData_UbxSecEcsign) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[24]
+	mi := &file_sensordata_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2812,7 +2907,7 @@ type NavSat_Svs struct {
 func (x *NavSat_Svs) Reset() {
 	*x = NavSat_Svs{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[25]
+		mi := &file_sensordata_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2825,7 +2920,7 @@ func (x *NavSat_Svs) String() string {
 func (*NavSat_Svs) ProtoMessage() {}
 
 func (x *NavSat_Svs) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[25]
+	mi := &file_sensordata_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2910,7 +3005,7 @@ type NavSig_Sigs struct {
 func (x *NavSig_Sigs) Reset() {
 	*x = NavSig_Sigs{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[26]
+		mi := &file_sensordata_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2923,7 +3018,7 @@ func (x *NavSig_Sigs) String() string {
 func (*NavSig_Sigs) ProtoMessage() {}
 
 func (x *NavSig_Sigs) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[26]
+	mi := &file_sensordata_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3031,7 +3126,7 @@ type MonRf_RFBlock struct {
 func (x *MonRf_RFBlock) Reset() {
 	*x = MonRf_RFBlock{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[27]
+		mi := &file_sensordata_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3044,7 +3139,7 @@ func (x *MonRf_RFBlock) String() string {
 func (*MonRf_RFBlock) ProtoMessage() {}
 
 func (x *MonRf_RFBlock) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[27]
+	mi := &file_sensordata_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3165,7 +3260,7 @@ type RxmMeasx_RxmMeasxSVType struct {
 func (x *RxmMeasx_RxmMeasxSVType) Reset() {
 	*x = RxmMeasx_RxmMeasxSVType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[28]
+		mi := &file_sensordata_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3178,7 +3273,7 @@ func (x *RxmMeasx_RxmMeasxSVType) String() string {
 func (*RxmMeasx_RxmMeasxSVType) ProtoMessage() {}
 
 func (x *RxmMeasx_RxmMeasxSVType) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[28]
+	mi := &file_sensordata_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3294,7 +3389,7 @@ type RxmRawx_RxmRawxMeasType struct {
 func (x *RxmRawx_RxmRawxMeasType) Reset() {
 	*x = RxmRawx_RxmRawxMeasType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[29]
+		mi := &file_sensordata_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3307,7 +3402,7 @@ func (x *RxmRawx_RxmRawxMeasType) String() string {
 func (*RxmRawx_RxmRawxMeasType) ProtoMessage() {}
 
 func (x *RxmRawx_RxmRawxMeasType) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[29]
+	mi := &file_sensordata_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3425,7 +3520,7 @@ type RxmSfrbx_WordBlock struct {
 func (x *RxmSfrbx_WordBlock) Reset() {
 	*x = RxmSfrbx_WordBlock{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sensordata_proto_msgTypes[30]
+		mi := &file_sensordata_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3438,7 +3533,7 @@ func (x *RxmSfrbx_WordBlock) String() string {
 func (*RxmSfrbx_WordBlock) ProtoMessage() {}
 
 func (x *RxmSfrbx_WordBlock) ProtoReflect() protoreflect.Message {
-	mi := &file_sensordata_proto_msgTypes[30]
+	mi := &file_sensordata_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3996,8 +4091,21 @@ var file_sensordata_proto_rawDesc = []byte{
 	0x2e, 0x57, 0x6f, 0x72, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x09, 0x77, 0x6f, 0x72, 0x64,
 	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x1a, 0x1f, 0x0a, 0x09, 0x57, 0x6f, 0x72, 0x64, 0x42, 0x6c, 0x6f,
 	0x63, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x77, 0x72, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d,
-	0x52, 0x04, 0x64, 0x77, 0x72, 0x64, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x3b, 0x73, 0x65, 0x6e, 0x73,
-	0x6f, 0x72, 0x64, 0x61, 0x74, 0x61, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x04, 0x64, 0x77, 0x72, 0x64, 0x22, 0xc0, 0x01, 0x0a, 0x05, 0x54, 0x69, 0x6d, 0x54, 0x70,
+	0x12, 0x1f, 0x0a, 0x0b, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x54, 0x69, 0x6d,
+	0x65, 0x12, 0x17, 0x0a, 0x07, 0x69, 0x74, 0x6f, 0x77, 0x5f, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x06, 0x69, 0x74, 0x6f, 0x77, 0x4d, 0x73, 0x12, 0x1e, 0x0a, 0x0b, 0x69, 0x74,
+	0x6f, 0x77, 0x5f, 0x73, 0x75, 0x62, 0x5f, 0x6d, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52,
+	0x09, 0x69, 0x74, 0x6f, 0x77, 0x53, 0x75, 0x62, 0x4d, 0x73, 0x12, 0x18, 0x0a, 0x08, 0x71, 0x5f,
+	0x65, 0x72, 0x72, 0x5f, 0x70, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x71, 0x45,
+	0x72, 0x72, 0x50, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x77, 0x65, 0x65, 0x6b, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x04, 0x77, 0x65, 0x65, 0x6b, 0x12, 0x14, 0x0a, 0x05, 0x66, 0x6c, 0x61, 0x67,
+	0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x66, 0x6c, 0x61, 0x67, 0x73, 0x12, 0x19,
+	0x0a, 0x08, 0x72, 0x65, 0x66, 0x5f, 0x69, 0x6e, 0x66, 0x6f, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0d,
+	0x52, 0x07, 0x72, 0x65, 0x66, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x0e, 0x5a, 0x0c, 0x2e, 0x3b, 0x73,
+	0x65, 0x6e, 0x73, 0x6f, 0x72, 0x64, 0x61, 0x74, 0x61, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -4012,7 +4120,7 @@ func file_sensordata_proto_rawDescGZIP() []byte {
 	return file_sensordata_proto_rawDescData
 }
 
-var file_sensordata_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_sensordata_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_sensordata_proto_goTypes = []interface{}{
 	(*ImuData)(nil),                   // 0: ImuData
 	(*MagnetometerData)(nil),          // 1: MagnetometerData
@@ -4030,38 +4138,39 @@ var file_sensordata_proto_goTypes = []interface{}{
 	(*RxmMeasx)(nil),                  // 13: RxmMeasx
 	(*RxmRawx)(nil),                   // 14: RxmRawx
 	(*RxmSfrbx)(nil),                  // 15: RxmSfrbx
-	(*ImuData_AccelerometerData)(nil), // 16: ImuData.AccelerometerData
-	(*ImuData_GyroscopeData)(nil),     // 17: ImuData.GyroscopeData
-	(*ImuData_FsyncData)(nil),         // 18: ImuData.FsyncData
-	(*GnssData_Dop)(nil),              // 19: GnssData.Dop
-	(*GnssData_Satellites)(nil),       // 20: GnssData.Satellites
-	(*GnssData_RF)(nil),               // 21: GnssData.RF
-	(*GnssData_RxmMeasxSVType)(nil),   // 22: GnssData.RxmMeasxSVType
-	(*GnssData_RxmMeasx)(nil),         // 23: GnssData.RxmMeasx
-	(*GnssData_UbxSecEcsign)(nil),     // 24: GnssData.UbxSecEcsign
-	(*NavSat_Svs)(nil),                // 25: NavSat.Svs
-	(*NavSig_Sigs)(nil),               // 26: NavSig.Sigs
-	(*MonRf_RFBlock)(nil),             // 27: MonRf.RFBlock
-	(*RxmMeasx_RxmMeasxSVType)(nil),   // 28: RxmMeasx.RxmMeasxSVType
-	(*RxmRawx_RxmRawxMeasType)(nil),   // 29: RxmRawx.RxmRawxMeasType
-	(*RxmSfrbx_WordBlock)(nil),        // 30: RxmSfrbx.WordBlock
+	(*TimTp)(nil),                     // 16: TimTp
+	(*ImuData_AccelerometerData)(nil), // 17: ImuData.AccelerometerData
+	(*ImuData_GyroscopeData)(nil),     // 18: ImuData.GyroscopeData
+	(*ImuData_FsyncData)(nil),         // 19: ImuData.FsyncData
+	(*GnssData_Dop)(nil),              // 20: GnssData.Dop
+	(*GnssData_Satellites)(nil),       // 21: GnssData.Satellites
+	(*GnssData_RF)(nil),               // 22: GnssData.RF
+	(*GnssData_RxmMeasxSVType)(nil),   // 23: GnssData.RxmMeasxSVType
+	(*GnssData_RxmMeasx)(nil),         // 24: GnssData.RxmMeasx
+	(*GnssData_UbxSecEcsign)(nil),     // 25: GnssData.UbxSecEcsign
+	(*NavSat_Svs)(nil),                // 26: NavSat.Svs
+	(*NavSig_Sigs)(nil),               // 27: NavSig.Sigs
+	(*MonRf_RFBlock)(nil),             // 28: MonRf.RFBlock
+	(*RxmMeasx_RxmMeasxSVType)(nil),   // 29: RxmMeasx.RxmMeasxSVType
+	(*RxmRawx_RxmRawxMeasType)(nil),   // 30: RxmRawx.RxmRawxMeasType
+	(*RxmSfrbx_WordBlock)(nil),        // 31: RxmSfrbx.WordBlock
 }
 var file_sensordata_proto_depIdxs = []int32{
-	16, // 0: ImuData.accelerometer:type_name -> ImuData.AccelerometerData
-	17, // 1: ImuData.gyroscope:type_name -> ImuData.GyroscopeData
-	18, // 2: ImuData.fsync:type_name -> ImuData.FsyncData
-	19, // 3: GnssData.dop:type_name -> GnssData.Dop
-	20, // 4: GnssData.satellites:type_name -> GnssData.Satellites
-	21, // 5: GnssData.rf:type_name -> GnssData.RF
-	23, // 6: GnssData.rxm_measx:type_name -> GnssData.RxmMeasx
-	24, // 7: GnssData.sec_ecsign:type_name -> GnssData.UbxSecEcsign
-	25, // 8: NavSat.svs:type_name -> NavSat.Svs
-	26, // 9: NavSig.sigs:type_name -> NavSig.Sigs
-	27, // 10: MonRf.rf_blocks:type_name -> MonRf.RFBlock
-	28, // 11: RxmMeasx.sv:type_name -> RxmMeasx.RxmMeasxSVType
-	29, // 12: RxmRawx.meas:type_name -> RxmRawx.RxmRawxMeasType
-	30, // 13: RxmSfrbx.word_block:type_name -> RxmSfrbx.WordBlock
-	22, // 14: GnssData.RxmMeasx.sv:type_name -> GnssData.RxmMeasxSVType
+	17, // 0: ImuData.accelerometer:type_name -> ImuData.AccelerometerData
+	18, // 1: ImuData.gyroscope:type_name -> ImuData.GyroscopeData
+	19, // 2: ImuData.fsync:type_name -> ImuData.FsyncData
+	20, // 3: GnssData.dop:type_name -> GnssData.Dop
+	21, // 4: GnssData.satellites:type_name -> GnssData.Satellites
+	22, // 5: GnssData.rf:type_name -> GnssData.RF
+	24, // 6: GnssData.rxm_measx:type_name -> GnssData.RxmMeasx
+	25, // 7: GnssData.sec_ecsign:type_name -> GnssData.UbxSecEcsign
+	26, // 8: NavSat.svs:type_name -> NavSat.Svs
+	27, // 9: NavSig.sigs:type_name -> NavSig.Sigs
+	28, // 10: MonRf.rf_blocks:type_name -> MonRf.RFBlock
+	29, // 11: RxmMeasx.sv:type_name -> RxmMeasx.RxmMeasxSVType
+	30, // 12: RxmRawx.meas:type_name -> RxmRawx.RxmRawxMeasType
+	31, // 13: RxmSfrbx.word_block:type_name -> RxmSfrbx.WordBlock
+	23, // 14: GnssData.RxmMeasx.sv:type_name -> GnssData.RxmMeasxSVType
 	15, // [15:15] is the sub-list for method output_type
 	15, // [15:15] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -4268,7 +4377,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ImuData_AccelerometerData); i {
+			switch v := v.(*TimTp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4280,7 +4389,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ImuData_GyroscopeData); i {
+			switch v := v.(*ImuData_AccelerometerData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4292,7 +4401,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ImuData_FsyncData); i {
+			switch v := v.(*ImuData_GyroscopeData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4304,7 +4413,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_Dop); i {
+			switch v := v.(*ImuData_FsyncData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4316,7 +4425,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_Satellites); i {
+			switch v := v.(*GnssData_Dop); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4328,7 +4437,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_RF); i {
+			switch v := v.(*GnssData_Satellites); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4340,7 +4449,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_RxmMeasxSVType); i {
+			switch v := v.(*GnssData_RF); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4352,7 +4461,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_RxmMeasx); i {
+			switch v := v.(*GnssData_RxmMeasxSVType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4364,7 +4473,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GnssData_UbxSecEcsign); i {
+			switch v := v.(*GnssData_RxmMeasx); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4376,7 +4485,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NavSat_Svs); i {
+			switch v := v.(*GnssData_UbxSecEcsign); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4388,7 +4497,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NavSig_Sigs); i {
+			switch v := v.(*NavSat_Svs); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4400,7 +4509,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MonRf_RFBlock); i {
+			switch v := v.(*NavSig_Sigs); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4412,7 +4521,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RxmMeasx_RxmMeasxSVType); i {
+			switch v := v.(*MonRf_RFBlock); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4424,7 +4533,7 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RxmRawx_RxmRawxMeasType); i {
+			switch v := v.(*RxmMeasx_RxmMeasxSVType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4436,6 +4545,18 @@ func file_sensordata_proto_init() {
 			}
 		}
 		file_sensordata_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RxmRawx_RxmRawxMeasType); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sensordata_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RxmSfrbx_WordBlock); i {
 			case 0:
 				return &v.state
@@ -4454,7 +4575,7 @@ func file_sensordata_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sensordata_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

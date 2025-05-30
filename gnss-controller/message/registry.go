@@ -25,6 +25,7 @@ var UbxMsgMonRf = reflect.TypeOf(&ubx.MonRf{})
 var UbxRxmMeasx = reflect.TypeOf(&ubx.RxmMeasx{})
 var UbxRxmRawx = reflect.TypeOf(&ubx.RxmRawx{})
 var UbxRxmSfrbx = reflect.TypeOf(&ubx.RxmSfrbx{})
+var UbxTimTp = reflect.TypeOf(&ubx.TimTp{})
 var UbxSecEcsignWithBuffer = reflect.TypeOf(&SecEcsignWithBuffer{})
 
 type HandlerRegistry struct {

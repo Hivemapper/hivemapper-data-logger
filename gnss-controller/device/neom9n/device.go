@@ -269,6 +269,7 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxRxmRawx, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxRxmSfrbx, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxTimTp, redisFeed)
 	} else {
 		fmt.Println("Redis handler not set")
 	}

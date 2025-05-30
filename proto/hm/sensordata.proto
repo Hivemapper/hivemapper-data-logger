@@ -374,3 +374,13 @@ message RxmSfrbx {
     uint32 version = 8;
     repeated WordBlock word_block = 9;
 }
+
+message TimTp {
+    string system_time = 1;
+    uint32 itow_ms = 2;
+    uint32 itow_sub_ms = 3;
+    int32  q_err_ps = 4;
+    uint32 week = 5;
+    uint32 flags = 6;
+    uint32 ref_info = 7;
+}

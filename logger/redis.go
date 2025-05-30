@@ -558,6 +558,18 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			}
 		}
 		protodata, err = s.Marshal(&protomessage)
+	case *ubx.TimTp:
+		redisKey = "TimTp"
+		protomessage := sensordata.TimTp{
+			SystemTime: systemTime.String(),
+			ItowMs:     uint32(m.TowMS_ms),
+			ItowSubMs:  uint32(m.TowSubMS_msl32),
+			QErrPs:     int32(m.QErr_ps),
+			Week:       uint32(m.Week_weeks),
+			Flags:      uint32(m.Flags),
+			RefInfo:    uint32(m.RefInfo),
+		}
+		protodata, err = s.Marshal(&protomessage)
 	}
 
 	if protodata == nil {
