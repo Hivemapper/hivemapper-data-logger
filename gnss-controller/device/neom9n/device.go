@@ -27,7 +27,7 @@ type Neom9n struct {
 
 func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool) *Neom9n {
 	n := &Neom9n{
-		startTime: time.Now(),
+		startTime: time.Now().UTC(),
 		config: &serial.Config{
 			Name: serialConfigName, // /dev/ttyAMA1
 			//Baud: 921600,

@@ -58,7 +58,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 
 		for _, handler := range f.handlers {
 			err := handler(
-				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now()),
+				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now().UTC()),
 				angularRate,
 				temperature,
 			)

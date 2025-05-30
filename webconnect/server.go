@@ -11,10 +11,10 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 
-	"github.com/bufbuild/connect-go"
-	uuid2 "github.com/google/uuid"
 	"github.com/Hivemapper/hivemapper-data-logger/data"
 	eventsv1 "github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1"
+	"github.com/bufbuild/connect-go"
+	uuid2 "github.com/google/uuid"
 )
 
 type subscriptions map[string]*Subscription
@@ -32,7 +32,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now(), nil),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now().UTC().UTC(), nil),
 		Response:  resp,
 	}
 }
@@ -59,7 +59,7 @@ func (s *EventsServer) HandleOrientedAcceleration(corrected *imu.Acceleration, t
 }
 
 func (s *EventsServer) HandleGnssData(gnssData *neom9n.Data) error {
-	event := data.NewBaseEvent("GNSS_EVENT", "GNSS", time.Now(), gnssData)
+	event := data.NewBaseEvent("GNSS_EVENT", "GNSS", time.Now().UTC().UTC(), gnssData)
 	err := s.SendEvent(event)
 	if err != nil {
 		return fmt.Errorf("sending event %w", err)
