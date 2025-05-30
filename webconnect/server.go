@@ -32,7 +32,7 @@ type GRPCEvent struct {
 
 func NewGRPCEvent(resp *eventsv1.EventsResponse) *GRPCEvent {
 	return &GRPCEvent{
-		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now().UTC().UTC(), nil),
+		BaseEvent: data.NewBaseEvent("GRPC_EVENT", "GRPC", time.Now().UTC(), nil),
 		Response:  resp,
 	}
 }
@@ -59,7 +59,7 @@ func (s *EventsServer) HandleOrientedAcceleration(corrected *imu.Acceleration, t
 }
 
 func (s *EventsServer) HandleGnssData(gnssData *neom9n.Data) error {
-	event := data.NewBaseEvent("GNSS_EVENT", "GNSS", time.Now().UTC().UTC(), gnssData)
+	event := data.NewBaseEvent("GNSS_EVENT", "GNSS", time.Now().UTC(), gnssData)
 	err := s.SendEvent(event)
 	if err != nil {
 		return fmt.Errorf("sending event %w", err)
