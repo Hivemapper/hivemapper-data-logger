@@ -229,8 +229,8 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 		now := time.Date(int(m.Year_y), time.Month(int(m.Month_month)), int(m.Day_d), int(m.Hour_h), int(m.Min_min), int(m.Sec_s), int(m.Nano_ns), time.UTC)
 		data.Timestamp = now
 
-		data.ActualSystemTime = time.Now()
-		data.SystemTime = time.Now()
+		data.ActualSystemTime = time.Now().UTC()
+		data.SystemTime = time.Now().UTC()
 
 		if m.Valid == ubx.NavPvtFullyResolved {
 			data.TimeResolved = 0
@@ -250,7 +250,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 			data.SystemTime = prevSystemTime.Add(time.Duration(timeDiff) * time.Millisecond)
 			fixedTimes++
 			if fixedTimes > fixThreshold {
-				data.SystemTime = time.Now()
+				data.SystemTime = time.Now().UTC()
 				fixedTimes = 0
 			}
 		} else {
