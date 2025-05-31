@@ -60,7 +60,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 
 	for {
 
-		time_of_last_packet = time.Now()
+		time_of_last_packet = time.Now().UTC()
 		fifopackets, err := f.imu.GetFifo() // Read FIFO data, if needed
 		if err != nil {
 			return fmt.Errorf("getting fifo data: %w", err)
@@ -84,7 +84,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			validPackets = append(validPackets, fifoData)
 
 			if fifoData.Fsync.FsyncInt {
-				// fmt.Println("Between fsyncs:", betweenFsyncs)
+				fmt.Println("Between fsyncs:", betweenFsyncs)
 				betweenFsyncs = 1
 			} else {
 				betweenFsyncs++

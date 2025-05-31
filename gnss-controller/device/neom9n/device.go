@@ -236,19 +236,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	}
 
 	fmt.Println("Registering logger ubx message handlers")
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavCov, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPosecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavStatus, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavEoe, dataFeed)
-	if n.measxEnabled {
-		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
-	}
 
 	// We need to pass a buffer along with ubx.SecEcsign to the data handler,
 	// so we must register a composite class instead of ubx.SecEcsign

@@ -11,11 +11,8 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
-	"github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1/eventsv1connect"
-	"github.com/Hivemapper/hivemapper-data-logger/webconnect"
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
-	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -29,8 +26,6 @@ var LogCmd = &cobra.Command{
 func init() {
 	// Imu
 	LogCmd.Flags().String("imu-config-file", "imu-logger.json", "Imu logger config file. Default path is ./imu-logger.json")
-	LogCmd.Flags().String("imu-json-destination-folder", "/mnt/data/imu", "json destination folder")
-	LogCmd.Flags().Duration("imu-json-save-interval", 15*time.Second, "json save interval")
 	LogCmd.Flags().String("imu-axis-map", "CamX:Z,CamY:X,CamZ:Y", "axis mapping of camera x,y,z values to real world x,y,z values. Default value is HDC mappings")
 	LogCmd.Flags().String("imu-inverted", "X:false,Y:false,Z:false", "axis inverted mapping of x,y,z values")
 	LogCmd.Flags().Bool("imu-skip-power-management", false, "skip power management setup of imu device on HDC-S")
@@ -115,16 +110,11 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	serialConfigName := mustGetString(cmd, "gnss-dev-path")
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
 
-	// listenAddr := mustGetString(cmd, "listen-addr")
-	eventServer := webconnect.NewEventServer()
-
 	dataHandler, err := NewDataHandler(
 		mustGetString(cmd, "db-output-path"),
 		mustGetDuration(cmd, "db-log-ttl"),
 		mustGetString(cmd, "gnss-json-destination-folder"),
 		mustGetDuration(cmd, "gnss-json-save-interval"),
-		mustGetString(cmd, "imu-json-destination-folder"),
-		mustGetDuration(cmd, "imu-json-save-interval"),
 		mustGetBool(cmd, "json-logs-enabled"),
 		getBoolOrDefault(cmd, "enable-redis-logs"),
 		getIntOrDefault(cmd, "max-redis-imu-entries"),
@@ -143,22 +133,8 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
 
-	//directionEventFeed := direction.NewDirectionEventFeed(conf, dataHandler.HandleDirectionEvent, eventServer.HandleDirectionEvent)
-	//orientedEventFeed := imu.NewOrientedAccelerationFeed(directionEventFeed.HandleOrientedAcceleration, dataHandler.HandleOrientedAcceleration)
-	//tiltCorrectedAccelerationEventFeed := imu.NewTiltCorrectedAccelerationFeed(orientedEventFeed.HandleTiltCorrectedAcceleration)
-
-	// TODO: implement replay image feed
-	//imagesFeed := camera.NewImageFeed(mustGetString(cmd, "images-folder"), dataHandler.HandleImage)
-	//go func() {
-	//	err := imagesFeed.Run()
-	//	if err != nil {
-	//		panic(fmt.Errorf("running image feed: %w", err))
-	//	}
-	//}()
-
 	rawImuEventFeed := imu.NewRawFeed(
 		imuDevice,
-		//tiltCorrectedAccelerationEventFeed.HandleRawFeed,
 		dataHandler.HandleRawImuFeed,
 	)
 	go func() {
@@ -175,8 +151,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	gnssEventFeed := gnss.NewGnssFeed(
 		[]gnss.GnssDataHandler{
 			dataHandler.HandlerGnssData,
-			//directionEventFeed.HandleGnssData,
-			eventServer.HandleGnssData,
 		},
 		nil,
 		options...,
@@ -206,26 +180,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}()
 	}
 
-	mux := http.NewServeMux()
-	path, handler := eventsv1connect.NewEventServiceHandler(eventServer)
-
-	opts := cors.Options{
-		AllowedHeaders: []string{"*"},
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-	}
-	handler = cors.New(opts).Handler(handler)
-
-	mux.Handle(path, handler)
-
-	// go func() {
-	// 	fmt.Printf("Starting GRPC server on %s ...\n", listenAddr)
-	// 	err = http.ListenAndServe(listenAddr, h2c.NewHandler(mux, &http2.Server{}))
-	// 	if err != nil {
-	// 		panic(fmt.Sprintf("running server: %s", err.Error()))
-	// 	}
-	// }()
-
 	httpListenAddr := mustGetString(cmd, "http-listen-addr")
 
 	origins := handlers.AllowedOrigins([]string{"*"})
@@ -240,17 +194,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	return nil
-}
-
-func mustGnssEvent(e *neom9n.Data) *neom9n.Data {
-	if e == nil {
-		return &neom9n.Data{
-			Dop:        &neom9n.Dop{},
-			RF:         &neom9n.RF{},
-			Satellites: &neom9n.Satellites{},
-		}
-	}
-	return e
 }
 
 func parseAxisMap(axisMapping string) (*iim42652.AxisMap, error) {
