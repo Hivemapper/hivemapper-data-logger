@@ -18,15 +18,7 @@ type Position struct {
 }
 
 type Data struct {
-	Ttff            int64          `json:"ttff"`
 	SystemTime      time.Time      `json:"systemtime"`
-	Timestamp       time.Time      `json:"timestamp"`
-	Fix             string         `json:"fix"`
-	Latitude        float64        `json:"latitude"`
-	Longitude       float64        `json:"longitude"`
-	Dop             *Dop           `json:"dop"`
-	Eph             float64        `json:"eph"` // Estimated horizontal Position (2D) Error in meters. Also known as Estimated Position Error (epe). Certainty unknown.
-	TimeResolved    int            `json:"time_resolved"`
 	SecEcsign       *ubx.SecEcsign `json:"sec_ecsign"`
 	SecEcsignBuffer string         `json:"sec_ecsign_buffer"`
 	//todo: add optional signature and hash struct genereated from UBX-SEC-ECSIGN messages by the decoder
@@ -59,6 +51,7 @@ func (df *DataFeed) HandleUbxMessage(msg interface{}) error {
 
 	switch m := msg.(type) {
 	case *message.SecEcsignWithBuffer:
+		data.SystemTime = time.Now().UTC()
 		data.SecEcsign = m.SecEcsign
 		data.SecEcsignBuffer = m.Base64MessageBuffer
 		df.HandleData(data)

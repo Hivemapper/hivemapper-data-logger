@@ -12,20 +12,13 @@ import (
 
 type DataHandler struct {
 	redisLogger       *logger.Redis
-	gnssJsonLogger    *logger.JsonFile
 	gnssData          *neom9n.Data
 	lastImageFileName string
-	jsonLogsEnabled   bool
 	redisLogsEnabled  bool
 	gnssAuthCount     int
 }
 
 func NewDataHandler(
-	dbPath string,
-	dbLogTTL time.Duration,
-	gnssJsonDestFolder string,
-	gnssSaveInterval time.Duration,
-	jsonLogsEnabled bool,
 	redisLogsEnabled bool,
 	maxRedisImuEntries int,
 	maxRedisMagEntries int,
@@ -35,6 +28,7 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 
 	var redisLogger *logger.Redis = nil
+	var err error
 	if redisLogsEnabled {
 		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries, redisLogProtoText)
 		err := redisLogger.Init()
@@ -43,16 +37,8 @@ func NewDataHandler(
 		}
 	}
 
-	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
-	err := gnssJsonLogger.Init(false)
-	if err != nil {
-		return nil, fmt.Errorf("initializing gnss json logger: %w", err)
-	}
-
 	return &DataHandler{
 		redisLogger:      redisLogger,
-		gnssJsonLogger:   gnssJsonLogger,
-		jsonLogsEnabled:  jsonLogsEnabled,
 		redisLogsEnabled: redisLogsEnabled,
 	}, err
 }
@@ -72,16 +58,7 @@ func (h *DataHandler) HandleOrientedAcceleration(
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
-	if data.SecEcsign == nil {
-		h.gnssData = data
-		if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
-			h.gnssJsonLogger.StartStoring()
-		}
-		err := h.gnssJsonLogger.Log(data.Timestamp, data)
-		if err != nil {
-			return fmt.Errorf("logging gnss data to json: %w", err)
-		}
-	} else {
+	if data.SecEcsign != nil {
 		if h.gnssAuthCount%60 == 0 {
 			if h.redisLogsEnabled {
 				err := h.redisLogger.LogGnssAuthData(*data)

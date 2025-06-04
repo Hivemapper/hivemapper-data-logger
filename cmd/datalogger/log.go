@@ -33,13 +33,10 @@ func init() {
 	// Gnss
 	LogCmd.Flags().Int("gnss-initial-baud-rate", 38400, "initial baud rate of gnss device")
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
-	LogCmd.Flags().String("gnss-json-destination-folder", "/mnt/data/gps", "json destination folder")
-	LogCmd.Flags().Duration("gnss-json-save-interval", 15*time.Second, "json save interval")
 	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
-	LogCmd.Flags().Bool("json-logs-enabled", false, "enable logging sensor data into json files")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
 
@@ -111,11 +108,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
 
 	dataHandler, err := NewDataHandler(
-		mustGetString(cmd, "db-output-path"),
-		mustGetDuration(cmd, "db-log-ttl"),
-		mustGetString(cmd, "gnss-json-destination-folder"),
-		mustGetDuration(cmd, "gnss-json-save-interval"),
-		mustGetBool(cmd, "json-logs-enabled"),
 		getBoolOrDefault(cmd, "enable-redis-logs"),
 		getIntOrDefault(cmd, "max-redis-imu-entries"),
 		getIntOrDefault(cmd, "max-redis-mag-entries"),
