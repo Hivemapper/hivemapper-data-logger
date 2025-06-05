@@ -27,7 +27,7 @@ type Neom9n struct {
 
 func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool) *Neom9n {
 	n := &Neom9n{
-		startTime: time.Now(),
+		startTime: time.Now().UTC(),
 		config: &serial.Config{
 			Name: serialConfigName, // /dev/ttyAMA1
 			//Baud: 921600,
@@ -124,11 +124,12 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910635, uint8(0), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
+	imu_frequency := 1
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
-	n.setConfig(0x40050002, uint32(5000), "CFG-TP-PERIOD_TP1")
-	n.setConfig(0x40050003, uint32(5000), "CFG-TP-PERIOD_LOCK_TP1")
-	n.setConfig(0x40050004, uint32(500), "CFG-TP-LEN_TP1")
-	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
+	n.setConfig(0x40050002, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_TP1")
+	n.setConfig(0x40050003, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_LOCK_TP1")
+	n.setConfig(0x40050004, uint32(100000/imu_frequency), "CFG-TP-LEN_TP1")
+	n.setConfig(0x40050005, uint32(100000/imu_frequency), "CFG-TP-LEN_LOCK_TP1")
 
 	// add raw measurements
 	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
@@ -235,19 +236,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	}
 
 	fmt.Println("Registering logger ubx message handlers")
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavCov, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPosecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavStatus, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavEoe, dataFeed)
-	if n.measxEnabled {
-		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
-	}
 
 	// We need to pass a buffer along with ubx.SecEcsign to the data handler,
 	// so we must register a composite class instead of ubx.SecEcsign
@@ -268,6 +256,7 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxRxmRawx, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxRxmSfrbx, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxTimTp, redisFeed)
 	} else {
 		fmt.Println("Redis handler not set")
 	}

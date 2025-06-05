@@ -2,6 +2,7 @@ package imu
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/streamingfast/imu-controller/device/iim42652"
@@ -11,6 +12,13 @@ type RawFeed struct {
 	imu                 *iim42652.IIM42652
 	handlers            []RawFeedHandler
 	fysnc_error_counter int
+}
+
+type ImuRawData struct {
+	acceleration *Acceleration
+	angularRate  *iim42652.AngularRate
+	temperature  iim42652.Temperature
+	fsync        *iim42652.Fsync
 }
 
 func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
@@ -25,55 +33,101 @@ type RawFeedHandler func(acceleration *Acceleration, angularRate *iim42652.Angul
 func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	fmt.Println("Run imu raw feed")
 
-	for {
-		fsync, err := f.imu.GetFsync()
-		if err != nil {
-			return fmt.Errorf("[ERROR] error getting fsync: %w", err)
-		}
-		// return early if fsync_int variable in is false
-		if !fsync.FsyncInt {
-			f.fysnc_error_counter++
-			if f.fysnc_error_counter > 60000 {
-				fmt.Println("[ERROR] 60,000 repeated fsync errors. Fsync is not being set.")
-				f.fysnc_error_counter = 0
+	// Open log file once before loop
+	logFile, err := os.OpenFile("/data/logger_imu_loop.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("opening log file: %w", err)
+	}
+	defer logFile.Close()
+
+	fifoChan := make(chan ImuRawData, 150) //
+
+	go func() {
+		for fifodata := range fifoChan {
+			for _, handler := range f.handlers {
+				if err := handler(fifodata.acceleration, fifodata.angularRate, fifodata.temperature, fifodata.fsync); err != nil {
+					fmt.Printf("handler error: %v\n", err)
+				}
 			}
-			time.Sleep(5 * time.Millisecond)
+
+		}
+	}()
+
+	var betweenFsyncs int = -1
+	var prev_last_packet_time time.Time
+	var time_of_last_packet time.Time
+	var packet_time time.Time
+
+	for {
+
+		time_of_last_packet = time.Now().UTC()
+		fifopackets, err := f.imu.GetFifo() // Read FIFO data, if needed
+		if err != nil {
+			return fmt.Errorf("getting fifo data: %w", err)
+		}
+
+		if betweenFsyncs == -1 {
+			// ignore first set of data
+			betweenFsyncs = 1
+			prev_last_packet_time = time_of_last_packet
+
 			continue
 		}
-		f.fysnc_error_counter = 0
 
-		acceleration, err := f.imu.GetAcceleration()
-		if err != nil {
-			return fmt.Errorf("getting acceleration: %w", err)
-		}
+		validPackets := make([]iim42652.FifoImuRawData, 0, len(fifopackets))
+		for _, fifoData := range fifopackets {
+			if !fifoData.Fsync.FsyncInt && betweenFsyncs >= 200 {
+				// Discard excess samples (usually only 1)
+				// fmt.Println("More than 200 samples between fsyncs")
+				continue
+			}
+			validPackets = append(validPackets, fifoData)
 
-		angularRate, err := f.imu.GetGyroscopeData()
-		if err != nil {
-			return fmt.Errorf("getting angular rate: %w", err)
-		}
-
-		temperature, err := f.imu.GetTemperature()
-		if err != nil {
-			return fmt.Errorf("getting temperature: %w", err)
-		}
-
-		for _, handler := range f.handlers {
-			err := handler(
-				NewAcceleration(axisMap.X(acceleration), axisMap.Y(acceleration), axisMap.Z(acceleration), acceleration.TotalMagnitude, time.Now()),
-				angularRate,
-				temperature,
-				fsync,
-			)
-			if err != nil {
-				return fmt.Errorf("calling handler: %w", err)
+			if fifoData.Fsync.FsyncInt {
+				fmt.Println("Between fsyncs:", betweenFsyncs)
+				betweenFsyncs = 1
+			} else {
+				betweenFsyncs++
 			}
 		}
-		if angularRate.X < -2000.0 {
-			fmt.Println("Resetting imu because angular rate is too high:", angularRate.X)
-			err := f.imu.Init()
-			if err != nil {
-				return fmt.Errorf("initializing IMU: %w", err)
+
+		for packet_idx, fifoData := range validPackets {
+
+			total_packets := len(validPackets)
+			if total_packets > 1 && packet_idx < total_packets-1 {
+				time_step := time_of_last_packet.Sub(prev_last_packet_time) / time.Duration(total_packets)
+				packet_time = prev_last_packet_time.Add(time_step * time.Duration(packet_idx+1))
+			} else {
+				packet_time = time_of_last_packet
+			}
+
+			fifo_raw_data := ImuRawData{
+				acceleration: NewAcceleration(axisMap.X(fifoData.Acceleration), axisMap.Y(fifoData.Acceleration), axisMap.Z(fifoData.Acceleration), fifoData.Acceleration.TotalMagnitude, packet_time),
+				angularRate:  fifoData.AngularRate,
+				temperature:  fifoData.Temperature,
+				fsync:        fifoData.Fsync,
+			}
+
+			if fifoData.AngularRate.X < -2000.0 {
+				fmt.Println("Resetting imu because angular rate is too high:", fifoData.AngularRate.X)
+				err := f.imu.Init()
+				if err != nil {
+					return fmt.Errorf("initializing IMU: %w", err)
+				}
+			}
+
+			select {
+			case fifoChan <- fifo_raw_data:
+				// Sent successfully
+			default:
+				// Channel full, drop or log
+				fmt.Println("Warning: fifo data channel full, dropping FIFO data")
 			}
 		}
+
+		prev_last_packet_time = time_of_last_packet
+
+		time.Sleep(100 * time.Millisecond)
+
 	}
 }
