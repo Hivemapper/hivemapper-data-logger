@@ -37,69 +37,6 @@ message MagnetometerData {
 }
 
 message GnssData {
-    message Dop {
-        double gdop = 1;
-        double hdop = 2;
-        double pdop = 3;
-        double tdop = 4;
-        double vdop = 5;
-        double xdop = 6;
-        double ydop = 7;
-    }
-
-    message Satellites {
-        int64 seen = 1;
-        int64 used = 2;
-    }
-
-    message RF {
-        string jamming_state = 1;
-        string ant_status = 2;
-        string ant_power = 3;
-        uint32 post_status = 4;
-        uint32 noise_per_ms = 5;
-        uint32 agc_cnt = 6;
-        uint32 jam_ind = 7;
-        int32 ofs_i = 8;
-        int32 mag_i = 9;
-        int32 ofs_q = 10;
-        int32 mag_q = 11;
-    }
-
-    message RxmMeasxSVType {
-        int32 gnss_id = 1;
-        int32 sv_id = 2;
-        int32 c_no = 3;
-        int32 mpath_indic = 4;
-        int32 doppler_ms_m_s = 5;
-        int32 doppler_hz_hz = 6;
-        uint32 whole_chips = 7;
-        uint32 frac_chips = 8;
-        int32 code_phase_msl_21 = 9;
-        int32 int_code_phase_ms = 10;
-        int32 pseu_range_rms_err = 11;
-        bytes reserved5 = 12;
-    }
-
-    message RxmMeasx {
-        int32 version = 1;
-        bytes reserved1 = 2;
-        uint32 gps_tow_ms = 3;
-        uint32 glo_tow_ms = 4;
-        uint32 bds_tow_ms = 5;
-        bytes reserved2 = 6;
-        uint32 qzss_tow_ms = 7;
-        uint32 gps_tow_acc_msl4 = 8;
-        uint32 glo_tow_acc_msl4 = 9;
-        uint32 bds_tow_acc_msl4 = 10;
-        bytes reserved3 = 11;
-        uint32 qzss_tow_acc_msl4 = 12;
-        int32 num_sv = 13;
-        int32 flags = 14;
-        bytes reserved4 = 15;
-        repeated RxmMeasxSVType sv = 16;
-    }
-
     message UbxSecEcsign {
         uint32 version = 1;
         bytes reserved0 = 2;
@@ -109,34 +46,9 @@ message GnssData {
         bytes ecdsa_signature = 6;
     }
 
-    int64 ttff = 1;
-    string system_time = 2;
-    string actual_system_time = 3;
-    string timestamp = 4;
-    string fix = 5;
-    double latitude = 6;
-    double unfiltered_latitude = 7;
-    double longitude = 8;
-    double unfiltered_longitude = 9;
-    double altitude = 10;
-    double heading = 11;
-    double speed = 12;
-    Dop dop = 13;
-    Satellites satellites = 14;
-    double sep = 15;
-    double eph = 16;
-    RF rf = 17;
-    double speed_accuracy = 18;
-    double heading_accuracy = 19;
-    int32 time_resolved = 20;
-    double horizontal_accuracy = 21;
-    double vertical_accuracy = 22;
-    string gga = 23;
-    RxmMeasx rxm_measx = 24;
-    UbxSecEcsign sec_ecsign = 25;
-    string sec_ecsign_buffer = 26;
-    double cno = 27;
-    double pos_confidence = 28;
+    string system_time = 1;
+    UbxSecEcsign sec_ecsign = 2;
+    string sec_ecsign_buffer = 3;
 }
 
 /// Low Level UBX Messages
