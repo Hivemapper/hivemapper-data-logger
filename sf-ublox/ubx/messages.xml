@@ -6367,7 +6367,7 @@ can be defined on a single port.</Comment>
           <Comment>Port identifier number (= 4 for SPI port)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>4</Subtype>          
+          <Subtype>4</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -6631,7 +6631,7 @@ protocol versions less than 20)</Comment>
           <Comment>Port identifier number (= 0 for I2C (DDC) port)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0</Subtype>          
+          <Subtype>0</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -8122,7 +8122,7 @@ TIMEPULSE2)</Comment>
       <Checksum>CK_A CK_B</Checksum>
     </Structure>
   </Message>
-  <!-- 
+  <!--
 TODO(lvd) seems same fields with flags subset of the next one
   Message>
     <Name>UBX-CFG-TP5</Name>
@@ -12401,7 +12401,7 @@ new leap second effective</Comment>
           <Comment>Message type (0x01 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>1</Subtype>                    
+          <Subtype>1</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -12462,7 +12462,7 @@ FLASH-DATA message sent.</Comment>
           <Comment>Message type (0x02 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>2</Subtype>                    
+          <Subtype>2</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -12495,7 +12495,7 @@ FLASH-DATA message sent.</Comment>
           <Comment>Message type (0x03 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>3</Subtype>          
+          <Subtype>3</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -14467,7 +14467,7 @@ circle^3]</Comment>
           <Comment>Message type (0x01 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>1</Subtype>          
+          <Subtype>1</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -14540,7 +14540,7 @@ circle^3]</Comment>
           <Comment>Message type (0x10 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0x10</Subtype>          
+          <Subtype>0x10</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -14851,7 +14851,7 @@ supported:
           <Comment>Message type (0x20 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0x20</Subtype>          
+          <Subtype>0x20</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -14995,7 +14995,7 @@ supported:
           <Comment>Message type (0x30 for this type)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0x30</Subtype>                    
+          <Subtype>0x30</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -18951,6 +18951,20 @@ is completely solved.</Description>
               <Description>1 = differential corrections were applied</Description>
             </Type>
             <Type>
+              <Index>2:4</Index>
+              <Type>unsigned value</Type>
+              <Name>psmState</Name>
+              <Description>Power save mode state (see Power management
+section in the integration manual for details.
+• 0 = PSM is not active
+• 1 = Enabled (an intermediate state before
+Acquisition state
+• 2 = Acquisition
+• 3 = Tracking
+• 4 = Power Optimized Tracking
+• 5 = Inactive</Description>
+            </Type>
+            <Type>
               <Index>5</Index>
               <Type>unsigned value</Type>
               <Name>headVehValid</Name>
@@ -19129,7 +19143,7 @@ and vehicle)</Comment>
         <Block>
           <Offset>78</Offset>
           <Name>flags3</Name>
-          <Type>X1</Type>
+          <Type>X2</Type>
           <Comment>Additional flags</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
@@ -19141,7 +19155,67 @@ and vehicle)</Comment>
               <Description>1 = Invalid lon, lat, height and hMSL</Description>
             </Type>
             <Type>
-              <Index>1:7</Index>
+              <Index>1:4</Index>
+              <Type>unsigned value</Type>
+              <Name>lastCorrectionAge</Name>
+              <Description>Age of the most recently received differential
+correction:
+• 0 = Not available
+• 1 = Age between 0 and 1 second
+• 2 = Age between 1 (inclusive) and 2 seconds
+• 3 = Age between 2 (inclusive) and 5 seconds
+• 4 = Age between 5 (inclusive) and 10 seconds
+• 5 = Age between 10 (inclusive) and 15 seconds
+• 6 = Age between 15 (inclusive) and 20 seconds
+• 7 = Age between 20 (inclusive) and 30 seconds
+• 8 = Age between 30 (inclusive) and 45 seconds
+• 9 = Age between 45 (inclusive) and 60 seconds
+• 10 = Age between 60 (inclusive) and 90 seconds
+• 11 = Age between 90 (inclusive) and 120 seconds
+• >=12 = Age greater or equal than 120 seconds</Description>
+            </Type>
+            <Type>
+              <Index>5:12</Index>
+              <Type>reserved</Type>
+              <Name />
+              <Description />
+            </Type>
+            <Type>
+              <Index>13</Index>
+              <Type>unsigned value</Type>
+              <Name>authTime</Name>
+              <Description>Flag that indicates if the output time has been
+validated against an external trusted time source
+• 0 = Time is not authenticated
+• 1 = Time is authenticated</Description>
+            </Type>
+            <Type>
+              <Index>14</Index>
+              <Type>unsigned value</Type>
+              <Name>nmaFixStatus</Name>
+              <Description>Flag assigned to a fix that has been computed
+mixing satellites with data authenticated through
+Navigation Message Authentication (NMA) methods
+and satellites using unauthenticated data. The fix
+is flagged as Verified when internal cross-checks
+validates the unauthenticated signals against the
+authenticated ones. Note that Not Verified status
+u-blox F10 SPG 6.00 - Interface description
+does not imply directly spoofing attacks, to identify
+spoofing alerts refer to UBX-SEC-SIG.
+• 0 = Not Verified: The mixed solution does not
+agree with the NMA authenticated data or the
+comparison could not be performed, e.g., not
+enough authenticated SVs to extrapolate the
+result or cryptographic data not decoded yet
+• 1 = Verified: The mixed solution agrees with the
+NMA authenticated data
+Currently, the only existing NMA method is Galileo
+Open Service Navigation Message Authentication
+(OSNMA) protocol.</Description>
+            </Type>
+            <Type>
+              <Index>15</Index>
               <Type>reserved</Type>
               <Name />
               <Description />
@@ -19149,9 +19223,9 @@ and vehicle)</Comment>
           </Bitfield>
         </Block>
         <Block>
-          <Offset>79</Offset>
+          <Offset>80</Offset>
           <Name>reserved1</Name>
-          <Type>U1[5]</Type>
+          <Type>U1[4]</Type>
           <Comment>Reserved</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
@@ -19626,9 +19700,9 @@ reach a quality indicator value of higher than 3.</Description>
               </Type>
               <Type>
                 <Index>19</Index>
-                <Type>reserved</Type>
-                <Name />
-                <Description />
+                <Type>unsigned value</Type>
+                <Name>spartnCorrUsed</Name>
+                <Description>1 = SPARTN corrections have been used for a signal in the subset specified in Signal Identifiers</Description>
               </Type>
               <Type>
                 <Index>20</Index>
@@ -19650,12 +19724,260 @@ reach a quality indicator value of higher than 3.</Description>
 Identifiers</Description>
               </Type>
               <Type>
-                <Index>23:31</Index>
+                <Index>23</Index>
+                <Type>unsigned value</Type>
+                <Name>clasCorrUsed</Name>
+                <Description>1 = CLAS corrections have been used for a signal in the subset specified in Signal Identifiers</Description>
+              </Type>
+              <Type>
+                <Index>24:31</Index>
                 <Type>reserved</Type>
                 <Name />
                 <Description />
               </Type>
             </Bitfield>
+          </Block>
+        </Block>
+      </Payload>
+      <Checksum>CK_A CK_B</Checksum>
+    </Structure>
+  </Message>
+  <Message>
+    <Name>UBX-NAV-SIG</Name>
+    <Type>Periodic/Polled</Type>
+    <Description>Signal information</Description>
+    <Comment>This message displays information about signals currently tracked or searched by the receiver.</Comment>
+    <Firmware>Supported on: u-blox M10</Firmware>
+    <Structure>
+      <Header>0xB5 0x62</Header>
+      <Class>0x01</Class>
+      <Id>0x43</Id>
+      <Length>8 + 16*numSigs</Length>
+      <Payload>
+        <Block>
+          <Offset>0</Offset>
+          <Name>iTOW</Name>
+          <Type>U4</Type>
+          <Comment>GPS time of week of the navigation epoch.
+See the description of iTOW for details.</Comment>
+          <Scale>-</Scale>
+          <Unit>ms</Unit>
+        </Block>
+        <Block>
+          <Offset>4</Offset>
+          <Name>version</Name>
+          <Type>U1</Type>
+          <Comment>Message version (0x00 for this version)</Comment>
+          <Scale>-</Scale>
+          <Unit>-</Unit>
+        </Block>
+        <Block>
+          <Offset>5</Offset>
+          <Name>numSigs</Name>
+          <Type>U1</Type>
+          <Comment>Number of signals</Comment>
+          <Scale>-</Scale>
+          <Unit>-</Unit>
+        </Block>
+        <Block>
+          <Offset>6</Offset>
+          <Name>reserved0</Name>
+          <Type>U1[2]</Type>
+          <Comment>Reserved</Comment>
+          <Scale>-</Scale>
+          <Unit>-</Unit>
+        </Block>
+        <Block name="numSigs" type="repeated">
+          <Block>
+            <Offset>8 + 16*N</Offset>
+            <Name>gnssId</Name>
+            <Type>U1</Type>
+            <Comment>GNSS identifier (see Satellite Numbering)
+for assignment</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>9 + 16*N</Offset>
+            <Name>svId</Name>
+            <Type>U1</Type>
+            <Comment>Satellite identifier (see Satellite
+Numbering) for assignment</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>10 + 16*N</Offset>
+            <Name>sigId</Name>
+            <Type>U1</Type>
+            <Comment>New style signal identifier (see Signal Identifiers)</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>11 + 16*N</Offset>
+            <Name>freqId</Name>
+            <Type>U1</Type>
+            <Comment>Only used for GLONASS: This is the frequency slot + 7
+(range from 0 to 13)</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>12 + 16*N</Offset>
+            <Name>prRes</Name>
+            <Type>I2</Type>
+            <Comment>Pseudorange residual</Comment>
+            <Scale>1e-1</Scale>
+            <Unit>m</Unit>
+          </Block>
+          <Block>
+            <Offset>14 + 16*N</Offset>
+            <Name>cno</Name>
+            <Type>U1</Type>
+            <Comment>Carrier-to-noise density ratio (signal strength)</Comment>
+            <Scale>-</Scale>
+            <Unit>dbHz</Unit>
+          </Block>
+          <Block>
+            <Offset>15 + 16*N</Offset>
+            <Name>qualityInd</Name>
+            <Type>U1</Type>
+            <Comment>Signal quality indicator:
+• 0 = no signal
+• 1 = searching signal
+• 2 = signal acquired
+• 3 = signal detected but unusable
+• 4 = code locked and time synchronized
+• 5, 6, 7 = code and carrier locked and time
+synchronized</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>16 + 16*N</Offset>
+            <Name>corrSource</Name>
+            <Type>U1</Type>
+            <Comment>Correction source:
+• 0 = no corrections
+• 1 = SBAS corrections
+• 2 = BeiDou corrections
+• 3 = RTCM2 corrections
+• 4 = RTCM3 OSR corrections
+• 5 = RTCM3 SSR corrections
+• 6 = QZSS SLAS corrections
+• 7 = SPARTN corrections
+• 8 = CLAS corrections</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>17 + 16*N</Offset>
+            <Name>ionoModel</Name>
+            <Type>U1</Type>
+            <Comment>Ionospheric model used:
+• 0 = no model
+• 1 = Klobuchar model transmitted by GPS
+• 2 = SBAS model
+• 3 = Klobuchar model transmitted by BeiDou
+• 8 = Iono delay derived from dual frequency
+observations</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+          </Block>
+          <Block>
+            <Offset>18 + 16*N</Offset>
+            <Name>sigFlags</Name>
+            <Type>X2</Type>
+            <Comment>Signal related flags</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
+            <Bitfield>
+              <Type>
+                <Index>0:1</Index>
+                <Type>unsigned value</Type>
+                <Name>health</Name>
+                <Description>Signal health flag:
+• 0 = unknown
+• 1 = healthy
+• 2 = unhealthy</Description>
+              </Type>
+              <Type>
+                <Index>2</Index>
+                <Type>unsigned value</Type>
+                <Name>prSmoothed</Name>
+                <Description>1 = Pseudorange has been smoothed</Description>
+              </Type>
+              <Type>
+                <Index>3</Index>
+                <Type>unsigned value</Type>
+                <Name>prUsed</Name>
+                <Description>1 = Pseudorange has been used for this signal</Description>
+              </Type>
+              <Type>
+                <Index>4</Index>
+                <Type>unsigned value</Type>
+                <Name>crUsed</Name>
+                <Description>1 = Carrier range has been used for this signal</Description>
+              </Type>
+              <Type>
+                <Index>5</Index>
+                <Type>unsigned value</Type>
+                <Name>doUsed</Name>
+                <Description>1 = Range rate (Doppler) has been used for this signal</Description>
+              </Type>
+              <Type>
+                <Index>6</Index>
+                <Type>unsigned value</Type>
+                <Name>prCorrUsed</Name>
+                <Description>1 = Pseudorange corrections have been used for this
+signal</Description>
+              </Type>
+              <Type>
+                <Index>7</Index>
+                <Type>unsigned value</Type>
+                <Name>crCorrUsed</Name>
+                <Description>1 = Carrier range corrections have been used for this
+signal</Description>
+              </Type>
+              <Type>
+                <Index>8</Index>
+                <Type>unsigned value</Type>
+                <Name>doCorrUsed</Name>
+                <Description>1 = Range rate (Doppler) corrections have been used
+for this signal</Description>
+              </Type>
+              <Type>
+                <Index>9</Index>
+                <Type>unsigned value</Type>
+                <Name>authStatus</Name>
+                <Description>Authentication status of the navigation data used to
+compute the satellite's position in current navigation
+epoch. If the authentication fails, the navigation data
+is not used so the authentication status in this
+message can take only two values:
+• 0 = Unknown
+• 1 = Authenticated
+Note that currently the only data authentication
+function is provided by Galileo Open Service
+Navigation Message Authentication (OSNMA)
+protocol for E1 I/NAV message.</Description>
+              </Type>
+              <Type>
+                <Index>10:15</Index>
+                <Type>reserved</Type>
+                <Name />
+                <Description />
+              </Type>
+            </Bitfield>
+          </Block>
+          <Block>
+            <Offset>20 + 16*N</Offset>
+            <Name>reserved1</Name>
+            <Type>U1[4]</Type>
+            <Comment>Reserved</Comment>
+            <Scale>-</Scale>
+            <Unit>-</Unit>
           </Block>
         </Block>
       </Payload>
@@ -24724,7 +25046,7 @@ time base</Comment>
           <Comment>Message type (0 for this message)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0</Subtype>                    
+          <Subtype>0</Subtype>
         </Block>
       </Payload>
       <Checksum>CK_A CK_B</Checksum>
@@ -24749,7 +25071,7 @@ time base</Comment>
           <Comment>Message type (2 for this message)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>2</Subtype>                              
+          <Subtype>2</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -24840,7 +25162,7 @@ oscillator.</Comment>
           <Comment>Message type (3 for this message)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>3</Subtype>          
+          <Subtype>3</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -25013,7 +25335,7 @@ time minus sourced time)</Comment>
           <Comment>Command (must be 0)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>0</Subtype>          
+          <Subtype>0</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -25046,7 +25368,7 @@ time minus sourced time)</Comment>
           <Comment>Command (must be 1)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>1</Subtype>          
+          <Subtype>1</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -25079,7 +25401,7 @@ time minus sourced time)</Comment>
           <Comment>Command (must be 2)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>2</Subtype>                    
+          <Subtype>2</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
@@ -25129,7 +25451,7 @@ time minus sourced time)</Comment>
           <Comment>Command (must be 3)</Comment>
           <Scale>-</Scale>
           <Unit>-</Unit>
-          <Subtype>3</Subtype>                    
+          <Subtype>3</Subtype>
         </Block>
         <Block>
           <Offset>1</Offset>
