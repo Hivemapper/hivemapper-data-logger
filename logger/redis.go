@@ -71,6 +71,10 @@ func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssA
 	}
 }
 
+var (
+	prevItowMs uint32
+)
+
 func (s *Redis) Init() error {
 	fmt.Println("Initializing Redis logger")
 	s.DB = redis.NewClient(&redis.Options{
@@ -243,6 +247,12 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagDecDege2:  int32(m.MagDec_dege2),
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
+
+		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 250 {
+			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs, "ms (", prevItowMs, ",", m.ITOW_ms, ")")
+		}
+		prevItowMs = m.ITOW_ms
+
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavDop:
 		redisKey = "NavDop"
