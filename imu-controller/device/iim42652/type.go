@@ -86,6 +86,12 @@ var (
 	RegisterTmstFsyncH  = &Register{Bank0, 0x2B}
 	RegisterIntfConfig5 = &Register{Bank1, 0x7B}
 	RegisterFsyncConfig = &Register{Bank0, 0x62}
+
+	RegisterFifoConfig  = &Register{Bank0, 0x16}
+	RegisterFifoData    = &Register{Bank0, 0x30}
+	RegisterFifoConfig1 = &Register{Bank0, 0x5F}
+	RegisterIntfConfig0 = &Register{Bank0, 0x4C}
+	RegisterFifoCountH  = &Register{Bank0, 0x2E}
 )
 
 const (

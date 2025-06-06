@@ -63,7 +63,7 @@ func (f *RawFeed) Init() error {
 }
 
 func (f *RawFeed) Run() error {
-	fmt.Println("Run imu raw feed")
+	fmt.Println("Run mag raw feed")
 	for {
 		time.Sleep(25 * time.Millisecond)
 		mag_readings, err := readData(f.device)
