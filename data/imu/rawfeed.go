@@ -84,7 +84,6 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			validPackets = append(validPackets, fifoData)
 
 			if fifoData.Fsync.FsyncInt {
-				fmt.Println("Between fsyncs:", betweenFsyncs)
 				betweenFsyncs = 1
 			} else {
 				betweenFsyncs++
