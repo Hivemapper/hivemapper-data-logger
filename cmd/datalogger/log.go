@@ -178,7 +178,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			//directionEventFeed.HandleGnssData,
 			eventServer.HandleGnssData,
 		},
-		nil,  // Pass the message handlers to the feed
+		nil,
 		options...,
 	)
 
