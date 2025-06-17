@@ -44,6 +44,7 @@ type DataHandler struct {
 	imuChan           chan *logger.ImuRedisWrapper
 	gnssChan          chan *neom9n.Data
 	magChan           chan *logger.MagnetometerRedisWrapper
+	batchHandler      *BatchHandler
 }
 
 func NewDataHandler(
@@ -154,6 +155,22 @@ func NewDataHandler(
 		return nil, fmt.Errorf("initializing imu json logger: %w", err)
 	}
 
+	batchHandler := &BatchHandler{
+		imuBuffer:     make([]*imu.Acceleration, 0, BatchSize),
+		gnssBuffer:    make([]*neom9n.Data, 0, BatchSize),
+		imuMutex:      sync.Mutex{},
+		gnssMutex:     sync.Mutex{},
+		lastImuFlush:  time.Time{},
+		lastGnssFlush: time.Time{},
+		flushInterval: 100 * time.Millisecond,
+		redisLogsEnabled: redisLogsEnabled,
+		jsonLogsEnabled:  jsonLogsEnabled,
+		gnssAuthCount:     0,
+		imuJsonLogger:     imuJsonLogger,
+		gnssJsonLogger:    gnssJsonLogger,
+		redisLogger:       redisLogger,
+	}
+
 	return &DataHandler{
 		redisLogger:      redisLogger,
 		gnssJsonLogger:   gnssJsonLogger,
@@ -163,6 +180,7 @@ func NewDataHandler(
 		imuChan:          imuChan,
 		gnssChan:         gnssChan,
 		magChan:          magChan,
+		batchHandler:      batchHandler,
 	}, nil
 }
 
@@ -218,46 +236,22 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
-	err := h.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
-	if err != nil {
-		return fmt.Errorf("logging raw imu data to json: %w", err)
-	}
-
-	if h.redisLogsEnabled && h.imuChan != nil {
-		imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate)
-		select {
-		case h.imuChan <- imuDataWrapper2:
-		default:
-			// Optional: log dropped samples or increment a metric
-		}
-	}
-	return nil
+	return h.batchHandler.AddImuData(acceleration, angularRate, temperature)
 }
 
-func (b *BatchHandler) AddImuData(data *imu.Acceleration) error {
+func (b *BatchHandler) AddImuData(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	b.imuMutex.Lock()
 	defer b.imuMutex.Unlock()
 
-	b.imuBuffer = append(b.imuBuffer, data)
+	// Store all IMU data together
+	b.imuBuffer = append(b.imuBuffer, acceleration)
 	if len(b.imuBuffer) >= BatchSize || time.Since(b.lastImuFlush) >= b.flushInterval {
-		return b.flushImu()
+		return b.flushImu(angularRate, temperature)
 	}
 	return nil
 }
 
-func (b *BatchHandler) AddGnssData(data *neom9n.Data) error {
-	b.gnssMutex.Lock()
-	defer b.gnssMutex.Unlock()
-
-	b.gnssBuffer = append(b.gnssBuffer, data)
-	if len(b.gnssBuffer) >= BatchSize || time.Since(b.lastGnssFlush) >= b.flushInterval {
-		return b.flushGnss()
-	}
-	return nil
-}
-
-func (b *BatchHandler) flushImu() error {
+func (b *BatchHandler) flushImu(angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
 	b.imuMutex.Lock()
 	defer b.imuMutex.Unlock()
 
@@ -267,14 +261,14 @@ func (b *BatchHandler) flushImu() error {
 
 	// Process batch
 	for _, data := range b.imuBuffer {
-		imuDataWrapper := logger.NewImuDataWrapper(data.Temperature, data, data.AngularRate)
+		imuDataWrapper := logger.NewImuDataWrapper(temperature, data, angularRate)
 		err := b.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
 		if err != nil {
 			return fmt.Errorf("batch logging raw imu data to json: %w", err)
 		}
 
 		if b.redisLogsEnabled {
-			imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), data.Temperature, data, data.AngularRate)
+			imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, data, angularRate)
 			err = b.redisLogger.LogImuData(*imuDataWrapper2)
 			if err != nil {
 				return fmt.Errorf("batch logging raw imu data to redis: %w", err)
@@ -307,7 +301,7 @@ func (b *BatchHandler) flushGnss() error {
 			}
 
 			if b.redisLogsEnabled {
-				err = b.redisLogger.LogGnssData(*data)
+				err = b.redisLogger.Log(data)
 				if err != nil {
 					return fmt.Errorf("batch logging gnss data to redis: %w", err)
 				}
@@ -315,7 +309,7 @@ func (b *BatchHandler) flushGnss() error {
 		} else {
 			if b.gnssAuthCount%60 == 0 {
 				if b.redisLogsEnabled {
-					err := b.redisLogger.LogGnssAuthData(*data)
+					err := b.redisLogger.Log(data)
 					if err != nil {
 						return fmt.Errorf("batch logging gnss auth data to redis: %w", err)
 					}
