@@ -8,7 +8,6 @@ import (
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	sensordata "github.com/Hivemapper/hivemapper-data-logger/proto-out"
-	"github.com/daedaleanai/ublox/ubx"
 	"github.com/go-redis/redis/v8"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 	"google.golang.org/protobuf/encoding/prototext"
