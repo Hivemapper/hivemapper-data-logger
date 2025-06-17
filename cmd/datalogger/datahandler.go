@@ -1,9 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
+	"sync"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
