@@ -138,7 +138,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
-
+	err = gnssDevice.Init(nil)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
@@ -183,7 +183,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	)
 
 	go func() {
-		err = gnssEventFeed.Run(gnssDevice, nil, dataHandler.redisLogsEnabled)
+		err = gnssEventFeed.Run(gnssDevice, dataHandler.redisLogger, dataHandler.redisLogsEnabled)
 		if err != nil {
 			panic(fmt.Errorf("running gnss event feed: %w", err))
 		}
