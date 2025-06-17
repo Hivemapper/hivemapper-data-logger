@@ -16,12 +16,15 @@ const (
 )
 
 type BatchHandler struct {
-	imuBuffer     []*imu.Acceleration
+	imuBuffer     []*ImuData
 	gnssBuffer    []*neom9n.Data
+	magBuffer     []*logger.MagnetometerRedisWrapper
 	imuMutex      sync.Mutex
 	gnssMutex     sync.Mutex
+	magMutex      sync.Mutex
 	lastImuFlush  time.Time
 	lastGnssFlush time.Time
+	lastMagFlush  time.Time
 	flushInterval time.Duration
 	redisLogsEnabled bool
 	jsonLogsEnabled  bool
@@ -29,6 +32,12 @@ type BatchHandler struct {
 	imuJsonLogger     *logger.JsonFile
 	gnssJsonLogger    *logger.JsonFile
 	redisLogger       *logger.Redis
+}
+
+type ImuData struct {
+	Acceleration *imu.Acceleration
+	AngularRate  *iim42652.AngularRate
+	Temperature  iim42652.Temperature
 }
 
 type DataHandler struct {
@@ -156,12 +165,15 @@ func NewDataHandler(
 	}
 
 	batchHandler := &BatchHandler{
-		imuBuffer:     make([]*imu.Acceleration, 0, BatchSize),
+		imuBuffer:     make([]*ImuData, 0, BatchSize),
 		gnssBuffer:    make([]*neom9n.Data, 0, BatchSize),
+		magBuffer:     make([]*logger.MagnetometerRedisWrapper, 0, BatchSize),
 		imuMutex:      sync.Mutex{},
 		gnssMutex:     sync.Mutex{},
+		magMutex:      sync.Mutex{},
 		lastImuFlush:  time.Time{},
 		lastGnssFlush: time.Time{},
+		lastMagFlush:  time.Time{},
 		flushInterval: 100 * time.Millisecond,
 		redisLogsEnabled: redisLogsEnabled,
 		jsonLogsEnabled:  jsonLogsEnabled,
@@ -243,15 +255,40 @@ func (b *BatchHandler) AddImuData(acceleration *imu.Acceleration, angularRate *i
 	b.imuMutex.Lock()
 	defer b.imuMutex.Unlock()
 
-	// Store all IMU data together
-	b.imuBuffer = append(b.imuBuffer, acceleration)
+	b.imuBuffer = append(b.imuBuffer, &ImuData{
+		Acceleration: acceleration,
+		AngularRate:  angularRate,
+		Temperature:  temperature,
+	})
 	if len(b.imuBuffer) >= BatchSize || time.Since(b.lastImuFlush) >= b.flushInterval {
-		return b.flushImu(angularRate, temperature)
+		return b.flushImu()
 	}
 	return nil
 }
 
-func (b *BatchHandler) flushImu(angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
+func (b *BatchHandler) AddGnssData(data *neom9n.Data) error {
+	b.gnssMutex.Lock()
+	defer b.gnssMutex.Unlock()
+
+	b.gnssBuffer = append(b.gnssBuffer, data)
+	if len(b.gnssBuffer) >= BatchSize || time.Since(b.lastGnssFlush) >= b.flushInterval {
+		return b.flushGnss()
+	}
+	return nil
+}
+
+func (b *BatchHandler) AddMagnetometerData(data *logger.MagnetometerRedisWrapper) error {
+	b.magMutex.Lock()
+	defer b.magMutex.Unlock()
+
+	b.magBuffer = append(b.magBuffer, data)
+	if len(b.magBuffer) >= BatchSize || time.Since(b.lastMagFlush) >= b.flushInterval {
+		return b.flushMagnetometer()
+	}
+	return nil
+}
+
+func (b *BatchHandler) flushImu() error {
 	b.imuMutex.Lock()
 	defer b.imuMutex.Unlock()
 
@@ -259,20 +296,26 @@ func (b *BatchHandler) flushImu(angularRate *iim42652.AngularRate, temperature i
 		return nil
 	}
 
-	// Process batch
-	for _, data := range b.imuBuffer {
-		imuDataWrapper := logger.NewImuDataWrapper(temperature, data, angularRate)
-		err := b.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
-		if err != nil {
-			return fmt.Errorf("batch logging raw imu data to json: %w", err)
-		}
-
-		if b.redisLogsEnabled {
-			imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, data, angularRate)
-			err = b.redisLogger.LogImuData(*imuDataWrapper2)
+	// Batch JSON logging
+	if b.jsonLogsEnabled {
+		for _, data := range b.imuBuffer {
+			imuDataWrapper := logger.NewImuDataWrapper(data.Temperature, data.Acceleration, data.AngularRate)
+			err := b.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
 			if err != nil {
-				return fmt.Errorf("batch logging raw imu data to redis: %w", err)
+				return fmt.Errorf("batch logging raw imu data to json: %w", err)
 			}
+		}
+	}
+
+	// Batch Redis logging
+	if b.redisLogsEnabled {
+		imuWrappers := make([]*logger.ImuRedisWrapper, 0, len(b.imuBuffer))
+		for _, data := range b.imuBuffer {
+			imuWrappers = append(imuWrappers, logger.NewImuRedisWrapper(time.Now().UTC(), data.Temperature, data.Acceleration, data.AngularRate))
+		}
+		err := b.redisLogger.LogImuDataBatch(imuWrappers)
+		if err != nil {
+			return fmt.Errorf("batch logging raw imu data to redis: %w", err)
 		}
 	}
 
@@ -289,37 +332,51 @@ func (b *BatchHandler) flushGnss() error {
 		return nil
 	}
 
-	// Process batch
-	for _, data := range b.gnssBuffer {
-		if data.SecEcsign == nil {
-			if b.jsonLogsEnabled && !b.gnssJsonLogger.IsLogging && data.Fix != "none" {
-				b.gnssJsonLogger.StartStoring()
-			}
-			err := b.gnssJsonLogger.Log(data.Timestamp, data)
-			if err != nil {
-				return fmt.Errorf("batch logging gnss data to json: %w", err)
-			}
-
-			if b.redisLogsEnabled {
-				err = b.redisLogger.LogGnssDataBatch([]*neom9n.Data{data})
+	// Batch JSON logging
+	if b.jsonLogsEnabled {
+		for _, data := range b.gnssBuffer {
+			if data.SecEcsign == nil && data.Fix != "none" {
+				if !b.gnssJsonLogger.IsLogging {
+					b.gnssJsonLogger.StartStoring()
+				}
+				err := b.gnssJsonLogger.Log(data.Timestamp, data)
 				if err != nil {
-					return fmt.Errorf("batch logging gnss data to redis: %w", err)
+					return fmt.Errorf("batch logging gnss data to json: %w", err)
 				}
 			}
-		} else {
-			if b.gnssAuthCount%60 == 0 {
-				if b.redisLogsEnabled {
-					err := b.redisLogger.LogGnssDataBatch([]*neom9n.Data{data})
-					if err != nil {
-						return fmt.Errorf("batch logging gnss auth data to redis: %w", err)
-					}
-				}
-			}
-			b.gnssAuthCount += 1
+		}
+	}
+
+	// Batch Redis logging
+	if b.redisLogsEnabled {
+		err := b.redisLogger.LogGnssDataBatch(b.gnssBuffer)
+		if err != nil {
+			return fmt.Errorf("batch logging gnss data to redis: %w", err)
 		}
 	}
 
 	b.gnssBuffer = b.gnssBuffer[:0]
 	b.lastGnssFlush = time.Now()
+	return nil
+}
+
+func (b *BatchHandler) flushMagnetometer() error {
+	b.magMutex.Lock()
+	defer b.magMutex.Unlock()
+
+	if len(b.magBuffer) == 0 {
+		return nil
+	}
+
+	// Batch Redis logging
+	if b.redisLogsEnabled {
+		err := b.redisLogger.LogMagnetometerDataBatch(b.magBuffer)
+		if err != nil {
+			return fmt.Errorf("batch logging magnetometer data to redis: %w", err)
+		}
+	}
+
+	b.magBuffer = b.magBuffer[:0]
+	b.lastMagFlush = time.Now()
 	return nil
 }
