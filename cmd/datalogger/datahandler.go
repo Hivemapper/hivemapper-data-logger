@@ -148,7 +148,7 @@ func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float
 	// 	}
 	// }
 
-	// return nil
+	return nil
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
