@@ -57,6 +57,8 @@ type Redis struct {
 	maxGnssEntries     int
 	maxGnssAuthEntries int
 	logProtoText       bool
+	imuBuffer          []ImuRedisWrapper
+	imuFlushThreshold  int
 }
 
 func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int, logProtoText bool) *Redis {
@@ -66,6 +68,8 @@ func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssA
 		maxGnssEntries:     maxGnssEntries,
 		maxGnssAuthEntries: maxGnssAuthEntries,
 		logProtoText:       logProtoText,
+		imuBuffer:          make([]ImuRedisWrapper, 0),
+		imuFlushThreshold:  10, 
 	}
 }
 
@@ -89,38 +93,50 @@ func (s *Redis) Init() error {
 }
 
 func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
-	// create imu proto
-	newdata := sensordata.ImuData{
-		SystemTime: imudata.System_time.String(),
-		Accelerometer: &sensordata.ImuData_AccelerometerData{
-			X: imudata.Accel.X,
-			Y: imudata.Accel.Y,
-			Z: imudata.Accel.Z,
-		},
-		Gyroscope: &sensordata.ImuData_GyroscopeData{
-			X: imudata.Gyro.X,
-			Y: imudata.Gyro.Y,
-			Z: imudata.Gyro.Z,
-		},
-		Temperature: imudata.Temp,
-		Time:        imudata.Time.String(),
-	}
-	// serialize the data
-	protodata, err := s.Marshal(&newdata)
-	if err != nil {
-		return err
+	s.imuBuffer = append(s.imuBuffer, imudata)
+
+	if len(s.imuBuffer) < s.imuFlushThreshold {
+		return nil // not enough data to flush yet
 	}
 
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "imu_data", protodata).Err(); err != nil {
-		return err
+	values := make([]interface{}, 0, len(s.imuBuffer))
+	for _, imu := range s.imuBuffer {
+		newdata := sensordata.ImuData{
+			SystemTime: imu.System_time.String(),
+			Accelerometer: &sensordata.ImuData_AccelerometerData{
+				X: imu.Accel.X,
+				Y: imu.Accel.Y,
+				Z: imu.Accel.Z,
+			},
+			Gyroscope: &sensordata.ImuData_GyroscopeData{
+				X: imu.Gyro.X,
+				Y: imu.Gyro.Y,
+				Z: imu.Gyro.Z,
+			},
+			Temperature: imu.Temp,
+			Time:        imu.Time.String(),
+		}
+
+		protodata, err := s.Marshal(&newdata)
+		if err != nil {
+			return fmt.Errorf("marshal IMU failed: %w", err)
+		}
+		values = append(values, protodata)
+	}
+
+	// Write batch to Redis
+	if err := s.DB.LPush(s.ctx, "imu_data", values...).Err(); err != nil {
+		return fmt.Errorf("redis LPush failed: %w", err)
 	}
 
 	if err := s.DB.LTrim(s.ctx, "imu_data", 0, int64(s.maxImuEntries)).Err(); err != nil {
-		return err
+		return fmt.Errorf("redis LTrim failed: %w", err)
 	}
+
+	s.imuBuffer = s.imuBuffer[:0] // clear buffer
 	return nil
 }
+
 
 func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 	// create magnetometer proto
@@ -524,4 +540,11 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	}
 
 	return nil
+}
+
+func (s *Redis) FlushImuBuffer() error {
+	if len(s.imuBuffer) == 0 {
+		return nil
+	}
+	return s.LogImuData(ImuRedisWrapper{}) // trigger flush when threshold met
 }
