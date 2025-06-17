@@ -108,8 +108,8 @@ func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
 	// 		}
 	// 	}
 	// 	h.gnssAuthCount += 1
-		return nil
-	}
+	// 	return nil
+	// }
 
 	return nil
 }
