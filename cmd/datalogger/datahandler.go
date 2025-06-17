@@ -82,32 +82,32 @@ func (h *DataHandler) HandleOrientedAcceleration(
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
-	if data.SecEcsign == nil {
-		h.gnssData = data
-		if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
-			h.gnssJsonLogger.StartStoring()
-		}
-		err := h.gnssJsonLogger.Log(data.Timestamp, data)
-		if err != nil {
-			return fmt.Errorf("logging gnss data to json: %w", err)
-		}
+	// if data.SecEcsign == nil {
+	// 	h.gnssData = data
+	// 	if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
+	// 		h.gnssJsonLogger.StartStoring()
+	// 	}
+	// 	err := h.gnssJsonLogger.Log(data.Timestamp, data)
+	// 	if err != nil {
+	// 		return fmt.Errorf("logging gnss data to json: %w", err)
+	// 	}
 
-		if h.redisLogsEnabled {
-			err = h.redisLogger.LogGnssData(*data)
-			if err != nil {
-				return fmt.Errorf("logging gnss data to redis: %w", err)
-			}
-		}
-	} else {
-		if h.gnssAuthCount%60 == 0 {
-			if h.redisLogsEnabled {
-				err := h.redisLogger.LogGnssAuthData(*data)
-				if err != nil {
-					return fmt.Errorf("logging gnss data to redis: %w", err)
-				}
-			}
-		}
-		h.gnssAuthCount += 1
+	// 	if h.redisLogsEnabled {
+	// 		err = h.redisLogger.LogGnssData(*data)
+	// 		if err != nil {
+	// 			return fmt.Errorf("logging gnss data to redis: %w", err)
+	// 		}
+	// 	}
+	// } else {
+	// 	if h.gnssAuthCount%60 == 0 {
+	// 		if h.redisLogsEnabled {
+	// 			err := h.redisLogger.LogGnssAuthData(*data)
+	// 			if err != nil {
+	// 				return fmt.Errorf("logging gnss data to redis: %w", err)
+	// 			}
+	// 		}
+	// 	}
+	// 	h.gnssAuthCount += 1
 		return nil
 	}
 
@@ -130,40 +130,40 @@ func calibrate(mag_x float64, mag_y float64, mag_z float64, transform [3][3]floa
 }
 
 func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
-	var center [3]float64
-	var transform [3][3]float64
-	center = [3]float64{0, 0, 0}
-	transform = [3][3]float64{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1},
-	}
+	// var center [3]float64
+	// var transform [3][3]float64
+	// center = [3]float64{0, 0, 0}
+	// transform = [3][3]float64{
+	// 	{1, 0, 0},
+	// 	{0, 1, 0},
+	// 	{0, 0, 1},
+	// }
 
-	calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
-	magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
-	if h.redisLogsEnabled {
-		err := h.redisLogger.LogMagnetometerData(*magDataWrapper)
-		if err != nil {
-			return fmt.Errorf("logging magnetometer data to redis: %w", err)
-		}
-	}
+	// calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
+	// magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
+	// if h.redisLogsEnabled {
+	// 	err := h.redisLogger.LogMagnetometerData(*magDataWrapper)
+	// 	if err != nil {
+	// 		return fmt.Errorf("logging magnetometer data to redis: %w", err)
+	// 	}
+	// }
 
-	return nil
+	// return nil
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
-	err := h.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
-	if err != nil {
-		return fmt.Errorf("logging raw imu data to json: %w", err)
-	}
+	// imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
+	// err := h.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
+	// if err != nil {
+	// 	return fmt.Errorf("logging raw imu data to json: %w", err)
+	// }
 
-	imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate)
-	if h.redisLogsEnabled {
-		err = h.redisLogger.LogImuData(*imuDataWrapper2)
-		if err != nil {
-			return fmt.Errorf("logging raw imu data to redis: %w", err)
-		}
-	}
+	// imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate)
+	// if h.redisLogsEnabled {
+	// 	err = h.redisLogger.LogImuData(*imuDataWrapper2)
+	// 	if err != nil {
+	// 		return fmt.Errorf("logging raw imu data to redis: %w", err)
+	// 	}
+	// }
 	return nil
 }
