@@ -138,7 +138,18 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
-	err = gnssDevice.Init(nil)
+	
+	// Initialize GNSS device with proper message handlers
+	messageHandlers := []neom9n.MessageHandler{
+		neom9n.NewNavPvtHandler(),
+		neom9n.NewNavSatHandler(),
+		neom9n.NewNavStatusHandler(),
+		neom9n.NewNavTimeLsHandler(),
+		neom9n.NewMonSpanHandler(),
+		neom9n.NewMonSysHandler(),
+	}
+	
+	err = gnssDevice.Init(messageHandlers)
 	if err != nil {
 		return fmt.Errorf("initializing neom9n: %w", err)
 	}
@@ -178,7 +189,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			//directionEventFeed.HandleGnssData,
 			eventServer.HandleGnssData,
 		},
-		nil,
+		messageHandlers,  // Pass the message handlers to the feed
 		options...,
 	)
 
