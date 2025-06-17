@@ -57,6 +57,12 @@ type Redis struct {
 	maxGnssEntries     int
 	maxGnssAuthEntries int
 	logProtoText       bool
+	imuBuffer          []ImuRedisWrapper
+	imuFlushThreshold  int
+	gnssBuffer         []neom9n.Data
+	gnssFlushThreshold int
+	magBuffer         []MagnetometerRedisWrapper
+	magFlushThreshold int
 }
 
 func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int, logProtoText bool) *Redis {
@@ -66,6 +72,12 @@ func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssA
 		maxGnssEntries:     maxGnssEntries,
 		maxGnssAuthEntries: maxGnssAuthEntries,
 		logProtoText:       logProtoText,
+		imuFlushThreshold:  100,
+		gnssFlushThreshold: 50,
+		magFlushThreshold: 50,
+		imuBuffer:          make([]ImuRedisWrapper, 0),
+		gnssBuffer:         make([]neom9n.Data, 0),			
+		magBuffer:         make([]MagnetometerRedisWrapper, 0),
 	}
 }
 
@@ -89,139 +101,179 @@ func (s *Redis) Init() error {
 }
 
 func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
-	// create imu proto
-	newdata := sensordata.ImuData{
-		SystemTime: imudata.System_time.String(),
-		Accelerometer: &sensordata.ImuData_AccelerometerData{
-			X: imudata.Accel.X,
-			Y: imudata.Accel.Y,
-			Z: imudata.Accel.Z,
-		},
-		Gyroscope: &sensordata.ImuData_GyroscopeData{
-			X: imudata.Gyro.X,
-			Y: imudata.Gyro.Y,
-			Z: imudata.Gyro.Z,
-		},
-		Temperature: imudata.Temp,
-		Time:        imudata.Time.String(),
-	}
-	// serialize the data
-	protodata, err := s.Marshal(&newdata)
-	if err != nil {
-		return err
+	s.imuBuffer = append(s.imuBuffer, imudata)
+
+	if len(s.imuBuffer) < s.imuFlushThreshold {
+		return nil // not enough data to flush yet
 	}
 
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "imu_data", protodata).Err(); err != nil {
-		return err
+	values := make([]interface{}, 0, len(s.imuBuffer))
+	for _, imu := range s.imuBuffer {
+		newdata := sensordata.ImuData{
+			SystemTime: imu.System_time.String(),
+			Accelerometer: &sensordata.ImuData_AccelerometerData{
+				X: imu.Accel.X,
+				Y: imu.Accel.Y,
+				Z: imu.Accel.Z,
+			},
+			Gyroscope: &sensordata.ImuData_GyroscopeData{
+				X: imu.Gyro.X,
+				Y: imu.Gyro.Y,
+				Z: imu.Gyro.Z,
+			},
+			Temperature: imu.Temp,
+			Time:        imu.Time.String(),
+		}
+
+		protodata, err := s.Marshal(&newdata)
+		if err != nil {
+			return fmt.Errorf("marshal IMU failed: %w", err)
+		}
+		values = append(values, protodata)
+	}
+
+	// Write batch to Redis
+	if err := s.DB.LPush(s.ctx, "imu_data", values...).Err(); err != nil {
+		return fmt.Errorf("redis LPush failed: %w", err)
 	}
 
 	if err := s.DB.LTrim(s.ctx, "imu_data", 0, int64(s.maxImuEntries)).Err(); err != nil {
-		return err
+		return fmt.Errorf("redis LTrim failed: %w", err)
 	}
+
+	s.imuBuffer = s.imuBuffer[:0] // clear buffer
 	return nil
 }
+
 
 func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
-	// create magnetometer proto
-	newdata := sensordata.MagnetometerData{
-		SystemTime: magdata.System_time.String(),
-		X:          magdata.Mag_x,
-		Y:          magdata.Mag_y,
-		Z:          magdata.Mag_z,
-	}
-	// serialize the data
-	protodata, err := s.Marshal(&newdata)
-	if err != nil {
-		return err
+	s.magBuffer = append(s.magBuffer, magdata)
+
+	if len(s.magBuffer) < s.magFlushThreshold {
+		return nil
 	}
 
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "magnetometer_data", protodata).Err(); err != nil {
-		return err
+	values := make([]interface{}, 0, len(s.magBuffer))
+
+	for _, mag := range s.magBuffer {
+		newdata := sensordata.MagnetometerData{
+			SystemTime: mag.System_time.String(),
+			X:          mag.Mag_x,
+			Y:          mag.Mag_y,
+			Z:          mag.Mag_z,
+		}
+
+		protodata, err := s.Marshal(&newdata)
+		if err != nil {
+			return fmt.Errorf("marshal magnetometer failed: %w", err)
+		}
+
+		values = append(values, protodata)
 	}
+
+	if err := s.DB.LPush(s.ctx, "magnetometer_data", values...).Err(); err != nil {
+		return fmt.Errorf("redis LPush magnetometer failed: %w", err)
+	}
+
 	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, int64(s.maxMagEntries)).Err(); err != nil {
-		return err
+		return fmt.Errorf("redis LTrim magnetometer failed: %w", err)
 	}
+
+	s.magBuffer = s.magBuffer[:0] // clear buffer
 	return nil
 }
+
 
 func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
-	// Create gnss proto
-	newdata := sensordata.GnssData{
-		Ttff:                gnssdata.Ttff,
-		SystemTime:          gnssdata.SystemTime.String(),
-		ActualSystemTime:    gnssdata.ActualSystemTime.String(),
-		Timestamp:           gnssdata.Timestamp.String(),
-		Fix:                 gnssdata.Fix,
-		Latitude:            gnssdata.Latitude,
-		UnfilteredLatitude:  gnssdata.UnfilteredLatitude,
-		Longitude:           gnssdata.Longitude,
-		UnfilteredLongitude: gnssdata.UnfilteredLongitude,
-		Altitude:            gnssdata.Altitude,
-		Heading:             gnssdata.Heading,
-		Speed:               gnssdata.Speed,
-		Dop: &sensordata.GnssData_Dop{
-			Hdop: gnssdata.Dop.HDop,
-			Vdop: gnssdata.Dop.VDop,
-			Tdop: gnssdata.Dop.TDop,
-			Gdop: gnssdata.Dop.GDop,
-			Pdop: gnssdata.Dop.PDop,
-			Xdop: gnssdata.Dop.XDop,
-			Ydop: gnssdata.Dop.YDop,
-		},
-		Satellites: &sensordata.GnssData_Satellites{
-			Seen: int64(gnssdata.Satellites.Seen),
-			Used: int64(gnssdata.Satellites.Used),
-		},
-		Sep: gnssdata.Sep,
-		Eph: gnssdata.Eph,
-		Rf: &sensordata.GnssData_RF{
-			JammingState: gnssdata.RF.JammingState,
-			AntStatus:    gnssdata.RF.AntStatus,
-			AntPower:     gnssdata.RF.AntPower,
-			PostStatus:   gnssdata.RF.PostStatus,
-			NoisePerMs:   uint32(gnssdata.RF.NoisePerMS),
-			AgcCnt:       uint32(gnssdata.RF.AgcCnt),
-			JamInd:       uint32(gnssdata.RF.JamInd),
-			OfsI:         int32(gnssdata.RF.OfsI),
-			MagI:         int32(gnssdata.RF.MagI),
-			OfsQ:         int32(gnssdata.RF.OfsQ),
-			MagQ:         int32(gnssdata.RF.MagQ),
-		},
-		SpeedAccuracy:      gnssdata.SpeedAccuracy,
-		HeadingAccuracy:    gnssdata.HeadingAccuracy,
-		TimeResolved:       int32(gnssdata.TimeResolved),
-		HorizontalAccuracy: gnssdata.HorizontalAccuracy,
-		VerticalAccuracy:   gnssdata.VerticalAccuracy,
-		Gga:                gnssdata.GGA,
-		Cno:                gnssdata.Cno,
-		PosConfidence:      gnssdata.PosConfidence,
+	s.gnssBuffer = append(s.gnssBuffer, gnssdata)
+
+	if len(s.gnssBuffer) < s.gnssFlushThreshold {
+		return nil
 	}
 
-	if gnssdata.RxmMeasx != nil {
-		newdata.RxmMeasx = &sensordata.GnssData_RxmMeasx{
-			GpsTowMs: gnssdata.RxmMeasx.GpsTOW_ms,
-			GloTowMs: gnssdata.RxmMeasx.GloTOW_ms,
-			BdsTowMs: gnssdata.RxmMeasx.BdsTOW_ms,
+	values := make([]interface{}, 0, len(s.gnssBuffer))
+
+	for _, data := range s.gnssBuffer {
+		newdata := sensordata.GnssData{
+			Ttff:                data.Ttff,
+			SystemTime:          data.SystemTime.String(),
+			ActualSystemTime:    data.ActualSystemTime.String(),
+			Timestamp:           data.Timestamp.String(),
+			Fix:                 data.Fix,
+			Latitude:            data.Latitude,
+			UnfilteredLatitude:  data.UnfilteredLatitude,
+			Longitude:           data.Longitude,
+			UnfilteredLongitude: data.UnfilteredLongitude,
+			Altitude:            data.Altitude,
+			Heading:             data.Heading,
+			Speed:               data.Speed,
+			Dop: &sensordata.GnssData_Dop{
+				Hdop: data.Dop.HDop,
+				Vdop: data.Dop.VDop,
+				Tdop: data.Dop.TDop,
+				Gdop: data.Dop.GDop,
+				Pdop: data.Dop.PDop,
+				Xdop: data.Dop.XDop,
+				Ydop: data.Dop.YDop,
+			},
+			Satellites: &sensordata.GnssData_Satellites{
+				Seen: int64(data.Satellites.Seen),
+				Used: int64(data.Satellites.Used),
+			},
+			Sep:                data.Sep,
+			Eph:                data.Eph,
+			SpeedAccuracy:      data.SpeedAccuracy,
+			HeadingAccuracy:    data.HeadingAccuracy,
+			TimeResolved:       int32(data.TimeResolved),
+			HorizontalAccuracy: data.HorizontalAccuracy,
+			VerticalAccuracy:   data.VerticalAccuracy,
+			Gga:                data.GGA,
+			Cno:                data.Cno,
+			PosConfidence:      data.PosConfidence,
+			Rf: &sensordata.GnssData_RF{
+				JammingState: data.RF.JammingState,
+				AntStatus:    data.RF.AntStatus,
+				AntPower:     data.RF.AntPower,
+				PostStatus:   data.RF.PostStatus,
+				NoisePerMs:   uint32(data.RF.NoisePerMS),
+				AgcCnt:       uint32(data.RF.AgcCnt),
+				JamInd:       uint32(data.RF.JamInd),
+				OfsI:         int32(data.RF.OfsI),
+				MagI:         int32(data.RF.MagI),
+				OfsQ:         int32(data.RF.OfsQ),
+				MagQ:         int32(data.RF.MagQ),
+			},
 		}
+
+		if data.RxmMeasx != nil {
+			newdata.RxmMeasx = &sensordata.GnssData_RxmMeasx{
+				GpsTowMs: data.RxmMeasx.GpsTOW_ms,
+				GloTowMs: data.RxmMeasx.GloTOW_ms,
+				BdsTowMs: data.RxmMeasx.BdsTOW_ms,
+			}
+		}
+
+		protodata, err := s.Marshal(&newdata)
+		if err != nil {
+			return fmt.Errorf("marshal GNSS failed: %w", err)
+		}
+
+		values = append(values, protodata)
 	}
 
-	// serialize the data
-	protodata, err := s.Marshal(&newdata)
-	if err != nil {
-		return err
+	// Batch write to Redis
+	if err := s.DB.LPush(s.ctx, "gnss_data", values...).Err(); err != nil {
+		return fmt.Errorf("redis LPush GNSS failed: %w", err)
 	}
 
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "gnss_data", protodata).Err(); err != nil {
-		return err
-	}
 	if err := s.DB.LTrim(s.ctx, "gnss_data", 0, int64(s.maxGnssEntries)).Err(); err != nil {
-		return err
+		return fmt.Errorf("redis LTrim GNSS failed: %w", err)
 	}
+
+	s.gnssBuffer = s.gnssBuffer[:0] // reset buffer
 	return nil
 }
+
 
 func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 	// Create gnss auth proto
@@ -524,4 +576,25 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	}
 
 	return nil
+}
+
+func (s *Redis) FlushImuBuffer() error {
+	if len(s.imuBuffer) == 0 {
+		return nil
+	}
+	return s.LogImuData(ImuRedisWrapper{}) // trigger flush when threshold met
+}
+
+func (s *Redis) FlushGnssBuffer() error {
+	if len(s.gnssBuffer) == 0 {
+		return nil
+	}
+	return s.LogGnssData(neom9n.Data{}) // will flush if threshold met
+}
+
+func (s *Redis) FlushMagBuffer() error {
+	if len(s.magBuffer) == 0 {
+		return nil
+	}
+	return s.LogMagnetometerData(MagnetometerRedisWrapper{}) // trigger flush logic
 }
