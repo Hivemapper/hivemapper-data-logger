@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -19,6 +20,10 @@ type DataHandler struct {
 	jsonLogsEnabled   bool
 	redisLogsEnabled  bool
 	gnssAuthCount     int
+
+	imuChan           chan *logger.ImuRedisWrapper
+	gnssChan          chan *neom9n.Data
+	magChan           chan *logger.MagnetometerRedisWrapper
 }
 
 func NewDataHandler(
@@ -38,12 +43,83 @@ func NewDataHandler(
 ) (*DataHandler, error) {
 
 	var redisLogger *logger.Redis = nil
+	var imuChan chan *logger.ImuRedisWrapper
+	var gnssChan chan *neom9n.Data
+	var magChan chan *logger.MagnetometerRedisWrapper
+
 	if redisLogsEnabled {
 		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries, redisLogProtoText)
 		err := redisLogger.Init()
 		if err != nil {
 			return nil, fmt.Errorf("initializing redis logger database: %w", err)
 		}
+
+		imuChan = make(chan *logger.ImuRedisWrapper, 10000)
+		gnssChan = make(chan *neom9n.Data, 10000)
+		magChan = make(chan *logger.MagnetometerRedisWrapper, 10000)
+
+		// IMU batch writer
+		go func() {
+			batch := make([]*logger.ImuRedisWrapper, 0, 100)
+			ticker := time.NewTicker(100 * time.Millisecond)
+			for {
+				select {
+				case msg := <-imuChan:
+					batch = append(batch, msg)
+					if len(batch) >= 50 {
+						_ = redisLogger.LogImuDataBatch(batch)
+						batch = batch[:0]
+					}
+				case <-ticker.C:
+					if len(batch) > 0 {
+						_ = redisLogger.LogImuDataBatch(batch)
+						batch = batch[:0]
+					}
+				}
+			}
+		}()
+
+		// GNSS batch writer
+		go func() {
+			batch := make([]*neom9n.Data, 0, 100)
+			ticker := time.NewTicker(200 * time.Millisecond)
+			for {
+				select {
+				case msg := <-gnssChan:
+					batch = append(batch, msg)
+					if len(batch) >= 50 {
+						_ = redisLogger.LogGnssDataBatch(batch)
+						batch = batch[:0]
+					}
+				case <-ticker.C:
+					if len(batch) > 0 {
+						_ = redisLogger.LogGnssDataBatch(batch)
+						batch = batch[:0]
+					}
+				}
+			}
+		}()
+
+		// Magnetometer batch writer
+		go func() {
+			batch := make([]*logger.MagnetometerRedisWrapper, 0, 100)
+			ticker := time.NewTicker(200 * time.Millisecond)
+			for {
+				select {
+				case msg := <-magChan:
+					batch = append(batch, msg)
+					if len(batch) >= 50 {
+						_ = redisLogger.LogMagnetometerDataBatch(batch)
+						batch = batch[:0]
+					}
+				case <-ticker.C:
+					if len(batch) > 0 {
+						_ = redisLogger.LogMagnetometerDataBatch(batch)
+						batch = batch[:0]
+					}
+				}
+			}
+		}()
 	}
 
 	gnssJsonLogger := logger.NewJsonFile(gnssJsonDestFolder, gnssSaveInterval)
@@ -64,7 +140,10 @@ func NewDataHandler(
 		imuJsonLogger:    imuJsonLogger,
 		jsonLogsEnabled:  jsonLogsEnabled,
 		redisLogsEnabled: redisLogsEnabled,
-	}, err
+		imuChan:          imuChan,
+		gnssChan:         gnssChan,
+		magChan:          magChan,
+	}, nil
 }
 
 func (h *DataHandler) HandleImage(imageFileName string) error {
@@ -82,35 +161,13 @@ func (h *DataHandler) HandleOrientedAcceleration(
 }
 
 func (h *DataHandler) HandlerGnssData(data *neom9n.Data) error {
-	// if data.SecEcsign == nil {
-	// 	h.gnssData = data
-	// 	if h.jsonLogsEnabled && !h.gnssJsonLogger.IsLogging && data.Fix != "none" {
-	// 		h.gnssJsonLogger.StartStoring()
-	// 	}
-	// 	err := h.gnssJsonLogger.Log(data.Timestamp, data)
-	// 	if err != nil {
-	// 		return fmt.Errorf("logging gnss data to json: %w", err)
-	// 	}
-
-	// 	if h.redisLogsEnabled {
-	// 		err = h.redisLogger.LogGnssData(*data)
-	// 		if err != nil {
-	// 			return fmt.Errorf("logging gnss data to redis: %w", err)
-	// 		}
-	// 	}
-	// } else {
-	// 	if h.gnssAuthCount%60 == 0 {
-	// 		if h.redisLogsEnabled {
-	// 			err := h.redisLogger.LogGnssAuthData(*data)
-	// 			if err != nil {
-	// 				return fmt.Errorf("logging gnss data to redis: %w", err)
-	// 			}
-	// 		}
-	// 	}
-	// 	h.gnssAuthCount += 1
-	// 	return nil
-	// }
-
+	if h.redisLogsEnabled && h.gnssChan != nil {
+		select {
+		case h.gnssChan <- data:
+		default:
+			// drop
+		}
+	}
 	return nil
 }
 
@@ -119,7 +176,6 @@ func calibrate(mag_x float64, mag_y float64, mag_z float64, transform [3][3]floa
 	for i := 0; i < 3; i++ {
 		mag[i] -= center[i]
 	}
-
 	results := [3]float64{0, 0, 0}
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -130,40 +186,31 @@ func calibrate(mag_x float64, mag_y float64, mag_z float64, transform [3][3]floa
 }
 
 func (h *DataHandler) HandlerMagnetometerData(system_time time.Time, mag_x float64, mag_y float64, mag_z float64) error {
-	// var center [3]float64
-	// var transform [3][3]float64
-	// center = [3]float64{0, 0, 0}
-	// transform = [3][3]float64{
-	// 	{1, 0, 0},
-	// 	{0, 1, 0},
-	// 	{0, 0, 1},
-	// }
-
-	// calibrated_mag := calibrate(mag_x, mag_y, mag_z, transform, center)
-	// magDataWrapper := logger.NewMagnetometerRedisWrapper(system_time, calibrated_mag[0], calibrated_mag[1], calibrated_mag[2])
-	// if h.redisLogsEnabled {
-	// 	err := h.redisLogger.LogMagnetometerData(*magDataWrapper)
-	// 	if err != nil {
-	// 		return fmt.Errorf("logging magnetometer data to redis: %w", err)
-	// 	}
-	// }
-
+	if h.redisLogsEnabled && h.magChan != nil {
+		magData := logger.NewMagnetometerRedisWrapper(system_time, mag_x, mag_y, mag_z)
+		select {
+		case h.magChan <- magData:
+		default:
+			// drop
+		}
+	}
 	return nil
 }
 
 func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, temperature iim42652.Temperature) error {
-	// imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
-	// err := h.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
-	// if err != nil {
-	// 	return fmt.Errorf("logging raw imu data to json: %w", err)
-	// }
+	imuDataWrapper := logger.NewImuDataWrapper(temperature, acceleration, angularRate)
+	err := h.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
+	if err != nil {
+		return fmt.Errorf("logging raw imu data to json: %w", err)
+	}
 
-	// imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate)
-	// if h.redisLogsEnabled {
-	// 	err = h.redisLogger.LogImuData(*imuDataWrapper2)
-	// 	if err != nil {
-	// 		return fmt.Errorf("logging raw imu data to redis: %w", err)
-	// 	}
-	// }
+	if h.redisLogsEnabled && h.imuChan != nil {
+		imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), temperature, acceleration, angularRate)
+		select {
+		case h.imuChan <- imuDataWrapper2:
+		default:
+			// Optional: log dropped samples or increment a metric
+		}
+	}
 	return nil
 }
