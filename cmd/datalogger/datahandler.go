@@ -11,6 +11,26 @@ import (
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
 
+const (
+	BatchSize = 100
+)
+
+type BatchHandler struct {
+	imuBuffer     []*imu.Acceleration
+	gnssBuffer    []*neom9n.Data
+	imuMutex      sync.Mutex
+	gnssMutex     sync.Mutex
+	lastImuFlush  time.Time
+	lastGnssFlush time.Time
+	flushInterval time.Duration
+	redisLogsEnabled bool
+	jsonLogsEnabled  bool
+	gnssAuthCount     int
+	imuJsonLogger     *logger.JsonFile
+	gnssJsonLogger    *logger.JsonFile
+	redisLogger       *logger.Redis
+}
+
 type DataHandler struct {
 	redisLogger       *logger.Redis
 	gnssJsonLogger    *logger.JsonFile
@@ -212,5 +232,100 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 			// Optional: log dropped samples or increment a metric
 		}
 	}
+	return nil
+}
+
+func (b *BatchHandler) AddImuData(data *imu.Acceleration) error {
+	b.imuMutex.Lock()
+	defer b.imuMutex.Unlock()
+
+	b.imuBuffer = append(b.imuBuffer, data)
+	if len(b.imuBuffer) >= BatchSize || time.Since(b.lastImuFlush) >= b.flushInterval {
+		return b.flushImu()
+	}
+	return nil
+}
+
+func (b *BatchHandler) AddGnssData(data *neom9n.Data) error {
+	b.gnssMutex.Lock()
+	defer b.gnssMutex.Unlock()
+
+	b.gnssBuffer = append(b.gnssBuffer, data)
+	if len(b.gnssBuffer) >= BatchSize || time.Since(b.lastGnssFlush) >= b.flushInterval {
+		return b.flushGnss()
+	}
+	return nil
+}
+
+func (b *BatchHandler) flushImu() error {
+	b.imuMutex.Lock()
+	defer b.imuMutex.Unlock()
+
+	if len(b.imuBuffer) == 0 {
+		return nil
+	}
+
+	// Process batch
+	for _, data := range b.imuBuffer {
+		imuDataWrapper := logger.NewImuDataWrapper(data.Temperature, data, data.AngularRate)
+		err := b.imuJsonLogger.Log(time.Now().UTC(), imuDataWrapper)
+		if err != nil {
+			return fmt.Errorf("batch logging raw imu data to json: %w", err)
+		}
+
+		if b.redisLogsEnabled {
+			imuDataWrapper2 := logger.NewImuRedisWrapper(time.Now().UTC(), data.Temperature, data, data.AngularRate)
+			err = b.redisLogger.LogImuData(*imuDataWrapper2)
+			if err != nil {
+				return fmt.Errorf("batch logging raw imu data to redis: %w", err)
+			}
+		}
+	}
+
+	b.imuBuffer = b.imuBuffer[:0]
+	b.lastImuFlush = time.Now()
+	return nil
+}
+
+func (b *BatchHandler) flushGnss() error {
+	b.gnssMutex.Lock()
+	defer b.gnssMutex.Unlock()
+
+	if len(b.gnssBuffer) == 0 {
+		return nil
+	}
+
+	// Process batch
+	for _, data := range b.gnssBuffer {
+		if data.SecEcsign == nil {
+			if b.jsonLogsEnabled && !b.gnssJsonLogger.IsLogging && data.Fix != "none" {
+				b.gnssJsonLogger.StartStoring()
+			}
+			err := b.gnssJsonLogger.Log(data.Timestamp, data)
+			if err != nil {
+				return fmt.Errorf("batch logging gnss data to json: %w", err)
+			}
+
+			if b.redisLogsEnabled {
+				err = b.redisLogger.LogGnssData(*data)
+				if err != nil {
+					return fmt.Errorf("batch logging gnss data to redis: %w", err)
+				}
+			}
+		} else {
+			if b.gnssAuthCount%60 == 0 {
+				if b.redisLogsEnabled {
+					err := b.redisLogger.LogGnssAuthData(*data)
+					if err != nil {
+						return fmt.Errorf("batch logging gnss auth data to redis: %w", err)
+					}
+				}
+			}
+			b.gnssAuthCount += 1
+		}
+	}
+
+	b.gnssBuffer = b.gnssBuffer[:0]
+	b.lastGnssFlush = time.Now()
 	return nil
 }
