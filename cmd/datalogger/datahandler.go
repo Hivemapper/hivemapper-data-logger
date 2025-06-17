@@ -301,7 +301,7 @@ func (b *BatchHandler) flushGnss() error {
 			}
 
 			if b.redisLogsEnabled {
-				err = b.redisLogger.Log(data)
+				err = b.redisLogger.LogGnssDataBatch([]*neom9n.Data{data})
 				if err != nil {
 					return fmt.Errorf("batch logging gnss data to redis: %w", err)
 				}
@@ -309,7 +309,7 @@ func (b *BatchHandler) flushGnss() error {
 		} else {
 			if b.gnssAuthCount%60 == 0 {
 				if b.redisLogsEnabled {
-					err := b.redisLogger.Log(data)
+					err := b.redisLogger.LogGnssDataBatch([]*neom9n.Data{data})
 					if err != nil {
 						return fmt.Errorf("batch logging gnss auth data to redis: %w", err)
 					}
