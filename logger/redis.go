@@ -11,6 +11,7 @@ import (
 	"github.com/daedaleanai/ublox/ubx"
 	"github.com/go-redis/redis/v8"
 	"github.com/streamingfast/imu-controller/device/iim42652"
+	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
@@ -197,8 +198,19 @@ func (s *Redis) Marshal(message proto.Message) ([]byte, error) {
 	return data, err
 }
 
+func monotonicTime() float64 {
+	var ts unix.Timespec
+	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		panic(err)
+	}
+	return float64(ts.Sec)*1000. + float64(ts.Nsec)/1e6
+}
+
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	systemTime := time.Now().UTC()
+	upTime := monotonicTime()
+
 	var protodata []byte = nil
 	var err error
 	var redisKey string = "INVALID"
@@ -214,6 +226,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 		// serialize as proto
 		protomessage := sensordata.NavPvt{
 			SystemTime:   systemTime.String(),
+			UptimeMs:     upTime,
 			ItowMs:       m.ITOW_ms,
 			YearY:        uint32(m.Year_y),
 			MonthMonth:   uint32(m.Month_month),
