@@ -28,15 +28,17 @@ type ImuRedisWrapper struct {
 	Gyro        *Gyro     `json:"gyro"`
 	Temp        float64   `json:"temp"`
 	Time        time.Time `json:"time"`
+	Fsync       *Fsync    `json:"fsync"`
 }
 
-func NewImuRedisWrapper(system_time time.Time, temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate) *ImuRedisWrapper {
+func NewImuRedisWrapper(system_time time.Time, temperature iim42652.Temperature, acceleration *imu.Acceleration, angularRate *iim42652.AngularRate, fsync *iim42652.Fsync) *ImuRedisWrapper {
 	return &ImuRedisWrapper{
 		System_time: system_time,
 		Accel:       NewAccel(acceleration.X, acceleration.Y, acceleration.Z),
 		Gyro:        NewGyro(angularRate.X, angularRate.Y, angularRate.Z),
 		Time:        acceleration.Time,
 		Temp:        *temperature,
+		Fsync:       NewFsync(fsync.TimeDelta, fsync.FsyncInt),
 	}
 }
 
@@ -68,6 +70,10 @@ func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssA
 		logProtoText:       logProtoText,
 	}
 }
+
+var (
+	prevItowMs uint32
+)
 
 func (s *Redis) Init() error {
 	fmt.Println("Initializing Redis logger")
@@ -104,6 +110,10 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 		},
 		Temperature: imudata.Temp,
 		Time:        imudata.Time.String(),
+		Fsync: &sensordata.ImuData_FsyncData{
+			FsyncInt:  imudata.Fsync.FsyncInt,
+			TimeDelta: int32(imudata.Fsync.TimeDelta),
+		},
 	}
 	// serialize the data
 	protodata, err := s.Marshal(&newdata)
@@ -141,83 +151,6 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 		return err
 	}
 	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, int64(s.maxMagEntries)).Err(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Redis) LogGnssData(gnssdata neom9n.Data) error {
-	// Create gnss proto
-	newdata := sensordata.GnssData{
-		Ttff:                gnssdata.Ttff,
-		SystemTime:          gnssdata.SystemTime.String(),
-		ActualSystemTime:    gnssdata.ActualSystemTime.String(),
-		Timestamp:           gnssdata.Timestamp.String(),
-		Fix:                 gnssdata.Fix,
-		Latitude:            gnssdata.Latitude,
-		UnfilteredLatitude:  gnssdata.UnfilteredLatitude,
-		Longitude:           gnssdata.Longitude,
-		UnfilteredLongitude: gnssdata.UnfilteredLongitude,
-		Altitude:            gnssdata.Altitude,
-		Heading:             gnssdata.Heading,
-		Speed:               gnssdata.Speed,
-		Dop: &sensordata.GnssData_Dop{
-			Hdop: gnssdata.Dop.HDop,
-			Vdop: gnssdata.Dop.VDop,
-			Tdop: gnssdata.Dop.TDop,
-			Gdop: gnssdata.Dop.GDop,
-			Pdop: gnssdata.Dop.PDop,
-			Xdop: gnssdata.Dop.XDop,
-			Ydop: gnssdata.Dop.YDop,
-		},
-		Satellites: &sensordata.GnssData_Satellites{
-			Seen: int64(gnssdata.Satellites.Seen),
-			Used: int64(gnssdata.Satellites.Used),
-		},
-		Sep: gnssdata.Sep,
-		Eph: gnssdata.Eph,
-		Rf: &sensordata.GnssData_RF{
-			JammingState: gnssdata.RF.JammingState,
-			AntStatus:    gnssdata.RF.AntStatus,
-			AntPower:     gnssdata.RF.AntPower,
-			PostStatus:   gnssdata.RF.PostStatus,
-			NoisePerMs:   uint32(gnssdata.RF.NoisePerMS),
-			AgcCnt:       uint32(gnssdata.RF.AgcCnt),
-			JamInd:       uint32(gnssdata.RF.JamInd),
-			OfsI:         int32(gnssdata.RF.OfsI),
-			MagI:         int32(gnssdata.RF.MagI),
-			OfsQ:         int32(gnssdata.RF.OfsQ),
-			MagQ:         int32(gnssdata.RF.MagQ),
-		},
-		SpeedAccuracy:      gnssdata.SpeedAccuracy,
-		HeadingAccuracy:    gnssdata.HeadingAccuracy,
-		TimeResolved:       int32(gnssdata.TimeResolved),
-		HorizontalAccuracy: gnssdata.HorizontalAccuracy,
-		VerticalAccuracy:   gnssdata.VerticalAccuracy,
-		Gga:                gnssdata.GGA,
-		Cno:                gnssdata.Cno,
-		PosConfidence:      gnssdata.PosConfidence,
-	}
-
-	if gnssdata.RxmMeasx != nil {
-		newdata.RxmMeasx = &sensordata.GnssData_RxmMeasx{
-			GpsTowMs: gnssdata.RxmMeasx.GpsTOW_ms,
-			GloTowMs: gnssdata.RxmMeasx.GloTOW_ms,
-			BdsTowMs: gnssdata.RxmMeasx.BdsTOW_ms,
-		}
-	}
-
-	// serialize the data
-	protodata, err := s.Marshal(&newdata)
-	if err != nil {
-		return err
-	}
-
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "gnss_data", protodata).Err(); err != nil {
-		return err
-	}
-	if err := s.DB.LTrim(s.ctx, "gnss_data", 0, int64(s.maxGnssEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -314,6 +247,12 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagDecDege2:  int32(m.MagDec_dege2),
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
+
+		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 250 {
+			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs, "ms (", prevItowMs, ",", m.ITOW_ms, ")")
+		}
+		prevItowMs = m.ITOW_ms
+
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavDop:
 		redisKey = "NavDop"
@@ -500,6 +439,68 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				IntCodePhaseMs:  uint32(sv.IntCodePhase_ms),
 				PseuRangeRmsErr: uint32(sv.PseuRangeRMSErr),
 			}
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.RxmRawx:
+		redisKey = "RxmRawx"
+		protomessage := sensordata.RxmRawx{
+			SystemTime: systemTime.String(),
+			RcvTowS:    m.RcvTow_s,
+			Week:       uint32(m.Week_weeks),
+			LeapS:      uint32(m.LeapS_s),
+			NumMeas:    uint32(m.NumMeas),
+			RecStat:    uint32(m.RecStat),
+			Version:    uint32(m.Version),
+		}
+		protomessage.Meas = make([]*sensordata.RxmRawx_RxmRawxMeasType, len(m.Meas))
+		for i, meas := range m.Meas {
+			protomessage.Meas[i] = &sensordata.RxmRawx_RxmRawxMeasType{
+				PrMes:             meas.PrMes_m,
+				CpMes:             meas.CpMes_cycles,
+				DoMes:             float64(meas.DoMes_hz),
+				GnssId:            uint32(meas.GnssId),
+				SvId:              uint32(meas.SvId),
+				SigId:             uint32(meas.SigId),
+				FreqId:            uint32(meas.FreqId),
+				LocktimeMs:        uint32(meas.Locktime_ms),
+				CnoDbhz:           uint32(meas.Cno_dbhz),
+				PrStdevM_1E2_2N:   uint32(meas.PrStdev_m),
+				CpStdevCycles_4E3: uint32(meas.CpStdev_cycles),
+				DoStdevHz_2E3_2N:  uint32(meas.DoStdev_hz),
+				TrkStat:           uint32(meas.TrkStat),
+			}
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.RxmSfrbx:
+		redisKey = "RxmSfrbx"
+		protomessage := sensordata.RxmSfrbx{
+			SystemTime: systemTime.String(),
+			GnssId:     uint32(m.GnssId),
+			SvId:       uint32(m.SvId),
+			SigId:      uint32(m.Reserved1),
+			FreqId:     uint32(m.FreqId),
+			NumWords:   uint32(m.NumWords),
+			Chn:        uint32(m.Chn),
+			Version:    uint32(m.Version),
+		}
+		protomessage.WordBlock = make([]*sensordata.RxmSfrbx_WordBlock, len(m.Words))
+		for i, word := range m.Words {
+			// Note: this is a byte array, so we will just pass the bytes directly
+			protomessage.WordBlock[i] = &sensordata.RxmSfrbx_WordBlock{
+				Dwrd: uint32(word.Dwrd), // 32-bit word
+			}
+		}
+		protodata, err = s.Marshal(&protomessage)
+	case *ubx.TimTp:
+		redisKey = "TimTp"
+		protomessage := sensordata.TimTp{
+			SystemTime: systemTime.String(),
+			ItowMs:     uint32(m.TowMS_ms),
+			ItowSubMs:  uint32(m.TowSubMS_msl32),
+			QErrPs:     int32(m.QErr_ps),
+			Week:       uint32(m.Week_weeks),
+			Flags:      uint32(m.Flags),
+			RefInfo:    uint32(m.RefInfo),
 		}
 		protodata, err = s.Marshal(&protomessage)
 	}

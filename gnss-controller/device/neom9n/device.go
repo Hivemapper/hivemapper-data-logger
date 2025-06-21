@@ -103,7 +103,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x10110025, []byte{0x01}, "CFG-NAVSPG-ACKAIDING") // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 
 	// set nominal rate of measurements -> navigation solution update rate
-	measurement_frequency := 8
+	measurement_frequency := 4
 	n.setConfig(0x30210001, uint16(1000/measurement_frequency), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                                      // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
@@ -117,25 +117,24 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	n.setConfig(0x20910016, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
-	n.setConfig(0x20910635, uint8(measurement_frequency), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
+	n.setConfig(0x20910635, uint8(0), "CFG-MSGOUT-UBX_SEC_SIG_UART1")
 
 	// set timepulse configurations
+	imu_frequency := 1
 	n.setConfig(0x2005000c, []byte{0x01}, "CFG-TP-TIMEGRID_TP1")
-	n.setConfig(0x40050002, uint32(5000), "CFG-TP-PERIOD_TP1")
-	n.setConfig(0x40050003, uint32(5000), "CFG-TP-PERIOD_LOCK_TP1")
-	n.setConfig(0x40050004, uint32(500), "CFG-TP-LEN_TP1")
-	n.setConfig(0x40050005, uint32(500), "CFG-TP-LEN_LOCK_TP1")
+	n.setConfig(0x40050002, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_TP1")
+	n.setConfig(0x40050003, uint32(1000000/imu_frequency), "CFG-TP-PERIOD_LOCK_TP1")
+	n.setConfig(0x40050004, uint32(100000/imu_frequency), "CFG-TP-LEN_TP1")
+	n.setConfig(0x40050005, uint32(100000/imu_frequency), "CFG-TP-LEN_LOCK_TP1")
 
 	// add raw measurements
-	value := []byte{0x00} // default off for MEASX
-	if n.measxEnabled {
-		value = []byte{0x01}
-	}
-	n.setConfig(0x20910205, value, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	n.setConfig(0x209102a5, uint8(1), "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
+	n.setConfig(0x209102a5, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
 	// turn off unneeded messages that are default on
 	n.setConfig(0x209100ab, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_RMC_I2C")
@@ -187,15 +186,15 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 	fmt.Println("Set config:", description, "value:", value)
 	// wait for ACK message from decoder before sending next message
 	n.ackWaitCounter = 0
-	for n.ackWaitCounter < 30 {
+	for n.ackWaitCounter < 25 {
 		if n.decoder.MessageAcknowledged {
 			n.decoder.MessageAcknowledged = false
 			break
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		n.ackWaitCounter++
 	}
-	if n.ackWaitCounter == 30 {
+	if n.ackWaitCounter == 25 {
 		fmt.Println("Set config not acknowledged")
 	}
 }
@@ -237,19 +236,6 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	}
 
 	fmt.Println("Registering logger ubx message handlers")
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPvt, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavCov, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavPosecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavStatus, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, dataFeed)
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavEoe, dataFeed)
-	if n.measxEnabled {
-		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, dataFeed)
-	}
 
 	// We need to pass a buffer along with ubx.SecEcsign to the data handler,
 	// so we must register a composite class instead of ubx.SecEcsign
@@ -267,9 +253,10 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSig, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, redisFeed)
-		if n.measxEnabled {
-			n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
-		}
+		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxRxmRawx, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxRxmSfrbx, redisFeed)
+		n.handlersRegistry.RegisterHandler(message.UbxTimTp, redisFeed)
 	} else {
 		fmt.Println("Redis handler not set")
 	}
