@@ -123,11 +123,11 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "imu_data", protodata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "ImuData", protodata).Err(); err != nil {
 		return err
 	}
 
-	if err := s.DB.LTrim(s.ctx, "imu_data", 0, int64(s.maxImuEntries)).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "ImuData", 0, int64(s.maxImuEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -148,10 +148,10 @@ func (s *Redis) LogMagnetometerData(magdata MagnetometerRedisWrapper) error {
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "magnetometer_data", protodata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "MagnetometerData", protodata).Err(); err != nil {
 		return err
 	}
-	if err := s.DB.LTrim(s.ctx, "magnetometer_data", 0, int64(s.maxMagEntries)).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "MagnetometerData", 0, int64(s.maxMagEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -176,10 +176,10 @@ func (s *Redis) LogGnssAuthData(gnssAuthData neom9n.Data) error {
 	}
 
 	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "gnss_auth_data", protodata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, "GnssAuthData", protodata).Err(); err != nil {
 		return err
 	}
-	if err := s.DB.LTrim(s.ctx, "gnss_auth_data", 0, int64(s.maxGnssAuthEntries)).Err(); err != nil {
+	if err := s.DB.LTrim(s.ctx, "GnssAuthData", 0, int64(s.maxGnssAuthEntries)).Err(); err != nil {
 		return err
 	}
 	return nil
