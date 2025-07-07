@@ -10,7 +10,6 @@ import (
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/spf13/cobra"
