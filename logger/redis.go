@@ -16,6 +16,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var (
+	prevItowMs = map[string]uint32{
+		"NavPvt":     0,
+		"NavCov":     0,
+		"NavTimegps": 0,
+		"NavPosecef": 0,
+		"NavVelecef": 0,
+		"NavStatus":  0,
+		"NavDop":     0,
+		"NavSat":     0,
+		"NavSig":     0,
+		"TimTp":      0}
+	NavGapLimit uint32 = 251 // ms, 250ms is 4Hz, so anything more than that is a gap
+)
+
 type MagnetometerRedisWrapper struct {
 	System_time time.Time `json:"system_time"`
 	Mag_x       float64   `json:"mag_x"`
@@ -71,10 +86,6 @@ func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssA
 		logProtoText:       logProtoText,
 	}
 }
-
-var (
-	prevItowMs uint32
-)
 
 func (s *Redis) Init() error {
 	fmt.Println("Initializing Redis logger")
@@ -260,12 +271,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagDecDege2:  int32(m.MagDec_dege2),
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
-
-		if prevItowMs != 0 && m.ITOW_ms-prevItowMs > 250 {
-			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs, "ms (", prevItowMs, ",", m.ITOW_ms, ")")
+		if prevItowMs["NavPvt"] != 0 && m.ITOW_ms-prevItowMs["NavPvt"] > NavGapLimit {
+			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs["NavPvt"], "ms (", prevItowMs["NavPvt"], ",", m.ITOW_ms, ")")
 		}
-		prevItowMs = m.ITOW_ms
-
+		prevItowMs["NavPvt"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavDop:
 		redisKey = "NavDop"
@@ -281,6 +290,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Ndop:       uint32(m.NDOP),
 			Edop:       uint32(m.EDOP),
 		}
+		if prevItowMs["NavDop"] != 0 && m.ITOW_ms-prevItowMs["NavDop"] > NavGapLimit {
+			fmt.Println("[WARNING] NavDop drop of", m.ITOW_ms-prevItowMs["NavDop"], "ms (", prevItowMs["NavDop"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavDop"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavCov:
 		redisKey = "NavCov"
@@ -303,6 +316,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			VelCovED:    float64(m.VelCovED_m2_s2),
 			VelCovDD:    float64(m.VelCovDD_m2_s2),
 		}
+		if prevItowMs["NavCov"] != 0 && m.ITOW_ms-prevItowMs["NavCov"] > NavGapLimit {
+			fmt.Println("[WARNING] NavCov drop of", m.ITOW_ms-prevItowMs["NavCov"], "ms (", prevItowMs["NavCov"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavCov"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavPosecef:
 		redisKey = "NavPosecef"
@@ -314,6 +331,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			EcefZCm: int32(m.EcefZ_cm),
 			PAccCm:  uint32(m.PAcc_cm),
 		}
+		if prevItowMs["NavPosecef"] != 0 && m.ITOW_ms-prevItowMs["NavPosecef"] > NavGapLimit {
+			fmt.Println("[WARNING] NavPosecef drop of", m.ITOW_ms-prevItowMs["NavPosecef"], "ms (", prevItowMs["NavPosecef"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavPosecef"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavTimegps:
 		redisKey = "NavTimegps"
@@ -326,6 +347,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Valid:  uint32(m.Valid),
 			TAccNs: uint32(m.TAcc_ns),
 		}
+		if prevItowMs["NavTimegps"] != 0 && m.ITOW_ms-prevItowMs["NavTimegps"] > NavGapLimit {
+			fmt.Println("[WARNING] NavTimegps drop of", m.ITOW_ms-prevItowMs["NavTimegps"], "ms (", prevItowMs["NavTimegps"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavTimegps"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavVelecef:
 		redisKey = "NavVelecef"
@@ -337,6 +362,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			EcefVzCmS: int32(m.EcefVZ_cm_s),
 			SAccCmS:   uint32(m.SAcc_cm_s),
 		}
+		if prevItowMs["NavVelecef"] != 0 && m.ITOW_ms-prevItowMs["NavVelecef"] > NavGapLimit {
+			fmt.Println("[WARNING] NavVelecef drop of", m.ITOW_ms-prevItowMs["NavVelecef"], "ms (", prevItowMs["NavVelecef"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavVelecef"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavStatus:
 		redisKey = "NavStatus"
@@ -350,6 +379,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Ttff:    uint32(m.Ttff_ms),
 			Msss:    uint32(m.Msss_ms),
 		}
+		if prevItowMs["NavStatus"] != 0 && m.ITOW_ms-prevItowMs["NavStatus"] > NavGapLimit {
+			fmt.Println("[WARNING] NavStatus drop of", m.ITOW_ms-prevItowMs["NavStatus"], "ms (", prevItowMs["NavStatus"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavStatus"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSat:
 		redisKey = "NavSat"
@@ -371,6 +404,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				Flags:    uint32(sv.Flags),
 			}
 		}
+		if prevItowMs["NavSat"] != 0 && m.ITOW_ms-prevItowMs["NavSat"] > NavGapLimit {
+			fmt.Println("[WARNING] NavSat drop of", m.ITOW_ms-prevItowMs["NavSat"], "ms (", prevItowMs["NavSat"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavSat"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSig:
 		redisKey = "NavSig"
@@ -395,6 +432,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				SigFlags:   uint32(sig.SigFlags),
 			}
 		}
+		if prevItowMs["NavSig"] != 0 && m.ITOW_ms-prevItowMs["NavSig"] > NavGapLimit {
+			fmt.Println("[WARNING] NavSig drop of", m.ITOW_ms-prevItowMs["NavSig"], "ms (", prevItowMs["NavSig"], ",", m.ITOW_ms, ")")
+		}
+		prevItowMs["NavSig"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.MonRf:
 		redisKey = "MonRf"
@@ -515,6 +556,10 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Flags:      uint32(m.Flags),
 			RefInfo:    uint32(m.RefInfo),
 		}
+		if prevItowMs["TimTp"] != 0 && m.TowMS_ms-prevItowMs["TimTp"] > 1001 {
+			fmt.Println("[WARNING] TimTp drop of", m.TowMS_ms-prevItowMs["TimTp"], "ms (", prevItowMs["TimTp"], ",", m.TowMS_ms, ")")
+		}
+		prevItowMs["TimTp"] = m.TowMS_ms
 		protodata, err = s.Marshal(&protomessage)
 	}
 
