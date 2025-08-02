@@ -25,7 +25,6 @@ var (
 		"NavVelecef": 0,
 		"NavStatus":  0,
 		"NavDop":     0,
-		"NavSat":     0,
 		"NavSig":     0,
 		"TimTp":      0}
 	NavGapLimit uint32 = 251 // ms, 250ms is 4Hz, so anything more than that is a gap
@@ -384,31 +383,31 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 		}
 		prevItowMs["NavStatus"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
-	case *ubx.NavSat:
-		redisKey = "NavSat"
-		protomessage := sensordata.NavSat{
-			SystemTime: systemTime.String(),
-			ItowMs:     m.ITOW_ms,
-			Version:    uint32(m.Version),
-			NumSvs:     uint32(m.NumSvs),
-		}
-		protomessage.Svs = make([]*sensordata.NavSat_Svs, len(m.Svs))
-		for i, sv := range m.Svs {
-			protomessage.Svs[i] = &sensordata.NavSat_Svs{
-				GnssId:   uint32(sv.GnssId),
-				SvId:     uint32(sv.SvId),
-				CnoDbhz:  uint32(sv.Cno_dbhz),
-				ElevDeg:  int32(sv.Elev_deg),
-				AzimDeg:  int32(sv.Azim_deg),
-				PrResMe1: int32(sv.PrRes_me1),
-				Flags:    uint32(sv.Flags),
-			}
-		}
-		if prevItowMs["NavSat"] != 0 && m.ITOW_ms-prevItowMs["NavSat"] > NavGapLimit {
-			fmt.Println("[WARNING] NavSat drop of", m.ITOW_ms-prevItowMs["NavSat"], "ms (", prevItowMs["NavSat"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavSat"] = m.ITOW_ms
-		protodata, err = s.Marshal(&protomessage)
+	// case *ubx.NavSat:
+	// 	redisKey = "NavSat"
+	// 	protomessage := sensordata.NavSat{
+	// 		SystemTime: systemTime.String(),
+	// 		ItowMs:     m.ITOW_ms,
+	// 		Version:    uint32(m.Version),
+	// 		NumSvs:     uint32(m.NumSvs),
+	// 	}
+	// 	protomessage.Svs = make([]*sensordata.NavSat_Svs, len(m.Svs))
+	// 	for i, sv := range m.Svs {
+	// 		protomessage.Svs[i] = &sensordata.NavSat_Svs{
+	// 			GnssId:   uint32(sv.GnssId),
+	// 			SvId:     uint32(sv.SvId),
+	// 			CnoDbhz:  uint32(sv.Cno_dbhz),
+	// 			ElevDeg:  int32(sv.Elev_deg),
+	// 			AzimDeg:  int32(sv.Azim_deg),
+	// 			PrResMe1: int32(sv.PrRes_me1),
+	// 			Flags:    uint32(sv.Flags),
+	// 		}
+	// 	}
+	// 	if prevItowMs["NavSat"] != 0 && m.ITOW_ms-prevItowMs["NavSat"] > NavGapLimit {
+	// 		fmt.Println("[WARNING] NavSat drop of", m.ITOW_ms-prevItowMs["NavSat"], "ms (", prevItowMs["NavSat"], ",", m.ITOW_ms, ")")
+	// 	}
+	// 	prevItowMs["NavSat"] = m.ITOW_ms
+	// 	protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavSig:
 		redisKey = "NavSig"
 		protomessage := sensordata.NavSig{

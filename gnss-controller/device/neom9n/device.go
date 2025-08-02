@@ -117,7 +117,6 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
-	n.setConfig(0x20910016, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
@@ -137,6 +136,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
 	// turn off unneeded messages that are default on
+	n.setConfig(0x20910016, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 	n.setConfig(0x209100ab, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_RMC_I2C")
 	n.setConfig(0x209100af, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_RMC_SPI")
 	n.setConfig(0x209100b0, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_VTG_I2C")
@@ -250,7 +250,7 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavVelecef, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavStatus, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavDop, redisFeed)
-		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
+		// n.handlersRegistry.RegisterHandler(message.UbxMsgNavSat, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgNavSig, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxMsgMonRf, redisFeed)
 		n.handlersRegistry.RegisterHandler(message.UbxRxmMeasx, redisFeed)
