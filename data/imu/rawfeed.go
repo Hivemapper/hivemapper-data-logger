@@ -40,7 +40,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	}
 	defer logFile.Close()
 
-	fifoChan := make(chan ImuRawData, 150) //
+	fifoChan := make(chan ImuRawData, 250) //
 
 	go func() {
 		for fifodata := range fifoChan {
