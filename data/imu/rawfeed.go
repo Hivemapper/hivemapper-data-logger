@@ -120,7 +120,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 				// Sent successfully
 			default:
 				// Channel full, drop or log
-				fmt.Println("Warning: fifo data channel full, dropping FIFO data")
+				fmt.Println(time.Now().UTC(), "Warning: fifo data channel full, dropping FIFO data")
 			}
 		}
 

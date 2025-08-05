@@ -271,7 +271,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
 		if prevItowMs["NavPvt"] != 0 && m.ITOW_ms-prevItowMs["NavPvt"] > NavGapLimit {
-			fmt.Println("[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs["NavPvt"], "ms (", prevItowMs["NavPvt"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs["NavPvt"], "ms (", prevItowMs["NavPvt"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavPvt"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -290,7 +290,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Edop:       uint32(m.EDOP),
 		}
 		if prevItowMs["NavDop"] != 0 && m.ITOW_ms-prevItowMs["NavDop"] > NavGapLimit {
-			fmt.Println("[WARNING] NavDop drop of", m.ITOW_ms-prevItowMs["NavDop"], "ms (", prevItowMs["NavDop"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavDop drop of", m.ITOW_ms-prevItowMs["NavDop"], "ms (", prevItowMs["NavDop"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavDop"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -316,7 +316,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			VelCovDD:    float64(m.VelCovDD_m2_s2),
 		}
 		if prevItowMs["NavCov"] != 0 && m.ITOW_ms-prevItowMs["NavCov"] > NavGapLimit {
-			fmt.Println("[WARNING] NavCov drop of", m.ITOW_ms-prevItowMs["NavCov"], "ms (", prevItowMs["NavCov"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavCov drop of", m.ITOW_ms-prevItowMs["NavCov"], "ms (", prevItowMs["NavCov"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavCov"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -331,7 +331,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			PAccCm:  uint32(m.PAcc_cm),
 		}
 		if prevItowMs["NavPosecef"] != 0 && m.ITOW_ms-prevItowMs["NavPosecef"] > NavGapLimit {
-			fmt.Println("[WARNING] NavPosecef drop of", m.ITOW_ms-prevItowMs["NavPosecef"], "ms (", prevItowMs["NavPosecef"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavPosecef drop of", m.ITOW_ms-prevItowMs["NavPosecef"], "ms (", prevItowMs["NavPosecef"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavPosecef"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -347,7 +347,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			TAccNs: uint32(m.TAcc_ns),
 		}
 		if prevItowMs["NavTimegps"] != 0 && m.ITOW_ms-prevItowMs["NavTimegps"] > NavGapLimit {
-			fmt.Println("[WARNING] NavTimegps drop of", m.ITOW_ms-prevItowMs["NavTimegps"], "ms (", prevItowMs["NavTimegps"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavTimegps drop of", m.ITOW_ms-prevItowMs["NavTimegps"], "ms (", prevItowMs["NavTimegps"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavTimegps"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -362,7 +362,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			SAccCmS:   uint32(m.SAcc_cm_s),
 		}
 		if prevItowMs["NavVelecef"] != 0 && m.ITOW_ms-prevItowMs["NavVelecef"] > NavGapLimit {
-			fmt.Println("[WARNING] NavVelecef drop of", m.ITOW_ms-prevItowMs["NavVelecef"], "ms (", prevItowMs["NavVelecef"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavVelecef drop of", m.ITOW_ms-prevItowMs["NavVelecef"], "ms (", prevItowMs["NavVelecef"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavVelecef"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -379,7 +379,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Msss:    uint32(m.Msss_ms),
 		}
 		if prevItowMs["NavStatus"] != 0 && m.ITOW_ms-prevItowMs["NavStatus"] > NavGapLimit {
-			fmt.Println("[WARNING] NavStatus drop of", m.ITOW_ms-prevItowMs["NavStatus"], "ms (", prevItowMs["NavStatus"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavStatus drop of", m.ITOW_ms-prevItowMs["NavStatus"], "ms (", prevItowMs["NavStatus"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavStatus"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -432,7 +432,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			}
 		}
 		if prevItowMs["NavSig"] != 0 && m.ITOW_ms-prevItowMs["NavSig"] > NavGapLimit {
-			fmt.Println("[WARNING] NavSig drop of", m.ITOW_ms-prevItowMs["NavSig"], "ms (", prevItowMs["NavSig"], ",", m.ITOW_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] NavSig drop of", m.ITOW_ms-prevItowMs["NavSig"], "ms (", prevItowMs["NavSig"], ",", m.ITOW_ms, ")")
 		}
 		prevItowMs["NavSig"] = m.ITOW_ms
 		protodata, err = s.Marshal(&protomessage)
@@ -556,7 +556,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			RefInfo:    uint32(m.RefInfo),
 		}
 		if prevItowMs["TimTp"] != 0 && m.TowMS_ms-prevItowMs["TimTp"] > 1001 {
-			fmt.Println("[WARNING] TimTp drop of", m.TowMS_ms-prevItowMs["TimTp"], "ms (", prevItowMs["TimTp"], ",", m.TowMS_ms, ")")
+			fmt.Println(time.Now().UTC(), "[WARNING] TimTp drop of", m.TowMS_ms-prevItowMs["TimTp"], "ms (", prevItowMs["TimTp"], ",", m.TowMS_ms, ")")
 		}
 		prevItowMs["TimTp"] = m.TowMS_ms
 		protodata, err = s.Marshal(&protomessage)

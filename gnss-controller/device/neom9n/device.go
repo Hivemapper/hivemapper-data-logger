@@ -183,7 +183,7 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 			},
 		},
 	}
-	fmt.Println("Set config:", description, "value:", value)
+	fmt.Println(time.Now().UTC(), "Set config:", description, "value:", value)
 	// wait for ACK message from decoder before sending next message
 	n.ackWaitCounter = 0
 	for n.ackWaitCounter < 25 {
@@ -195,7 +195,7 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 		n.ackWaitCounter++
 	}
 	if n.ackWaitCounter == 25 {
-		fmt.Println("Set config not acknowledged")
+		fmt.Println(time.Now().UTC(), "Set config not acknowledged")
 	}
 }
 
