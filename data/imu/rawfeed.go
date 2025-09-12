@@ -11,7 +11,7 @@ import (
 type RawFeed struct {
 	imu                 *iim42652.IIM42652
 	handlers            []RawFeedHandler
-	fysnc_error_counter int
+	fsync_error_counter int
 }
 
 type ImuRawData struct {
@@ -23,8 +23,9 @@ type ImuRawData struct {
 
 func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 	return &RawFeed{
-		imu:      imu,
-		handlers: handlers,
+		imu:                 imu,
+		handlers:            handlers,
+		fsync_error_counter: 58,
 	}
 }
 
@@ -84,6 +85,13 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 			validPackets = append(validPackets, fifoData)
 
 			if fifoData.Fsync.FsyncInt {
+				if betweenFsyncs < 200 {
+					f.fsync_error_counter++
+					if f.fsync_error_counter >= 60 {
+						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncs, "samples since last fsync, repeated every 60 instances")
+						f.fsync_error_counter = 0
+					}
+				}
 				betweenFsyncs = 1
 			} else {
 				betweenFsyncs++
