@@ -79,7 +79,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		for _, fifoData := range fifopackets {
 			if !fifoData.Fsync.FsyncInt && betweenFsyncs >= 200 {
 				// Discard excess samples (usually only 1)
-				// fmt.Println("More than 200 samples between fsyncs")
+				fmt.Println(time.Now().UTC(), "More than 200 samples between fsyncs")
 				continue
 			}
 			validPackets = append(validPackets, fifoData)
@@ -89,7 +89,6 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 					f.fsync_error_counter++
 					if f.fsync_error_counter >= 60 {
 						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncs, "samples since last fsync, repeated every 60 instances")
-						fmt.Println(time.Now().UTC(), "fifoChan queue size:", len(fifoChan))
 						f.fsync_error_counter = 0
 					}
 				}
@@ -129,13 +128,18 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 				// Sent successfully
 			default:
 				// Channel full, drop or log
-				fmt.Println(time.Now().UTC(), "Warning: fifo data channel full, dropping FIFO data")
+				fmt.Println(
+					time.Now().UTC(),
+					"Warning: fifo data channel full, dropping FIFO data. Current queue size:",
+					len(fifoChan),
+					"capacity:", cap(fifoChan),
+				)
 			}
 		}
 
 		prev_last_packet_time = time_of_last_packet
 
-		time.Sleep(25 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 	}
 }
