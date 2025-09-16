@@ -89,6 +89,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 					f.fsync_error_counter++
 					if f.fsync_error_counter >= 60 {
 						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncs, "samples since last fsync, repeated every 60 instances")
+						fmt.Println(time.Now().UTC(), "fifoChan queue size:", len(fifoChan))
 						f.fsync_error_counter = 0
 					}
 				}
@@ -134,7 +135,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 
 		prev_last_packet_time = time_of_last_packet
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(25 * time.Millisecond)
 
 	}
 }
