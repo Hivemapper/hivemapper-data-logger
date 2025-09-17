@@ -9,9 +9,8 @@ import (
 )
 
 type RawFeed struct {
-	imu                 *iim42652.IIM42652
-	handlers            []RawFeedHandler
-	fsync_error_counter int
+	imu      *iim42652.IIM42652
+	handlers []RawFeedHandler
 }
 
 type ImuRawData struct {
@@ -23,9 +22,8 @@ type ImuRawData struct {
 
 func NewRawFeed(imu *iim42652.IIM42652, handlers ...RawFeedHandler) *RawFeed {
 	return &RawFeed{
-		imu:                 imu,
-		handlers:            handlers,
-		fsync_error_counter: 58,
+		imu:      imu,
+		handlers: handlers,
 	}
 }
 
@@ -55,9 +53,12 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 	}()
 
 	var betweenFsyncs int = -1
+	var betweenFsyncsFull int = -1
 	var prev_last_packet_time time.Time
 	var time_of_last_packet time.Time
 	var packet_time time.Time
+	var high_freq_counter int = 58
+	var low_freq_counter int = 58
 
 	for {
 
@@ -70,6 +71,7 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		if betweenFsyncs == -1 {
 			// ignore first set of data
 			betweenFsyncs = 1
+			betweenFsyncsFull = 1
 			prev_last_packet_time = time_of_last_packet
 
 			continue
@@ -78,23 +80,32 @@ func (f *RawFeed) Run(axisMap *iim42652.AxisMap) error {
 		validPackets := make([]iim42652.FifoImuRawData, 0, len(fifopackets))
 		for _, fifoData := range fifopackets {
 			if !fifoData.Fsync.FsyncInt && betweenFsyncs >= 200 {
+				betweenFsyncsFull++
 				// Discard excess samples (usually only 1)
-				fmt.Println(time.Now().UTC(), "More than 200 samples between fsyncs")
 				continue
 			}
 			validPackets = append(validPackets, fifoData)
 
 			if fifoData.Fsync.FsyncInt {
 				if betweenFsyncs < 200 {
-					f.fsync_error_counter++
-					if f.fsync_error_counter >= 60 {
-						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncs, "samples since last fsync, repeated every 60 instances")
-						f.fsync_error_counter = 0
+					low_freq_counter++
+					if low_freq_counter >= 60 {
+						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncs, " samples since last fsync, repeated every 60 instances")
+						low_freq_counter = 0
+					}
+				}
+				if betweenFsyncsFull > 200 {
+					high_freq_counter++
+					if high_freq_counter >= 60 {
+						fmt.Println(time.Now().UTC(), "[Warning] ", betweenFsyncsFull, " samples between fsyncs, repeated every 60 instances")
+						high_freq_counter = 0
 					}
 				}
 				betweenFsyncs = 1
+				betweenFsyncsFull = 1
 			} else {
 				betweenFsyncs++
+				betweenFsyncsFull++
 			}
 		}
 
