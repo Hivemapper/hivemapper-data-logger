@@ -61,7 +61,7 @@ func init() {
 
 	// Redis
 	LogCmd.Flags().Bool("enable-redis-logs", false, "enable redis logging")
-	LogCmd.Flags().Int("max-redis-imu-entries", 1000, "max imu entries in redis")
+	LogCmd.Flags().Int("max-redis-imu-entries", 5000, "max imu entries in redis")
 	LogCmd.Flags().Int("max-redis-mag-entries", 1000, "max mag entries in redis")
 	LogCmd.Flags().Int("max-redis-gnss-entries", 1000, "max gnss entries in redis")
 	LogCmd.Flags().Int("max-redis-gnss-auth-entries", 1000, "max gnss auth entries in redis")

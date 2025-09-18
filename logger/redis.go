@@ -132,12 +132,11 @@ func (s *Redis) LogImuData(imudata ImuRedisWrapper) error {
 		return err
 	}
 
-	// Push the JSON data to the Redis list
-	if err := s.DB.LPush(s.ctx, "ImuData", protodata).Err(); err != nil {
-		return err
-	}
-
-	if err := s.DB.LTrim(s.ctx, "ImuData", 0, int64(s.maxImuEntries)).Err(); err != nil {
+	pipe := s.DB.Pipeline()
+	pipe.LPush(s.ctx, "ImuData", protodata)
+	pipe.LTrim(s.ctx, "ImuData", 0, int64(s.maxImuEntries))
+	_, err = pipe.Exec(s.ctx)
+	if err != nil {
 		return err
 	}
 	return nil
