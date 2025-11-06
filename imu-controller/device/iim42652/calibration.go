@@ -18,7 +18,7 @@ const (
 	bitGyroConfig0ODRpos  byte = 0
 	bitGyroConfig0ODRMask byte = (0x0F << bitGyroConfig0ODRpos)
 	bitGyroODRSelect1KHz  byte = (0x06 << bitGyroConfig0ODRpos)
-	bitGyroODRSelect200Hz byte = (0x07 << bitGyroConfig0ODRpos)
+	bitGyroODRSelect200Hz byte = (0x0E << bitGyroConfig0ODRpos)
 
 	bitGyroConfig1GyroUiFiltOrdPos   byte = 2
 	bitGyroConfig1GyroUiFiltOrdMask  byte = (0x3 << bitGyroConfig1GyroUiFiltOrdPos)
@@ -36,7 +36,7 @@ const (
 	bitAccelFSSelect4g          byte = (0x2 << bitAccelFsSelectPos)
 
 	bitAccelConfig0ODRpos  byte = 0
-	bitAccelODRSelect200Hz byte = (0x07 << bitAccelConfig0ODRpos)
+	bitAccelODRSelect200Hz byte = (0x0E << bitAccelConfig0ODRpos)
 )
 
 // User register constants.

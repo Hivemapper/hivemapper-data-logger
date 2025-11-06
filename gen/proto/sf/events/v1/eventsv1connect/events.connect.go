@@ -7,8 +7,8 @@ package eventsv1connect
 import (
 	context "context"
 	errors "errors"
-	connect_go "github.com/bufbuild/connect-go"
 	v1 "github.com/Hivemapper/hivemapper-data-logger/gen/proto/sf/events/v1"
+	connect_go "github.com/bufbuild/connect-go"
 	http "net/http"
 	strings "strings"
 )
@@ -81,13 +81,19 @@ type EventServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewEventServiceHandler(svc EventServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	mux := http.NewServeMux()
-	mux.Handle(EventServiceEventsProcedure, connect_go.NewServerStreamHandler(
+	eventServiceEventsHandler := connect_go.NewServerStreamHandler(
 		EventServiceEventsProcedure,
 		svc.Events,
 		opts...,
-	))
-	return "/sf.events.v1.EventService/", mux
+	)
+	return "/sf.events.v1.EventService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case EventServiceEventsProcedure:
+			eventServiceEventsHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
 }
 
 // UnimplementedEventServiceHandler returns CodeUnimplemented from all methods.

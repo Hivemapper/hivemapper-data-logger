@@ -10,7 +10,6 @@ import (
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
-	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
 	"github.com/gorilla/handlers"
 	gmux "github.com/gorilla/mux"
 	"github.com/spf13/cobra"
@@ -155,22 +154,22 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
-	if mustGetBool(cmd, "enable-magnetometer") {
-		magnetometerEventFeed := magnetometer.NewRawFeed(
-			dataHandler.HandlerMagnetometerData,
-		)
+	// if mustGetBool(cmd, "enable-magnetometer") {
+	// 	magnetometerEventFeed := magnetometer.NewRawFeed(
+	// 		dataHandler.HandlerMagnetometerData,
+	// 	)
 
-		err = magnetometerEventFeed.Init()
-		if err != nil {
-			panic(fmt.Errorf("initializing magnetometer feed: %w", err))
-		}
-		go func() {
-			err = magnetometerEventFeed.Run()
-			if err != nil {
-				panic(fmt.Errorf("running magnetometer feed: %w", err))
-			}
-		}()
-	}
+	// 	err = magnetometerEventFeed.Init()
+	// 	if err != nil {
+	// 		panic(fmt.Errorf("initializing magnetometer feed: %w", err))
+	// 	}
+	// 	go func() {
+	// 		err = magnetometerEventFeed.Run()
+	// 		if err != nil {
+	// 			panic(fmt.Errorf("running magnetometer feed: %w", err))
+	// 		}
+	// 	}()
+	// }
 
 	httpListenAddr := mustGetString(cmd, "http-listen-addr")
 
