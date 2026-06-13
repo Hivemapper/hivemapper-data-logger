@@ -25,12 +25,13 @@ func NewDataHandler(
 	maxRedisGnssEntries int,
 	maxRedisGnssAuthEntries int,
 	redisLogProtoText bool,
+	redisWriteGnssToFile string,
 ) (*DataHandler, error) {
 
 	var redisLogger *logger.Redis = nil
 	var err error
 	if redisLogsEnabled {
-		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries, redisLogProtoText)
+		redisLogger = logger.NewRedis(maxRedisImuEntries, maxRedisMagEntries, maxRedisGnssEntries, maxRedisGnssAuthEntries, redisLogProtoText, redisWriteGnssToFile)
 		err := redisLogger.Init()
 		if err != nil {
 			return nil, fmt.Errorf("initializing redis logger database: %w", err)
@@ -120,4 +121,8 @@ func (h *DataHandler) HandleRawImuFeed(acceleration *imu.Acceleration, angularRa
 		}
 	}
 	return nil
+}
+
+func (h *DataHandler) HandleGnssReplayData(redisKey string, data []byte) error {
+	return h.redisLogger.LogGnssReplayData(redisKey, data)
 }
