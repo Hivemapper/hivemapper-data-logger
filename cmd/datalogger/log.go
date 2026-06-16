@@ -76,11 +76,11 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	redisLogPbtxt := getBoolOrDefault(cmd, "redis-log-pbtxt")
 
 	if (redisWriteGnssToFile != "" || redisReadGnssFromFile != "") && !enableRedisLogs {
-		panic("enable-redis-logs must be set if either gnss-file flag is set")
+		return fmt.Errorf("enable-redis-logs must be set if either gnss-file flag is set")
 	}
 
 	if redisWriteGnssToFile != "" && !redisLogPbtxt {
-		panic("redis-log-pbtxt must be set if redis-write-gnss-to-file is set")
+		return fmt.Errorf("redis-log-pbtxt must be set if redis-write-gnss-to-file is set")
 	}
 
 	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
