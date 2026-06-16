@@ -2,7 +2,9 @@ package logger
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
@@ -74,19 +76,32 @@ type Redis struct {
 	maxGnssEntries     int
 	maxGnssAuthEntries int
 	logProtoText       bool
+	gnssFilePath       string
+	gnssFileHandle     *os.File
 }
 
-func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int, logProtoText bool) *Redis {
+func NewRedis(maxImuEntries int, maxMagEntries int, maxGnssEntries int, maxGnssAuthEntries int, logProtoText bool, gnssFilePath string) *Redis {
 	return &Redis{
 		maxImuEntries:      maxImuEntries,
 		maxMagEntries:      maxMagEntries,
 		maxGnssEntries:     maxGnssEntries,
 		maxGnssAuthEntries: maxGnssAuthEntries,
 		logProtoText:       logProtoText,
+		gnssFilePath:       gnssFilePath,
 	}
 }
 
 func (s *Redis) Init() error {
+	if len(s.gnssFilePath) != 0 {
+		fmt.Printf("Opening file %s for logging\n", s.gnssFilePath)
+		var err error
+		s.gnssFileHandle, err = os.Create(s.gnssFilePath)
+		if err != nil {
+			return fmt.Errorf("opening file: %w", err)
+		}
+		fmt.Printf("Redis logger initialized (writing to file)")
+	}
+
 	fmt.Println("Initializing Redis logger")
 	s.DB = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379", // Use your Redis server address
@@ -207,7 +222,7 @@ func (s *Redis) Marshal(message proto.Message) ([]byte, error) {
 	return data, err
 }
 
-func monotonicTime() float64 {
+func MonotonicTime() float64 {
 	var ts unix.Timespec
 	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
 	if err != nil {
@@ -218,7 +233,7 @@ func monotonicTime() float64 {
 
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	systemTime := time.Now().UTC()
-	upTime := monotonicTime()
+	upTime := MonotonicTime()
 
 	var protodata []byte = nil
 	var err error
@@ -570,8 +585,42 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 		return err
 	}
 
+	if s.gnssFileHandle == nil {
+		// Push the proto data to the Redis list
+		if err := s.DB.LPush(s.ctx, redisKey, protodata).Err(); err != nil {
+			return err
+		}
+
+		// Trim the list to the max number of entries
+		if err := s.DB.LTrim(s.ctx, redisKey, 0, int64(s.maxGnssEntries)).Err(); err != nil {
+			return err
+		}
+	} else {
+		// This should only be used with pbtxt
+
+		// serialize into json with two fields "redisKey" and "data"
+		entry := GnssReplayEvent{
+			RedisKey: redisKey,
+			Data:     string(protodata),
+		}
+
+		jsonData, err := json.Marshal(entry)
+		if err != nil {
+			return fmt.Errorf("failed to marshal gnss data to json: %w", err)
+		}
+
+		_, err = s.gnssFileHandle.Write(append(jsonData, '\n'))
+		if err != nil {
+			return fmt.Errorf("failed to write gnss data to file: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Redis) LogGnssReplayData(redisKey string, data []byte) error {
 	// Push the proto data to the Redis list
-	if err := s.DB.LPush(s.ctx, redisKey, protodata).Err(); err != nil {
+	if err := s.DB.LPush(s.ctx, redisKey, data).Err(); err != nil {
 		return err
 	}
 
@@ -581,4 +630,9 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	}
 
 	return nil
+}
+
+type GnssReplayEvent struct {
+	RedisKey string `json:"redisKey"`
+	Data     string `json:"data"`
 }

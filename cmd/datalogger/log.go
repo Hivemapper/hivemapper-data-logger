@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -11,8 +10,6 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
-	"github.com/gorilla/handlers"
-	gmux "github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -66,11 +63,26 @@ func init() {
 	LogCmd.Flags().Int("max-redis-gnss-entries", 1000, "max gnss entries in redis")
 	LogCmd.Flags().Int("max-redis-gnss-auth-entries", 1000, "max gnss auth entries in redis")
 	LogCmd.Flags().Bool("redis-log-pbtxt", false, "enable logging sensor data into redis in pbtxt format")
+	LogCmd.Flags().String("redis-write-gnss-to-file", "", "write protobuf to file instead of redis")
+	LogCmd.Flags().String("redis-read-gnss-from-file", "", "read protobuf from file instead of sensors")
 
 	RootCmd.AddCommand(LogCmd)
 }
 
 func logRun(cmd *cobra.Command, _ []string) error {
+	redisWriteGnssToFile := mustGetString(cmd, "redis-write-gnss-to-file")
+	redisReadGnssFromFile := mustGetString(cmd, "redis-read-gnss-from-file")
+	enableRedisLogs := getBoolOrDefault(cmd, "enable-redis-logs")
+	redisLogPbtxt := getBoolOrDefault(cmd, "redis-log-pbtxt")
+
+	if (redisWriteGnssToFile != "" || redisReadGnssFromFile != "") && !enableRedisLogs {
+		return fmt.Errorf("enable-redis-logs must be set if either gnss-file flag is set")
+	}
+
+	if redisWriteGnssToFile != "" && !redisLogPbtxt {
+		return fmt.Errorf("redis-log-pbtxt must be set if redis-write-gnss-to-file is set")
+	}
+
 	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
 	if err != nil {
 		return fmt.Errorf("parsing axis map: %w", err)
@@ -104,26 +116,53 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	conf := imu.LoadConfig(mustGetString(cmd, "imu-config-file"))
 	fmt.Println("Config: ", conf.String())
 
-	serialConfigName := mustGetString(cmd, "gnss-dev-path")
-	mgaOfflineFilePath := mustGetString(cmd, "gnss-mga-offline-file-path")
-
 	dataHandler, err := NewDataHandler(
-		getBoolOrDefault(cmd, "enable-redis-logs"),
+		enableRedisLogs,
 		getIntOrDefault(cmd, "max-redis-imu-entries"),
 		getIntOrDefault(cmd, "max-redis-mag-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-auth-entries"),
-		getBoolOrDefault(cmd, "redis-log-pbtxt"),
+		redisLogPbtxt,
+		redisWriteGnssToFile,
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
-	gnssDevice := neom9n.NewNeom9n(serialConfigName, mgaOfflineFilePath, mustGetInt(cmd, "gnss-initial-baud-rate"), mustGetBool(cmd, "gnss-measx-enabled"))
-	err = gnssDevice.Init(nil)
+	err = initializeSensorThreads(
+		imuDevice,
+		dataHandler,
+		axisMap,
+		mustGetString(cmd, "gnss-dev-path"),
+		mustGetString(cmd, "gnss-mga-offline-file-path"),
+		mustGetInt(cmd, "gnss-initial-baud-rate"),
+		mustGetBool(cmd, "gnss-measx-enabled"),
+		mustGetBool(cmd, "enable-magnetometer"),
+		mustGetBool(cmd, "skip-filtering"),
+		redisReadGnssFromFile,
+	)
 	if err != nil {
-		return fmt.Errorf("initializing neom9n: %w", err)
+		return err
 	}
+
+	for {
+		time.Sleep(10 * time.Second)
+	}
+}
+
+func initializeSensorThreads(
+	imuDevice *iim42652.IIM42652,
+	dataHandler *DataHandler,
+	axisMap *iim42652.AxisMap,
+	gnssDevPath string,
+	mgaOfflineFilePath string,
+	gnssInitBaudRate int,
+	gnssMeasxEnabled bool,
+	enableMagnetometer bool,
+	skipFiltering bool,
+	gnssReadFile string,
+) error {
+	var err error
 
 	rawImuEventFeed := imu.NewRawFeed(
 		imuDevice,
@@ -136,26 +175,46 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 
-	var options []gnss.Option
-	if mustGetBool(cmd, "skip-filtering") {
-		options = append(options, gnss.WithSkipFiltering())
-	}
-	gnssEventFeed := gnss.NewGnssFeed(
-		[]gnss.GnssDataHandler{
-			dataHandler.HandlerGnssData,
-		},
-		nil,
-		options...,
-	)
-
-	go func() {
-		err = gnssEventFeed.Run(gnssDevice, dataHandler.redisLogger, dataHandler.redisLogsEnabled)
+	if gnssReadFile == "" {
+		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled)
+		err = gnssDevice.Init(nil)
 		if err != nil {
-			panic(fmt.Errorf("running gnss event feed: %w", err))
+			return fmt.Errorf("initializing neom9n: %w", err)
 		}
-	}()
 
-	if mustGetBool(cmd, "enable-magnetometer") {
+		var options []gnss.Option
+		if skipFiltering {
+			options = append(options, gnss.WithSkipFiltering())
+		}
+		gnssEventFeed := gnss.NewGnssFeed(
+			[]gnss.GnssDataHandler{
+				dataHandler.HandlerGnssData,
+			},
+			nil,
+			options...,
+		)
+
+		go func() {
+			err = gnssEventFeed.Run(gnssDevice, dataHandler.redisLogger, dataHandler.redisLogsEnabled)
+			if err != nil {
+				panic(fmt.Errorf("running gnss event feed: %w", err))
+			}
+		}()
+	} else {
+		gnssReplayFeed := gnss.NewGnssReplayFeed(
+			gnssReadFile,
+			dataHandler.HandleGnssReplayData,
+		)
+
+		go func() {
+			err = gnssReplayFeed.Run()
+			if err != nil {
+				panic(fmt.Errorf("running gnss event feed: %w", err))
+			}
+		}()
+	}
+
+	if enableMagnetometer {
 		magnetometerEventFeed := magnetometer.NewRawFeed(
 			dataHandler.HandlerMagnetometerData,
 		)
@@ -171,20 +230,6 @@ func logRun(cmd *cobra.Command, _ []string) error {
 			}
 		}()
 	}
-
-	httpListenAddr := mustGetString(cmd, "http-listen-addr")
-
-	origins := handlers.AllowedOrigins([]string{"*"})
-	headers := handlers.AllowedHeaders([]string{"Content-Type"})
-	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	router := gmux.NewRouter().StrictSlash(true)
-
-	err = http.ListenAndServe(httpListenAddr, handlers.CORS(origins, headers, methods)(router))
-	fmt.Printf("Starting http server on %s ...\n", httpListenAddr)
-	if err != nil {
-		return fmt.Errorf("running http server: %w", err)
-	}
-
 	return nil
 }
 
