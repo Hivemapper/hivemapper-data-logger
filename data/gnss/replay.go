@@ -10,7 +10,6 @@ import (
 
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	sensordata "github.com/Hivemapper/hivemapper-data-logger/proto-out"
-	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
@@ -22,14 +21,7 @@ type GnssReplayFeed struct {
 	dataHandler    GnssReplayDataHandler
 }
 
-func monotonicTime() float64 {
-	var ts unix.Timespec
-	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
-	if err != nil {
-		panic(err)
-	}
-	return float64(ts.Sec)*1000. + float64(ts.Nsec)/1e6
-}
+
 
 func NewGnssReplayFeed(replayFilePath string, dataHandler GnssReplayDataHandler) *GnssReplayFeed {
 	g := &GnssReplayFeed{
@@ -106,7 +98,7 @@ func (f *GnssReplayFeed) Run() error {
 		// Monotonic time and system time in the replayed data needs to be updated
 		// so that it will be accepted by bee-sensor-fusion.
 		if navPvt, ok := msg.(*sensordata.NavPvt); ok {
-			navPvt.UptimeMs = monotonicTime()
+			navPvt.UptimeMs = logger.MonotonicTime()
 			navPvt.SystemTime = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
 		}
 

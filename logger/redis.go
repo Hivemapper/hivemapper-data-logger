@@ -222,7 +222,7 @@ func (s *Redis) Marshal(message proto.Message) ([]byte, error) {
 	return data, err
 }
 
-func monotonicTime() float64 {
+func MonotonicTime() float64 {
 	var ts unix.Timespec
 	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
 	if err != nil {
@@ -233,7 +233,7 @@ func monotonicTime() float64 {
 
 func (s *Redis) HandleUbxMessage(msg interface{}) error {
 	systemTime := time.Now().UTC()
-	upTime := monotonicTime()
+	upTime := MonotonicTime()
 
 	var protodata []byte = nil
 	var err error
