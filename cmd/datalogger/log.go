@@ -70,6 +70,19 @@ func init() {
 }
 
 func logRun(cmd *cobra.Command, _ []string) error {
+	redisWriteGnssToFile := mustGetString(cmd, "redis-write-gnss-to-file")
+	redisReadGnssFromFile := mustGetString(cmd, "redis-read-gnss-from-file")
+	enableRedisLogs := getBoolOrDefault(cmd, "enable-redis-logs")
+	redisLogPbtxt := getBoolOrDefault(cmd, "redis-log-pbtxt")
+
+	if (redisWriteGnssToFile != "" || redisReadGnssFromFile != "") && !enableRedisLogs {
+		panic("enable-redis-logs must be set if either gnss-file flag is set")
+	}
+
+	if redisWriteGnssToFile != "" && !redisLogPbtxt {
+		panic("redis-log-pbtxt must be set if redis-write-gnss-to-file is set")
+	}
+
 	axisMap, err := parseAxisMap(mustGetString(cmd, "imu-axis-map"))
 	if err != nil {
 		return fmt.Errorf("parsing axis map: %w", err)
@@ -104,13 +117,13 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	fmt.Println("Config: ", conf.String())
 
 	dataHandler, err := NewDataHandler(
-		getBoolOrDefault(cmd, "enable-redis-logs"),
+		enableRedisLogs,
 		getIntOrDefault(cmd, "max-redis-imu-entries"),
 		getIntOrDefault(cmd, "max-redis-mag-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-entries"),
 		getIntOrDefault(cmd, "max-redis-gnss-auth-entries"),
-		getBoolOrDefault(cmd, "redis-log-pbtxt"),
-		mustGetString(cmd, "redis-write-gnss-to-file"),
+		redisLogPbtxt,
+		redisWriteGnssToFile,
 	)
 	if err != nil {
 		return fmt.Errorf("creating data handler: %w", err)
@@ -126,7 +139,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetBool(cmd, "gnss-measx-enabled"),
 		mustGetBool(cmd, "enable-magnetometer"),
 		mustGetBool(cmd, "skip-filtering"),
-		mustGetString(cmd, "redis-read-gnss-from-file"),
+		redisReadGnssFromFile,
 	)
 	if err != nil {
 		return err

@@ -21,8 +21,6 @@ type GnssReplayFeed struct {
 	dataHandler    GnssReplayDataHandler
 }
 
-
-
 func NewGnssReplayFeed(replayFilePath string, dataHandler GnssReplayDataHandler) *GnssReplayFeed {
 	g := &GnssReplayFeed{
 		replayFilePath: replayFilePath,
@@ -108,6 +106,8 @@ func (f *GnssReplayFeed) Run() error {
 			continue
 		}
 
-		f.dataHandler(entry.RedisKey, binary_data)
+		if err := f.dataHandler(entry.RedisKey, binary_data); err != nil {
+			fmt.Printf("error pushing gnss replay data to redis: %s\n", err)
+		}
 	}
 }
