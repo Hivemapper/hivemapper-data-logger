@@ -10,6 +10,7 @@ import (
 
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	sensordata "github.com/Hivemapper/hivemapper-data-logger/proto-out"
+	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,10 +22,19 @@ type GnssReplayFeed struct {
 	dataHandler    GnssReplayDataHandler
 }
 
-func NewGnssReplayFeed(replayFilePath string, datahandler GnssReplayDataHandler) *GnssReplayFeed {
+func monotonicTime() float64 {
+	var ts unix.Timespec
+	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		panic(err)
+	}
+	return float64(ts.Sec)*1000. + float64(ts.Nsec)/1e6
+}
+
+func NewGnssReplayFeed(replayFilePath string, dataHandler GnssReplayDataHandler) *GnssReplayFeed {
 	g := &GnssReplayFeed{
-		replayFilePath,
-		datahandler,
+		replayFilePath: replayFilePath,
+		dataHandler:    dataHandler,
 	}
 	return g
 }
@@ -56,7 +66,6 @@ func (f *GnssReplayFeed) Run() error {
 
 	firstEpoch := true
 
-	// read each line of the file
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -67,7 +76,6 @@ func (f *GnssReplayFeed) Run() error {
 			return fmt.Errorf("error reading from gnss replay file: %s", err)
 		}
 
-		// json with "rediskey" and "data" (pbtxt) entries
 		var entry logger.GnssReplayEvent
 		err = json.Unmarshal([]byte(line), &entry)
 		if err != nil {
@@ -96,7 +104,14 @@ func (f *GnssReplayFeed) Run() error {
 			continue
 		}
 
-		// now serialize to bytes
+		// Monotonic time and system time in the replayed data needs to be updated
+		// so that it will be accepted by bee-sensor-fusion.
+		if navPvt, ok := msg.(*sensordata.NavPvt); ok {
+			navPvt.UptimeMs = monotonicTime()
+			navPvt.SystemTime = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
+			fmt.Printf("[DEBUG] Set NavPvt.SystemTime to: %s\n", navPvt.SystemTime)
+		}
+
 		binary_data, err := proto.Marshal(msg)
 		if err != nil {
 			fmt.Printf("error marshalling gnss data: %s\n", err)
