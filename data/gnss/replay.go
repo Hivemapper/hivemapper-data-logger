@@ -82,7 +82,6 @@ func (f *GnssReplayFeed) Run() error {
 			fmt.Printf("error unmarshalling gnss json line: %s\n", err)
 			continue
 		}
-		fmt.Printf("%s\n", entry.RedisKey)
 
 		if entry.RedisKey == "RxmRawx" {
 			if !firstEpoch {
@@ -109,7 +108,6 @@ func (f *GnssReplayFeed) Run() error {
 		if navPvt, ok := msg.(*sensordata.NavPvt); ok {
 			navPvt.UptimeMs = monotonicTime()
 			navPvt.SystemTime = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
-			fmt.Printf("[DEBUG] Set NavPvt.SystemTime to: %s\n", navPvt.SystemTime)
 		}
 
 		binary_data, err := proto.Marshal(msg)
