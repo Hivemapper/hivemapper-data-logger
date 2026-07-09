@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/Hivemapper/hivemapper-data-logger/logger"
@@ -55,6 +56,7 @@ func (f *GnssReplayFeed) Run() error {
 	reader := bufio.NewReader(replayFileHandle)
 
 	firstEpoch := true
+	systemTimeSet := false
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -97,7 +99,24 @@ func (f *GnssReplayFeed) Run() error {
 		// so that it will be accepted by bee-sensor-fusion.
 		if navPvt, ok := msg.(*sensordata.NavPvt); ok {
 			navPvt.UptimeMs = logger.MonotonicTime()
-			navPvt.SystemTime = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
+
+			// set system time to navPvt.SystemTime
+			if !systemTimeSet {
+				fmt.Printf("gnss replay: first NavPvt system_time raw=%q\n", navPvt.SystemTime)
+				parsedTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", navPvt.SystemTime)
+				if err != nil {
+					return fmt.Errorf("parsing replay system_time: %w", err)
+				}
+				fmt.Printf("gnss replay: parsed system_time=%s unix_ns=%d\n", parsedTime.Format(time.RFC3339Nano), parsedTime.UnixNano())
+				timeval := syscall.NsecToTimeval(parsedTime.UnixNano())
+				fmt.Printf("gnss replay: settimeofday sec=%d usec=%d\n", timeval.Sec, timeval.Usec)
+				if err := syscall.Settimeofday(&timeval); err != nil {
+					fmt.Printf("gnss replay: settimeofday failed: %v\n", err)
+					return fmt.Errorf("setting system time: %w", err)
+				}
+				fmt.Printf("gnss replay: settimeofday succeeded, current_time=%s\n", time.Now().UTC().Format(time.RFC3339Nano))
+				systemTimeSet = true
+			}
 		}
 
 		binary_data, err := proto.Marshal(msg)
