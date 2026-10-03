@@ -29,7 +29,7 @@ var (
 		"NavDop":     0,
 		"NavSig":     0,
 		"TimTp":      0}
-	NavGapLimit uint32 = 251 // ms, 250ms is 4Hz, so anything more than that is a gap
+	NavGapLimit uint32 = neom9n.MeasurementPeriodMS + 1 // ms, tolerate epoch rounding
 )
 
 type MagnetometerRedisWrapper struct {

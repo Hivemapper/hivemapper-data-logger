@@ -12,6 +12,11 @@ import (
 	"github.com/tarm/serial"
 )
 
+const (
+	MeasurementFrequencyHz = 25
+	MeasurementPeriodMS    = 1000 / MeasurementFrequencyHz
+)
+
 type Neom9n struct {
 	startTime          time.Time
 	config             *serial.Config
@@ -103,9 +108,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x10110025, []byte{0x01}, "CFG-NAVSPG-ACKAIDING") // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 
 	// set nominal rate of measurements -> navigation solution update rate
-	measurement_frequency := 4
-	n.setConfig(0x30210001, uint16(1000/measurement_frequency), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
-	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                                      // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
+	measurement_frequency := MeasurementFrequencyHz
+	n.setConfig(0x30210001, uint16(MeasurementPeriodMS), "CFG-RATE-MEAS 0x30210001") // 40 ms navigation epochs
+	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                               // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
 	// set critical navigation messages to match solution epoch rate
 	n.setConfig(0x20910007, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_PVT_UART1") // CFG-MSGOUT-UBX_NAV_PVT_UART1 0x20910007 Output rate of the UBX-NAV-PVT message on port UART1
