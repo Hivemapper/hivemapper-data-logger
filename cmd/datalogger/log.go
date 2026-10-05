@@ -10,6 +10,7 @@ import (
 	"github.com/Hivemapper/hivemapper-data-logger/data/gnss"
 	"github.com/Hivemapper/hivemapper-data-logger/data/imu"
 	"github.com/Hivemapper/hivemapper-data-logger/data/magnetometer"
+	"github.com/Hivemapper/hivemapper-data-logger/logger"
 	"github.com/spf13/cobra"
 	"github.com/streamingfast/imu-controller/device/iim42652"
 )
@@ -34,6 +35,7 @@ func init() {
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
+	LogCmd.Flags().String("config-db-path", "/data/recording/odc-api.db", "path to the odc-api database holding the device config table")
 
 	LogCmd.Flags().String("time-valid-threshold", "resolved", "resolved, time or date")
 
@@ -129,6 +131,9 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating data handler: %w", err)
 	}
 
+	gnssMeasurementRateHz := readGnssMeasurementRate(mustGetString(cmd, "config-db-path"))
+	logger.NavGapLimit = uint32(1000/gnssMeasurementRateHz + 1)
+
 	err = initializeSensorThreads(
 		imuDevice,
 		dataHandler,
@@ -137,6 +142,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetString(cmd, "gnss-mga-offline-file-path"),
 		mustGetInt(cmd, "gnss-initial-baud-rate"),
 		mustGetBool(cmd, "gnss-measx-enabled"),
+		gnssMeasurementRateHz,
 		mustGetBool(cmd, "enable-magnetometer"),
 		mustGetBool(cmd, "skip-filtering"),
 		redisReadGnssFromFile,
@@ -158,6 +164,7 @@ func initializeSensorThreads(
 	mgaOfflineFilePath string,
 	gnssInitBaudRate int,
 	gnssMeasxEnabled bool,
+	gnssMeasurementRateHz int,
 	enableMagnetometer bool,
 	skipFiltering bool,
 	gnssReadFile string,
@@ -176,7 +183,7 @@ func initializeSensorThreads(
 	}()
 
 	if gnssReadFile == "" {
-		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled)
+		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled, gnssMeasurementRateHz)
 		err = gnssDevice.Init(nil)
 		if err != nil {
 			return fmt.Errorf("initializing neom9n: %w", err)

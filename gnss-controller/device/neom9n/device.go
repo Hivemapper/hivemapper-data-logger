@@ -22,10 +22,11 @@ type Neom9n struct {
 	mgaOfflineFilePath string
 	decoderDone        chan error
 	measxEnabled       bool
+	measurementRateHz  int
 	ackWaitCounter     int
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now().UTC(),
 		config: &serial.Config{
@@ -39,6 +40,7 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRa
 		mgaOfflineFilePath: mgaOfflineFilePath,
 		output:             make(chan ubx.Message),
 		measxEnabled:       measxEnabled,
+		measurementRateHz:  measurementRateHz,
 	}
 
 	return n
@@ -103,7 +105,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x10110025, []byte{0x01}, "CFG-NAVSPG-ACKAIDING") // CFG-NAVSPG-ACKAIDING 0x10110025 Acknowledge assistance input messages
 
 	// set nominal rate of measurements -> navigation solution update rate
-	measurement_frequency := 4
+	measurement_frequency := n.measurementRateHz
 	n.setConfig(0x30210001, uint16(1000/measurement_frequency), "CFG-RATE-MEAS 0x30210001") // CFG-RATE-MEAS 0x30210001 U2 0.001 s Nominal time between GNSS measurements
 	n.setConfig(0x30210002, uint16(1), "CFG-RATE-NAV")                                      // CFG-RATE-NAV 0x30210002 Ratio of number of measurements to number of navigation solutions
 
