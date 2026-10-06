@@ -29,7 +29,7 @@ var (
 		"NavDop":     0,
 		"NavSig":     0,
 		"TimTp":      0}
-	NavGapLimit uint32 = 251 // ms, 250ms is 4Hz, so anything more than that is a gap
+	NavGapLimit uint32 = 251 // ms, one epoch plus 1ms; set from the GNSS rate at startup
 )
 
 type MagnetometerRedisWrapper struct {
