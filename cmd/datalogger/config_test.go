@@ -35,11 +35,11 @@ func TestReadGnssMeasurementRate(t *testing.T) {
 	}{
 		{"configured", str("8"), 8},
 		{"lower bound", str("1"), 1},
-		{"upper bound", str("10"), 10},
+		{"upper bound", str("25"), 25},
 		{"integral float", str("8.0"), 8},
 		{"missing key", nil, 4},
 		{"zero", str("0"), 4},
-		{"too high", str("11"), 4},
+		{"too high", str("26"), 4},
 		{"fractional", str("8.5"), 4},
 		{"json string", str(`"8"`), 4},
 		{"not json", str("fast"), 4},

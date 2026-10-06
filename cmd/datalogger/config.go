@@ -42,8 +42,8 @@ func queryGnssMeasurementRate(dbPath string) (int, error) {
 	if err := json.Unmarshal([]byte(raw), &rate); err != nil {
 		return 0, fmt.Errorf("parsing %q: %w", raw, err)
 	}
-	if rate < 1 || rate > 10 || rate != math.Trunc(rate) {
-		return 0, fmt.Errorf("%s is not an integer in [1, 10]", raw)
+	if rate < 1 || rate > 25 || rate != math.Trunc(rate) {
+		return 0, fmt.Errorf("%s is not an integer in [1, 25]", raw)
 	}
 	return int(rate), nil
 }
