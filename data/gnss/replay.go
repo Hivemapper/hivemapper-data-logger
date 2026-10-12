@@ -55,6 +55,11 @@ func (f *GnssReplayFeed) Run() error {
 	reader := bufio.NewReader(replayFileHandle)
 
 	firstEpoch := true
+	// Pace the replay at the file's own epoch rate rather than a fixed 4 Hz. The interval
+	// is learned from consecutive NavPvt itow_ms, so a file generated at any rate replays
+	// at that rate. Only the second epoch uses the default, before a delta is known.
+	epochSleep := 250 * time.Millisecond
+	var prevItowMs uint32
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -75,7 +80,7 @@ func (f *GnssReplayFeed) Run() error {
 
 		if entry.RedisKey == "RxmRawx" {
 			if !firstEpoch {
-				time.Sleep(250 * time.Millisecond)
+				time.Sleep(epochSleep)
 			}
 			firstEpoch = false
 		}
@@ -96,6 +101,15 @@ func (f *GnssReplayFeed) Run() error {
 		// Monotonic time and system time in the replayed data needs to be updated
 		// so that it will be accepted by bee-sensor-fusion.
 		if navPvt, ok := msg.(*sensordata.NavPvt); ok {
+			// Learn the epoch interval before the timestamps are rewritten to now.
+			if itow := navPvt.GetItowMs(); itow != 0 {
+				if prevItowMs != 0 && itow > prevItowMs {
+					if d := time.Duration(itow-prevItowMs) * time.Millisecond; d > 0 && d <= 2*time.Second {
+						epochSleep = d
+					}
+				}
+				prevItowMs = itow
+			}
 			navPvt.UptimeMs = logger.MonotonicTime()
 			navPvt.SystemTime = time.Now().UTC().Format("2006-01-02 15:04:05.000000")
 		}

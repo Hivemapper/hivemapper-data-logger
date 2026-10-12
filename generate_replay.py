@@ -42,12 +42,12 @@ def ned_to_ecef_vel(lat_deg, lon_deg, vel_n, vel_e, vel_d):
     
     return vx, vy, vz
 
-def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_lon, heading_deg):
+def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_lon, heading_deg, rate_hz=4.0):
     # Calculate speed in meters/second
     speed_mps = speed_kmh / 3.6
     
-    # Epoch rate: 4Hz (every 250ms)
-    dt = 0.25
+    # Epoch rate, default 4 Hz (every 250 ms)
+    dt = 1.0 / rate_hz
     steps = int(duration_sec / dt)
     
     # Start time
@@ -206,6 +206,7 @@ if __name__ == '__main__':
     parser.add_argument('--lat', type=float, default=37.7749, help="Starting Latitude (default: SF)")
     parser.add_argument('--lon', type=float, default=-122.4194, help="Starting Longitude (default: SF)")
     parser.add_argument('--heading', type=float, default=90.0, help="Heading direction in degrees (0=North, 90=East, etc.)")
+    parser.add_argument('--rate', type=float, default=4.0, help="GNSS epoch rate in Hz")
     
     args = parser.parse_args()
-    generate_simulation(args.duration, args.output, args.speed, args.lat, args.lon, args.heading)
+    generate_simulation(args.duration, args.output, args.speed, args.lat, args.lon, args.heading, args.rate)
