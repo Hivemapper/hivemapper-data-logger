@@ -30,9 +30,10 @@ const (
 func (CfgValSet) classID() uint16 { return 0x8a06 }
 
 type CfgValGetReq struct {
-	Version byte
-	Layers  CfgValSetLayers
-	Key     uint32
+	Version  byte
+	Layers   CfgValSetLayers
+	Position uint16
+	Key      uint32
 }
 
 func (CfgValGetReq) classID() uint16 { return 0x8b06 }

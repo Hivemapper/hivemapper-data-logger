@@ -2,6 +2,7 @@ package message
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"time"
 
 	"encoding/hex"
@@ -152,12 +153,11 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				initializeDecoder()
 				continue
 			}
-			if cfg, ok := msg.(*ubx.CfgValGet); ok {
-				pairs := make([]string, 0, len(cfg.CfgData))
-				for _, c := range cfg.CfgData {
-					pairs = append(pairs, fmt.Sprintf("0x%08x=%v", c.Key, c.Value))
-				}
-				fmt.Println(time.Now().UTC(), "CFG:", strings.Join(pairs, " "))
+			// CFG-VALGET responses have no mkMsg case, so they arrive as RawMessage and
+			// the generic decoder cannot size CfgData's values. Parse them here: bits
+			// 28-30 of each key give its storage size.
+			if raw, ok := msg.(*ubx.RawMessage); ok && raw.ClassID == 0x8b06 {
+				fmt.Println(time.Now().UTC(), "CFG:", formatCfgValGet(raw.Data))
 			}
 			if _, ok := msg.(*ubx.AckAck); ok {
 				d.MessageAcknowledged = true
@@ -209,4 +209,29 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 func needToRepair(err error) bool {
 	// Check if the error message contains the word "unexpected"
 	return strings.Contains(err.Error(), "unexpected")
+}
+
+// formatCfgValGet renders a UBX-CFG-VALGET payload as key=value pairs. Layout is
+// version, layer, position (2 bytes), then key/value pairs; the key's storage-size
+// bits give each value's width.
+func formatCfgValGet(p []byte) string {
+	if len(p) < 4 {
+		return "(short)"
+	}
+	sizes := map[byte]int{1: 1, 2: 1, 3: 2, 4: 4, 5: 8}
+	pairs := []string{}
+	for i := 4; i+4 <= len(p); {
+		key := binary.LittleEndian.Uint32(p[i : i+4])
+		n, ok := sizes[byte((key>>28)&0x7)]
+		if !ok || i+4+n > len(p) {
+			break
+		}
+		var v uint64
+		for j := 0; j < n; j++ {
+			v |= uint64(p[i+4+j]) << uint(8*j)
+		}
+		pairs = append(pairs, fmt.Sprintf("0x%08x=%d", key, v))
+		i += 4 + n
+	}
+	return strings.Join(pairs, " ")
 }
