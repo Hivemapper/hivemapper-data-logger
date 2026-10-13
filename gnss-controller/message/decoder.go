@@ -153,7 +153,11 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				continue
 			}
 			if cfg, ok := msg.(*ubx.CfgValGet); ok {
-				fmt.Println("CFG:", cfg)
+				pairs := make([]string, 0, len(cfg.CfgData))
+				for _, c := range cfg.CfgData {
+					pairs = append(pairs, fmt.Sprintf("0x%08x=%v", c.Key, c.Value))
+				}
+				fmt.Println(time.Now().UTC(), "CFG:", strings.Join(pairs, " "))
 			}
 			if _, ok := msg.(*ubx.AckAck); ok {
 				d.MessageAcknowledged = true

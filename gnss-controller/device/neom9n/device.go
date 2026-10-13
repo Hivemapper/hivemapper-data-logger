@@ -148,6 +148,10 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x209102a5, uint8(measurement_frequency), "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
+	// Nothing configures CFG-SIGNAL, so each receiver runs whatever constellation set it
+	// has stored. Log the group once at startup so field logs can answer what was enabled.
+	n.getConfig(0x0031FFFF)
+
 	// turn off unneeded messages that are default on
 	n.setConfig(0x20910016, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
 	n.setConfig(0x209100ab, []byte{0x00}, "CFG-MSGOUT-NMEA_ID_RMC_I2C")
@@ -212,14 +216,16 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 	}
 }
 
-// func (n *Neom9n) getConfig(key uint32) {
-// 	n.output <- &ubx.CfgValGetReq{
-// 		Version: 0x00,
-// 		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
-// 		Key:     key,
-// 	}
-// 	time.Sleep(100 * time.Millisecond)
-// }
+// getConfig polls one key, or a whole group with an item id of 0xFFFF. The response is
+// logged by the decoder; nothing here reads it back.
+func (n *Neom9n) getConfig(key uint32) {
+	n.output <- &ubx.CfgValGetReq{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
+		Key:     key,
+	}
+	time.Sleep(100 * time.Millisecond)
+}
 
 // func (n *Neom9n) delConfig(key uint32, description string) {
 // 	n.output <- &ubx.CfgValDel{
