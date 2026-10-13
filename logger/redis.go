@@ -36,15 +36,13 @@ var (
 	gnssStatsStart = time.Now()
 )
 
-// gnssStatsKeys are the messages bee-sensor-fusion needs to agree on an itow before it
-// will write an epoch. Reported together because the shape tells you which fault it is.
+// gnssStatsKeys are the messages fusion needs on one itow to write an epoch.
 var gnssStatsKeys = []string{"NavPvt", "NavCov", "NavTimegps", "NavPosecef", "NavVelecef", "NavStatus", "NavDop", "NavSig"}
 
 const gnssStatsInterval = 60 * time.Second
 
-// noteItow records an arrival and, once a minute, prints one line of per-message counts.
-// One message low means that message's output rate is misconfigured; all of them low
-// together means whole epochs are being lost upstream.
+// noteItow counts arrivals and prints per-message totals once a minute. One message
+// low means its output rate is wrong; all low means whole epochs are being lost.
 func noteItow(key string, itow uint32) {
 	prevItowMs[key] = itow
 	gnssRecvCounts[key]++

@@ -153,9 +153,7 @@ func (d *Decoder) Decode(stream *serial.Port, config *serial.Config) chan error 
 				initializeDecoder()
 				continue
 			}
-			// CFG-VALGET responses have no mkMsg case, so they arrive as RawMessage and
-			// the generic decoder cannot size CfgData's values. Parse them here: bits
-			// 28-30 of each key give its storage size.
+			// No mkMsg case for CFG-VALGET, so it arrives as RawMessage.
 			if raw, ok := msg.(*ubx.RawMessage); ok && raw.ClassID == 0x8b06 {
 				fmt.Println(time.Now().UTC(), "CFG:", formatCfgValGet(raw.Data))
 			}
