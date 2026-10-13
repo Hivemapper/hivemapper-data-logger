@@ -119,6 +119,10 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	// Fusion needs NAV-DOP for every epoch like the rest; left unset it runs at whatever
+	// rate is stored on the receiver, and a stored rate above 1 silently halves the
+	// delivered GNSS rate.
+	n.setConfig(0x20910039, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_DOP_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
@@ -134,7 +138,14 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 
 	// add raw measurements
 	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	n.setConfig(0x209102a5, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	// RXM-RAWX is over half of every epoch's UART bytes and grows with satellites tracked,
+	// so it is emitted once a second rather than once an epoch. Nothing on the device reads
+	// it: fusion only archives it to the rxm_rawx table and epoch alignment does not use it.
+	// CAUTION: the SEC-ECSIGN signed buffer is every UBX frame since the previous signature
+	// (see message/decoder.go), so this also removes ~95% of the raw measurements from the
+	// GNSS auth payload sent upstream. Harmless if nothing upstream validates against them;
+	// raise the divisor here if it does.
+	n.setConfig(0x209102a5, uint8(measurement_frequency), "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
 	// turn off unneeded messages that are default on

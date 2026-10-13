@@ -132,7 +132,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	gnssMeasurementRateHz := readGnssMeasurementRate(mustGetString(cmd, "config-db-path"))
-	logger.NavGapLimit = uint32(1000/gnssMeasurementRateHz + 1)
+	logger.GnssMeasurementRateHz = gnssMeasurementRateHz
 
 	err = initializeSensorThreads(
 		imuDevice,

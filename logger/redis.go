@@ -29,8 +29,52 @@ var (
 		"NavDop":     0,
 		"NavSig":     0,
 		"TimTp":      0}
-	NavGapLimit uint32 = 251 // ms, one epoch plus 1ms; set from the GNSS rate at startup
+	// GnssMeasurementRateHz is the configured GNSS rate, set at startup.
+	GnssMeasurementRateHz = 4
+
+	gnssRecvCounts = map[string]int{}
+	gnssStatsStart = time.Now()
 )
+
+// gnssStatsKeys are the messages bee-sensor-fusion needs to agree on an itow before it
+// will write an epoch. Reported together because the shape tells you which fault it is.
+var gnssStatsKeys = []string{"NavPvt", "NavCov", "NavTimegps", "NavPosecef", "NavVelecef", "NavStatus", "NavDop", "NavSig"}
+
+const gnssStatsInterval = 60 * time.Second
+
+// noteItow records an arrival and, once a minute, prints one line of per-message counts.
+// One message low means that message's output rate is misconfigured; all of them low
+// together means whole epochs are being lost upstream.
+func noteItow(key string, itow uint32) {
+	prevItowMs[key] = itow
+	gnssRecvCounts[key]++
+
+	elapsed := time.Since(gnssStatsStart)
+	if elapsed < gnssStatsInterval {
+		return
+	}
+
+	expected := int(float64(GnssMeasurementRateHz) * elapsed.Seconds())
+	counts := ""
+	lowest := expected
+	for _, k := range gnssStatsKeys {
+		counts += fmt.Sprintf(" %s=%d", k, gnssRecvCounts[k])
+		if gnssRecvCounts[k] < lowest {
+			lowest = gnssRecvCounts[k]
+		}
+	}
+	tag := "[GNSS]"
+	if expected > 0 && lowest*10 < expected*9 {
+		tag = "[WARNING] [GNSS]"
+	}
+	fmt.Printf("%v %s %.0fs: expected %d epochs @%dHz, received%s\n",
+		time.Now().UTC(), tag, elapsed.Seconds(), expected, GnssMeasurementRateHz, counts)
+
+	for k := range gnssRecvCounts {
+		delete(gnssRecvCounts, k)
+	}
+	gnssStatsStart = time.Now()
+}
 
 type MagnetometerRedisWrapper struct {
 	System_time time.Time `json:"system_time"`
@@ -284,10 +328,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			MagDecDege2:  int32(m.MagDec_dege2),
 			MagAccDege2:  uint32(m.MagAcc_dege2),
 		}
-		if prevItowMs["NavPvt"] != 0 && m.ITOW_ms-prevItowMs["NavPvt"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavPvt drop of", m.ITOW_ms-prevItowMs["NavPvt"], "ms (", prevItowMs["NavPvt"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavPvt"] = m.ITOW_ms
+		noteItow("NavPvt", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavDop:
 		redisKey = "NavDop"
@@ -303,10 +344,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Ndop:       uint32(m.NDOP),
 			Edop:       uint32(m.EDOP),
 		}
-		if prevItowMs["NavDop"] != 0 && m.ITOW_ms-prevItowMs["NavDop"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavDop drop of", m.ITOW_ms-prevItowMs["NavDop"], "ms (", prevItowMs["NavDop"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavDop"] = m.ITOW_ms
+		noteItow("NavDop", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavCov:
 		redisKey = "NavCov"
@@ -329,10 +367,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			VelCovED:    float64(m.VelCovED_m2_s2),
 			VelCovDD:    float64(m.VelCovDD_m2_s2),
 		}
-		if prevItowMs["NavCov"] != 0 && m.ITOW_ms-prevItowMs["NavCov"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavCov drop of", m.ITOW_ms-prevItowMs["NavCov"], "ms (", prevItowMs["NavCov"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavCov"] = m.ITOW_ms
+		noteItow("NavCov", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavPosecef:
 		redisKey = "NavPosecef"
@@ -344,10 +379,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			EcefZCm: int32(m.EcefZ_cm),
 			PAccCm:  uint32(m.PAcc_cm),
 		}
-		if prevItowMs["NavPosecef"] != 0 && m.ITOW_ms-prevItowMs["NavPosecef"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavPosecef drop of", m.ITOW_ms-prevItowMs["NavPosecef"], "ms (", prevItowMs["NavPosecef"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavPosecef"] = m.ITOW_ms
+		noteItow("NavPosecef", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavTimegps:
 		redisKey = "NavTimegps"
@@ -360,10 +392,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Valid:  uint32(m.Valid),
 			TAccNs: uint32(m.TAcc_ns),
 		}
-		if prevItowMs["NavTimegps"] != 0 && m.ITOW_ms-prevItowMs["NavTimegps"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavTimegps drop of", m.ITOW_ms-prevItowMs["NavTimegps"], "ms (", prevItowMs["NavTimegps"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavTimegps"] = m.ITOW_ms
+		noteItow("NavTimegps", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavVelecef:
 		redisKey = "NavVelecef"
@@ -375,10 +404,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			EcefVzCmS: int32(m.EcefVZ_cm_s),
 			SAccCmS:   uint32(m.SAcc_cm_s),
 		}
-		if prevItowMs["NavVelecef"] != 0 && m.ITOW_ms-prevItowMs["NavVelecef"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavVelecef drop of", m.ITOW_ms-prevItowMs["NavVelecef"], "ms (", prevItowMs["NavVelecef"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavVelecef"] = m.ITOW_ms
+		noteItow("NavVelecef", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.NavStatus:
 		redisKey = "NavStatus"
@@ -392,10 +418,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 			Ttff:    uint32(m.Ttff_ms),
 			Msss:    uint32(m.Msss_ms),
 		}
-		if prevItowMs["NavStatus"] != 0 && m.ITOW_ms-prevItowMs["NavStatus"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavStatus drop of", m.ITOW_ms-prevItowMs["NavStatus"], "ms (", prevItowMs["NavStatus"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavStatus"] = m.ITOW_ms
+		noteItow("NavStatus", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	// case *ubx.NavSat:
 	// 	redisKey = "NavSat"
@@ -445,10 +468,7 @@ func (s *Redis) HandleUbxMessage(msg interface{}) error {
 				SigFlags:   uint32(sig.SigFlags),
 			}
 		}
-		if prevItowMs["NavSig"] != 0 && m.ITOW_ms-prevItowMs["NavSig"] > NavGapLimit {
-			fmt.Println(time.Now().UTC(), "[WARNING] NavSig drop of", m.ITOW_ms-prevItowMs["NavSig"], "ms (", prevItowMs["NavSig"], ",", m.ITOW_ms, ")")
-		}
-		prevItowMs["NavSig"] = m.ITOW_ms
+		noteItow("NavSig", m.ITOW_ms)
 		protodata, err = s.Marshal(&protomessage)
 	case *ubx.MonRf:
 		redisKey = "MonRf"
