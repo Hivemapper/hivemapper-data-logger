@@ -135,8 +135,8 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 
 	// add raw measurements
 	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	// 1 Hz: over half the epoch's UART bytes, and only archived.
-	n.setConfig(0x209102a5, uint8(measurement_frequency), "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	// Disabled: over half the epoch's UART bytes, and nothing reads it.
+	n.setConfig(0x209102a5, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
 	// CFG-SIGNAL is never set, so log what the receiver has stored.
