@@ -191,19 +191,23 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 		},
 	}
 	fmt.Println(time.Now().UTC(), "Set config:", description, "value:", value)
-	// wait for ACK message from decoder before sending next message
+	n.waitForAck("Set config", description)
+}
+
+// waitForAck blocks until the decoder reports an ACK, clearing it so the next message
+// waits for its own. Every send must call this or the one after it returns early on a
+// stale flag, and each later ACK then releases the wrong message.
+func (n *Neom9n) waitForAck(action string, description string) {
 	n.ackWaitCounter = 0
 	for n.ackWaitCounter < 25 {
 		if n.decoder.MessageAcknowledged {
 			n.decoder.MessageAcknowledged = false
-			break
+			return
 		}
 		time.Sleep(20 * time.Millisecond)
 		n.ackWaitCounter++
 	}
-	if n.ackWaitCounter == 25 {
-		fmt.Println(time.Now().UTC(), "Set config not acknowledged")
-	}
+	fmt.Println(time.Now().UTC(), action, "not acknowledged:", description)
 }
 
 // getConfig polls one key, or a whole group with an item id of 0xFFFF. The response is
@@ -214,7 +218,7 @@ func (n *Neom9n) getConfig(key uint32) {
 		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
 		Key:     key,
 	}
-	time.Sleep(100 * time.Millisecond)
+	n.waitForAck("Get config", fmt.Sprintf("0x%08x", key))
 }
 
 // func (n *Neom9n) delConfig(key uint32, description string) {

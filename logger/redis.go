@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/device/neom9n"
@@ -32,8 +33,12 @@ var (
 	// GnssMeasurementRateHz is the configured GNSS rate, set at startup.
 	GnssMeasurementRateHz = 4
 
+	// Guards the counters below: noteItow runs on the decoder goroutine, the reporter
+	// on its own.
+	gnssStatsMu    sync.Mutex
 	gnssRecvCounts = map[string]int{}
-	gnssStatsStart = time.Now()
+	gnssStatsStart time.Time
+	gnssSawData    bool
 )
 
 // gnssStatsKeys are the messages fusion needs on one itow to write an epoch.
@@ -41,17 +46,42 @@ var gnssStatsKeys = []string{"NavPvt", "NavCov", "NavTimegps", "NavPosecef", "Na
 
 const gnssStatsInterval = 60 * time.Second
 
-// noteItow counts arrivals and prints per-message totals once a minute. One message
-// low means its output rate is wrong; all low means whole epochs are being lost.
+// noteItow counts an arrival. StartGnssStatsReporter prints the totals.
 func noteItow(key string, itow uint32) {
 	prevItowMs[key] = itow
-	gnssRecvCounts[key]++
 
-	elapsed := time.Since(gnssStatsStart)
-	if elapsed < gnssStatsInterval {
+	gnssStatsMu.Lock()
+	defer gnssStatsMu.Unlock()
+	gnssRecvCounts[key]++
+	if !gnssSawData {
+		// Start the window at the first message, not at boot: Init spends seconds
+		// waiting on config ACKs and would otherwise count as a shortfall.
+		gnssSawData = true
+		gnssStatsStart = time.Now()
+	}
+}
+
+// StartGnssStatsReporter prints per-message arrival counts once a minute. One message low
+// means its output rate is wrong; all low means whole epochs are being lost. Driven by a
+// timer rather than by arrivals so it still reports when nothing is arriving at all.
+func StartGnssStatsReporter() {
+	go func() {
+		for range time.Tick(gnssStatsInterval) {
+			reportGnssStats()
+		}
+	}()
+}
+
+func reportGnssStats() {
+	gnssStatsMu.Lock()
+	defer gnssStatsMu.Unlock()
+
+	if !gnssSawData {
+		fmt.Printf("%v [WARNING] [GNSS] no nav messages received\n", time.Now().UTC())
 		return
 	}
 
+	elapsed := time.Since(gnssStatsStart)
 	expected := int(float64(GnssMeasurementRateHz) * elapsed.Seconds())
 	counts := ""
 	lowest := expected

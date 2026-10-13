@@ -133,6 +133,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	gnssMeasurementRateHz := readGnssMeasurementRate(mustGetString(cmd, "config-db-path"))
 	logger.GnssMeasurementRateHz = gnssMeasurementRateHz
+	logger.StartGnssStatsReporter()
 
 	err = initializeSensorThreads(
 		imuDevice,
