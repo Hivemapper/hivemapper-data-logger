@@ -52,8 +52,11 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
     
     # Start time
     now = datetime.now(timezone.utc)
-    # Start GPS Time of Week (TOW) - let's pick a default
-    start_itow_ms = 517405500
+    # GPS week/TOW must track now: the device sets its clock from these, so a
+    # hardcoded pair drags it to the encoded date.
+    gps_s = (now - datetime(1980, 1, 6, tzinfo=timezone.utc)).total_seconds() + 18
+    start_week = int(gps_s // 604800)
+    start_itow_ms = int((gps_s % 604800) * 1000)
     start_uptime_ms = 25326299.0
     
     lat = start_lat
@@ -67,6 +70,8 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
             t_offset = step * dt
             step_time = now + timedelta(seconds=t_offset)
             itow_ms = start_itow_ms + int(t_offset * 1000)
+            gps_week = start_week + itow_ms // 604800000
+            itow_ms %= 604800000
             uptime_ms = start_uptime_ms + (t_offset * 1000)
             
             # 1. Update position (Dead reckoning)
@@ -123,7 +128,7 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
             
             # 1. RxmRawx
             rxm_rawx_data = (
-                f'system_time:"{sys_time_str}" rcv_tow_s:{rcv_tow_s:.3f} week:2422 leap_s:18 num_meas:2 rec_stat:1 version:1 '
+                f'system_time:"{sys_time_str}" rcv_tow_s:{rcv_tow_s:.3f} week:{gps_week} leap_s:18 num_meas:2 rec_stat:1 version:1 '
                 f'meas:{{pr_mes:2.3631966949941665e+07 cp_mes:1.2418683236464132e+08 do_mes:-2038.1473388671875 sv_id:32 locktime_ms:8000 cno_dbhz:25 pr_stdev_m_1e2_2n:8 cp_stdev_cycles_4e3:10 do_stdev_hz_2e3_2n:8 trk_stat:7}} '
                 f'meas:{{pr_mes:2.3793212786808778e+07 cp_mes:1.2503417617119361e+08 do_mes:339.675048828125 sv_id:2 cno_dbhz:23 pr_stdev_m_1e2_2n:10 cp_stdev_cycles_4e3:15 do_stdev_hz_2e3_2n:12 trk_stat:1}}'
             )
@@ -172,7 +177,7 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
             f.write(json.dumps({"redisKey": "NavDop", "data": nav_dop_data}) + '\n')
             
             # 8. NavTimegps
-            nav_timegps_data = f'itow_ms:{itow_ms} week:2422 leap_s:18 valid:7 t_acc_ns:96186096'
+            nav_timegps_data = f'itow_ms:{itow_ms} week:{gps_week} leap_s:18 valid:7 t_acc_ns:96186096'
             f.write(json.dumps({"redisKey": "NavTimegps", "data": nav_timegps_data}) + '\n')
             
             # 9. NavCov

@@ -119,6 +119,7 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x2091017e, []byte{0x01}, "CFG-MSGOUT-UBX_TIM_TP_UART1")
 	n.setConfig(0x2091001b, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_STATUS_UART1")
 	n.setConfig(0x20910346, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_SIG_UART1")
+	n.setConfig(0x20910039, []byte{0x01}, "CFG-MSGOUT-UBX_NAV_DOP_UART1")
 
 	// non critical messages set to 1 Hz
 	n.setConfig(0x2091035a, uint8(measurement_frequency), "CFG-MSGOUT-UBX_MON_RF_UART1") // CFG-MSGOUT-UBX_MON_RF_UART1 0x2091035a Output rate of the UBX-MON-RF message on port UART1
@@ -134,8 +135,12 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 
 	// add raw measurements
 	n.setConfig(0x20910205, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_MEASX_UART1")
-	n.setConfig(0x209102a5, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
+	// Disabled: over half the epoch's UART bytes, and nothing reads it.
+	n.setConfig(0x209102a5, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
+
+	// CFG-SIGNAL is never set, so log what the receiver has stored.
+	n.getConfig(0x0031FFFF)
 
 	// turn off unneeded messages that are default on
 	n.setConfig(0x20910016, []byte{0x00}, "CFG-MSGOUT-UBX_NAV_SAT_UART1")
@@ -186,29 +191,35 @@ func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
 		},
 	}
 	fmt.Println(time.Now().UTC(), "Set config:", description, "value:", value)
-	// wait for ACK message from decoder before sending next message
+	n.waitForAck("Set config", description)
+}
+
+// waitForAck blocks until the decoder reports an ACK, clearing it so the next message
+// waits for its own. Every send must call this or the one after it returns early on a
+// stale flag, and each later ACK then releases the wrong message.
+func (n *Neom9n) waitForAck(action string, description string) {
 	n.ackWaitCounter = 0
 	for n.ackWaitCounter < 25 {
 		if n.decoder.MessageAcknowledged {
 			n.decoder.MessageAcknowledged = false
-			break
+			return
 		}
 		time.Sleep(20 * time.Millisecond)
 		n.ackWaitCounter++
 	}
-	if n.ackWaitCounter == 25 {
-		fmt.Println(time.Now().UTC(), "Set config not acknowledged")
-	}
+	fmt.Println(time.Now().UTC(), action, "not acknowledged:", description)
 }
 
-// func (n *Neom9n) getConfig(key uint32) {
-// 	n.output <- &ubx.CfgValGetReq{
-// 		Version: 0x00,
-// 		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
-// 		Key:     key,
-// 	}
-// 	time.Sleep(100 * time.Millisecond)
-// }
+// getConfig polls one key, or a whole group with an item id of 0xFFFF. The response is
+// logged by the decoder; nothing here reads it back.
+func (n *Neom9n) getConfig(key uint32) {
+	n.output <- &ubx.CfgValGetReq{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam),
+		Key:     key,
+	}
+	n.waitForAck("Get config", fmt.Sprintf("0x%08x", key))
+}
 
 // func (n *Neom9n) delConfig(key uint32, description string) {
 // 	n.output <- &ubx.CfgValDel{
