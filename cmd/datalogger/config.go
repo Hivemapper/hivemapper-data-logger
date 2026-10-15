@@ -11,16 +11,22 @@ import (
 
 const defaultGnssMeasurementRateHz = 4
 
-// The constellations this receiver can be told about. GLONASS is absent because the
-// receiver has no key for it and rejects one.
-var supportedConstellations = map[string]bool{
-	"GPS": true, "SBAS": true, "GAL": true, "BDS": true, "QZSS": true,
+// Every constellation this receiver can be told about, and whether it is on when
+// nothing is configured. The defaults are the set every field device already has
+// stored, so the default write is a no-op. GLONASS is absent because the receiver has
+// no key for it and rejects one.
+func defaultGnssConstellations() map[string]bool {
+	return map[string]bool{
+		"GPS":  true,
+		"SBAS": true,
+		"GAL":  true,
+		"BDS":  true,
+		"QZSS": false,
+	}
 }
 
-// The set every field device already has stored, so the default write is a no-op.
-func defaultGnssConstellations() map[string]bool {
-	return map[string]bool{"GPS": true, "SBAS": true, "GAL": true, "BDS": true}
-}
+// Keys, not values: a constellation is supported whether or not it is on by default.
+var supportedConstellations = defaultGnssConstellations()
 
 // readGnssMeasurementRate reads GNSS_MEASUREMENT_RATE_HZ from the odc-api config table.
 // bee-sensor-fusion applies the same rule, so both agree on the rate.
@@ -59,7 +65,7 @@ func queryGnssConstellations(dbPath string) (map[string]bool, error) {
 	}
 
 	for name := range enabled {
-		if !supportedConstellations[name] {
+		if _, ok := supportedConstellations[name]; !ok {
 			return nil, fmt.Errorf("%q is not a constellation this receiver supports", name)
 		}
 	}

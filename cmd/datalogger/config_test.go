@@ -108,7 +108,9 @@ func TestReadGnssConstellations(t *testing.T) {
 		want  map[string]bool
 	}{
 		{"missing key falls back", nil, fallback},
-		{"the default set", str(`{"GPS":true,"SBAS":true,"GAL":true,"BDS":true}`), fallback},
+		// What the configurator seeds, so this pins the two defaults to agree.
+		{"the seeded default set",
+			str(`{"BDS":true,"GAL":true,"GPS":true,"QZSS":false,"SBAS":true}`), fallback},
 		{"one constellation", str(`{"GPS":true}`), map[string]bool{"GPS": true}},
 		{"explicit false is kept", str(`{"GPS":true,"GAL":false}`),
 			map[string]bool{"GPS": true, "GAL": false}},
