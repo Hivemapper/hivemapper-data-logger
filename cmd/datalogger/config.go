@@ -11,6 +11,23 @@ import (
 
 const defaultGnssMeasurementRateHz = 4
 
+// Every constellation this receiver can be told about, and whether it is on when
+// nothing is configured. The defaults are the set every field device already has
+// stored, so the default write is a no-op. GLONASS is absent because the receiver has
+// no key for it and rejects one.
+func defaultGnssConstellations() map[string]bool {
+	return map[string]bool{
+		"GPS":  true,
+		"SBAS": true,
+		"GAL":  true,
+		"BDS":  true,
+		"QZSS": false,
+	}
+}
+
+// Keys, not values: a constellation is supported whether or not it is on by default.
+var supportedConstellations = defaultGnssConstellations()
+
 // readGnssMeasurementRate reads GNSS_MEASUREMENT_RATE_HZ from the odc-api config table.
 // bee-sensor-fusion applies the same rule, so both agree on the rate.
 func readGnssMeasurementRate(dbPath string) int {
@@ -23,16 +40,60 @@ func readGnssMeasurementRate(dbPath string) int {
 	return rate
 }
 
-func queryGnssMeasurementRate(dbPath string) (int, error) {
+// readGnssConstellations reads GNSS_CONSTELLATIONS from the odc-api config table.
+// Changing the set costs the receiver a ~400 ms loss of fix; writing back the set it
+// already holds costs nothing.
+func readGnssConstellations(dbPath string) map[string]bool {
+	enabled, err := queryGnssConstellations(dbPath)
+	if err != nil {
+		fmt.Printf("GNSS_CONSTELLATIONS: %v, using %v\n", err, defaultGnssConstellations())
+		return defaultGnssConstellations()
+	}
+	fmt.Printf("GNSS_CONSTELLATIONS: %v\n", enabled)
+	return enabled
+}
+
+func queryGnssConstellations(dbPath string) (map[string]bool, error) {
+	raw, err := queryConfig(dbPath, "GNSS_CONSTELLATIONS")
+	if err != nil {
+		return nil, err
+	}
+
+	var enabled map[string]bool
+	if err := json.Unmarshal([]byte(raw), &enabled); err != nil {
+		return nil, fmt.Errorf("parsing %q: %w", raw, err)
+	}
+
+	for name := range enabled {
+		if _, ok := supportedConstellations[name]; !ok {
+			return nil, fmt.Errorf("%q is not a constellation this receiver supports", name)
+		}
+	}
+	// The receiver requires at least one major constellation; SBAS is augmentation and
+	// QZSS is regional, so neither counts on its own.
+	if !enabled["GPS"] && !enabled["GAL"] && !enabled["BDS"] {
+		return nil, fmt.Errorf("%s enables no major constellation (GPS, GAL or BDS)", raw)
+	}
+	return enabled, nil
+}
+
+func queryConfig(dbPath, key string) (string, error) {
 	// mode=rw so a missing file is an error instead of being created empty.
 	db, err := sql.Open("sqlite", "file:"+dbPath+"?mode=rw&_pragma=query_only(1)&_pragma=busy_timeout(2000)")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer db.Close()
 
 	var raw string
-	err = db.QueryRow("SELECT value FROM config WHERE key = 'GNSS_MEASUREMENT_RATE_HZ'").Scan(&raw)
+	if err := db.QueryRow("SELECT value FROM config WHERE key = ?", key).Scan(&raw); err != nil {
+		return "", err
+	}
+	return raw, nil
+}
+
+func queryGnssMeasurementRate(dbPath string) (int, error) {
+	raw, err := queryConfig(dbPath, "GNSS_MEASUREMENT_RATE_HZ")
 	if err != nil {
 		return 0, err
 	}

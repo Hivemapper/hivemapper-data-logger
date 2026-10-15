@@ -133,6 +133,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 
 	gnssMeasurementRateHz := readGnssMeasurementRate(mustGetString(cmd, "config-db-path"))
 	logger.GnssMeasurementRateHz = gnssMeasurementRateHz
+	gnssConstellations := readGnssConstellations(mustGetString(cmd, "config-db-path"))
 	logger.StartGnssStatsReporter()
 
 	err = initializeSensorThreads(
@@ -144,6 +145,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		mustGetInt(cmd, "gnss-initial-baud-rate"),
 		mustGetBool(cmd, "gnss-measx-enabled"),
 		gnssMeasurementRateHz,
+		gnssConstellations,
 		mustGetBool(cmd, "enable-magnetometer"),
 		mustGetBool(cmd, "skip-filtering"),
 		redisReadGnssFromFile,
@@ -166,6 +168,7 @@ func initializeSensorThreads(
 	gnssInitBaudRate int,
 	gnssMeasxEnabled bool,
 	gnssMeasurementRateHz int,
+	gnssConstellations map[string]bool,
 	enableMagnetometer bool,
 	skipFiltering bool,
 	gnssReadFile string,
@@ -184,7 +187,7 @@ func initializeSensorThreads(
 	}()
 
 	if gnssReadFile == "" {
-		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled, gnssMeasurementRateHz)
+		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled, gnssMeasurementRateHz, gnssConstellations)
 		err = gnssDevice.Init(nil)
 		if err != nil {
 			return fmt.Errorf("initializing neom9n: %w", err)

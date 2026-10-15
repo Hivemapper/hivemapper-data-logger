@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Hivemapper/gnss-controller/message"
@@ -23,10 +24,11 @@ type Neom9n struct {
 	decoderDone        chan error
 	measxEnabled       bool
 	measurementRateHz  int
+	constellations     map[string]bool
 	ackWaitCounter     int
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int, constellations map[string]bool) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now().UTC(),
 		config: &serial.Config{
@@ -41,6 +43,7 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRa
 		output:             make(chan ubx.Message),
 		measxEnabled:       measxEnabled,
 		measurementRateHz:  measurementRateHz,
+		constellations:     constellations,
 	}
 
 	return n
@@ -139,7 +142,9 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	n.setConfig(0x209102a5, []byte{0x00}, "CFG-MSGOUT-UBX_RXM_RAWX_UART1")
 	n.setConfig(0x20910232, []byte{0x01}, "CFG-MSGOUT-UBX_RXM_SFRBX_UART1")
 
-	// CFG-SIGNAL is never set, so log what the receiver has stored.
+	n.setConstellations()
+
+	// Log the group back so the set a device is actually running is visible in its logs.
 	n.getConfig(0x0031FFFF)
 
 	// turn off unneeded messages that are default on
@@ -177,6 +182,46 @@ func (n *Neom9n) Init(lastPosition *Position) error {
 	}
 
 	return nil
+}
+
+// Keys for the constellations this receiver supports. GLONASS (0x10310025) is
+// deliberately absent: the receiver has no such key and NAKs the whole frame.
+var constellationKeys = []struct {
+	name string
+	key  uint32
+}{
+	{"GPS", 0x1031001f},
+	{"SBAS", 0x10310020},
+	{"GAL", 0x10310021},
+	{"BDS", 0x10310022},
+	{"QZSS", 0x10310024},
+}
+
+// setConstellations writes the whole CFG-SIGNAL group in one VALSET. Changing any
+// item in the group resets the GNSS subsystem, costing ~400 ms of fix; batching makes
+// a change of several constellations cost one reset rather than one each. Writing
+// values the receiver already holds is a no-op and costs nothing, which is the usual
+// case on boot.
+func (n *Neom9n) setConstellations() {
+	cfgData := make([]*ubx.CfgData, 0, len(constellationKeys))
+	parts := make([]string, 0, len(constellationKeys))
+	for _, c := range constellationKeys {
+		value := byte(0x00)
+		if n.constellations[c.name] {
+			value = 0x01
+		}
+		cfgData = append(cfgData, &ubx.CfgData{Key: c.key, Value: []byte{value}})
+		parts = append(parts, fmt.Sprintf("%s=%d", c.name, value))
+	}
+
+	n.output <- &ubx.CfgValSet{
+		Version: 0x00,
+		Layers:  ubx.CfgValSetLayers(ubx.CfgValSetLayersRam | ubx.CfgValSetLayersFlash | ubx.CfgValSetLayersBBR),
+		CfgData: cfgData,
+	}
+	description := strings.Join(parts, " ")
+	fmt.Println(time.Now().UTC(), "Set config: CFG-SIGNAL", description)
+	n.waitForAck("Set config", "CFG-SIGNAL "+description)
 }
 
 func (n *Neom9n) setConfig(key uint32, value interface{}, description string) {
