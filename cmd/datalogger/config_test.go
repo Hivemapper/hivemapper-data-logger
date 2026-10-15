@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
-	"strings"
+	"reflect"
 	"testing"
 )
 
@@ -100,31 +100,36 @@ func writeConstellationDb(t *testing.T, value *string) string {
 
 func TestReadGnssConstellations(t *testing.T) {
 	str := func(s string) *string { return &s }
-	fallback := "GPS,SBAS,GAL,BDS"
+	fallback := defaultGnssConstellations()
 
 	cases := []struct {
 		name  string
 		value *string
-		want  string
+		want  map[string]bool
 	}{
 		{"missing key falls back", nil, fallback},
-		{"default set", str(`"GPS,SBAS,GAL,BDS"`), "GPS,SBAS,GAL,BDS"},
-		{"single constellation", str(`"GPS"`), "GPS"},
-		{"long names and spacing", str(`" galileo , BeiDou "`), "GAL,BDS"},
-		{"duplicates collapse", str(`"GPS,gps,GPS"`), "GPS"},
-		{"order is preserved", str(`"BDS,GPS"`), "BDS,GPS"},
-		{"GLONASS is rejected", str(`"GPS,GLONASS"`), fallback},
-		{"unknown name is rejected", str(`"GPS,NAVIC"`), fallback},
-		{"augmentation alone is rejected", str(`"SBAS,QZSS"`), fallback},
-		{"empty is rejected", str(`""`), fallback},
-		{"non-string is rejected", str(`4`), fallback},
+		{"the default set", str(`{"GPS":true,"SBAS":true,"GAL":true,"BDS":true}`), fallback},
+		{"one constellation", str(`{"GPS":true}`), map[string]bool{"GPS": true}},
+		{"explicit false is kept", str(`{"GPS":true,"GAL":false}`),
+			map[string]bool{"GPS": true, "GAL": false}},
+		{"QZSS is supported", str(`{"GPS":true,"QZSS":true}`),
+			map[string]bool{"GPS": true, "QZSS": true}},
+		{"GLONASS is rejected", str(`{"GPS":true,"GLONASS":true}`), fallback},
+		{"unknown name is rejected", str(`{"GPS":true,"NAVIC":true}`), fallback},
+		{"lower case is not a name", str(`{"gps":true}`), fallback},
+		{"augmentation alone is rejected", str(`{"SBAS":true,"QZSS":true}`), fallback},
+		{"all disabled is rejected", str(`{"GPS":false,"GAL":false,"BDS":false}`), fallback},
+		{"empty object is rejected", str(`{}`), fallback},
+		{"a string is rejected", str(`"GPS,GAL"`), fallback},
+		{"a number is rejected", str(`4`), fallback},
+		{"malformed json is rejected", str(`{"GPS":`), fallback},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := strings.Join(readGnssConstellations(writeConstellationDb(t, c.value)), ",")
-			if got != c.want {
-				t.Fatalf("got %q, want %q", got, c.want)
+			got := readGnssConstellations(writeConstellationDb(t, c.value))
+			if !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("got %v, want %v", got, c.want)
 			}
 		})
 	}
@@ -132,7 +137,7 @@ func TestReadGnssConstellations(t *testing.T) {
 
 func TestReadGnssConstellationsMissingDb(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "absent.db")
-	if got := strings.Join(readGnssConstellations(path), ","); got != "GPS,SBAS,GAL,BDS" {
-		t.Fatalf("got %q, want the default set", got)
+	if got := readGnssConstellations(path); !reflect.DeepEqual(got, defaultGnssConstellations()) {
+		t.Fatalf("got %v, want the default set", got)
 	}
 }

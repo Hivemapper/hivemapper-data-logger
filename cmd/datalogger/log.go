@@ -168,7 +168,7 @@ func initializeSensorThreads(
 	gnssInitBaudRate int,
 	gnssMeasxEnabled bool,
 	gnssMeasurementRateHz int,
-	gnssConstellations []string,
+	gnssConstellations map[string]bool,
 	enableMagnetometer bool,
 	skipFiltering bool,
 	gnssReadFile string,

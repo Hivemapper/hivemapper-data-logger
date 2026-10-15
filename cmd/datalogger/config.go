@@ -5,16 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strings"
 
 	_ "modernc.org/sqlite"
 )
 
 const defaultGnssMeasurementRateHz = 4
 
+// The constellations this receiver can be told about. GLONASS is absent because the
+// receiver has no key for it and rejects one.
+var supportedConstellations = map[string]bool{
+	"GPS": true, "SBAS": true, "GAL": true, "BDS": true, "QZSS": true,
+}
+
 // The set every field device already has stored, so the default write is a no-op.
-// GLONASS is absent: the receiver has no key for it and rejects one.
-const defaultGnssConstellations = "GPS,SBAS,GAL,BDS"
+func defaultGnssConstellations() map[string]bool {
+	return map[string]bool{"GPS": true, "SBAS": true, "GAL": true, "BDS": true}
+}
 
 // readGnssMeasurementRate reads GNSS_MEASUREMENT_RATE_HZ from the odc-api config table.
 // bee-sensor-fusion applies the same rule, so both agree on the rate.
@@ -28,70 +34,41 @@ func readGnssMeasurementRate(dbPath string) int {
 	return rate
 }
 
-// readGnssConstellations reads GNSS_CONSTELLATIONS from the odc-api config table
-// and returns the constellations to enable. Changing the set costs the receiver a
-// ~400 ms loss of fix; writing back the set it already holds costs nothing.
-func readGnssConstellations(dbPath string) []string {
-	names, err := queryGnssConstellations(dbPath)
+// readGnssConstellations reads GNSS_CONSTELLATIONS from the odc-api config table.
+// Changing the set costs the receiver a ~400 ms loss of fix; writing back the set it
+// already holds costs nothing.
+func readGnssConstellations(dbPath string) map[string]bool {
+	enabled, err := queryGnssConstellations(dbPath)
 	if err != nil {
-		fmt.Printf("GNSS_CONSTELLATIONS: %v, using %s\n", err, defaultGnssConstellations)
-		return parseConstellations(defaultGnssConstellations)
+		fmt.Printf("GNSS_CONSTELLATIONS: %v, using %v\n", err, defaultGnssConstellations())
+		return defaultGnssConstellations()
 	}
-	fmt.Printf("GNSS_CONSTELLATIONS: %s\n", strings.Join(names, ","))
-	return names
+	fmt.Printf("GNSS_CONSTELLATIONS: %v\n", enabled)
+	return enabled
 }
 
-func queryGnssConstellations(dbPath string) ([]string, error) {
+func queryGnssConstellations(dbPath string) (map[string]bool, error) {
 	raw, err := queryConfig(dbPath, "GNSS_CONSTELLATIONS")
 	if err != nil {
 		return nil, err
 	}
-	var value string
-	if err := json.Unmarshal([]byte(raw), &value); err != nil {
+
+	var enabled map[string]bool
+	if err := json.Unmarshal([]byte(raw), &enabled); err != nil {
 		return nil, fmt.Errorf("parsing %q: %w", raw, err)
 	}
-	return validateConstellations(value)
-}
 
-func parseConstellations(value string) []string {
-	names, err := validateConstellations(value)
-	if err != nil {
-		panic(err) // only reached if defaultGnssConstellations is itself invalid
-	}
-	return names
-}
-
-// validateConstellations normalises the list and rejects anything the receiver
-// cannot do, so a typo falls back to the default instead of being written.
-func validateConstellations(value string) ([]string, error) {
-	supported := map[string]string{
-		"GPS": "GPS", "SBAS": "SBAS",
-		"GAL": "GAL", "GALILEO": "GAL",
-		"BDS": "BDS", "BEIDOU": "BDS",
-		"QZSS": "QZSS",
-	}
-	seen := map[string]bool{}
-	names := []string{}
-	for _, field := range strings.Split(value, ",") {
-		field = strings.ToUpper(strings.TrimSpace(field))
-		if field == "" {
-			continue
-		}
-		name, ok := supported[field]
-		if !ok {
-			return nil, fmt.Errorf("%q is not a constellation this receiver supports", field)
-		}
-		if !seen[name] {
-			seen[name] = true
-			names = append(names, name)
+	for name := range enabled {
+		if !supportedConstellations[name] {
+			return nil, fmt.Errorf("%q is not a constellation this receiver supports", name)
 		}
 	}
-	// The receiver requires at least one major constellation; SBAS is augmentation
-	// and QZSS is regional, so neither counts on its own.
-	if !seen["GPS"] && !seen["GAL"] && !seen["BDS"] {
-		return nil, fmt.Errorf("%q enables no major constellation (GPS, GAL or BDS)", value)
+	// The receiver requires at least one major constellation; SBAS is augmentation and
+	// QZSS is regional, so neither counts on its own.
+	if !enabled["GPS"] && !enabled["GAL"] && !enabled["BDS"] {
+		return nil, fmt.Errorf("%s enables no major constellation (GPS, GAL or BDS)", raw)
 	}
-	return names, nil
+	return enabled, nil
 }
 
 func queryConfig(dbPath, key string) (string, error) {

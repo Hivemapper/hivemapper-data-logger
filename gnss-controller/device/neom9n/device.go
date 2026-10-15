@@ -24,11 +24,11 @@ type Neom9n struct {
 	decoderDone        chan error
 	measxEnabled       bool
 	measurementRateHz  int
-	constellations     []string
+	constellations     map[string]bool
 	ackWaitCounter     int
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int, constellations []string) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int, constellations map[string]bool) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now().UTC(),
 		config: &serial.Config{
@@ -203,16 +203,11 @@ var constellationKeys = []struct {
 // values the receiver already holds is a no-op and costs nothing, which is the usual
 // case on boot.
 func (n *Neom9n) setConstellations() {
-	enabled := make(map[string]bool, len(n.constellations))
-	for _, name := range n.constellations {
-		enabled[name] = true
-	}
-
 	cfgData := make([]*ubx.CfgData, 0, len(constellationKeys))
 	parts := make([]string, 0, len(constellationKeys))
 	for _, c := range constellationKeys {
 		value := byte(0x00)
-		if enabled[c.name] {
+		if n.constellations[c.name] {
 			value = 0x01
 		}
 		cfgData = append(cfgData, &ubx.CfgData{Key: c.key, Value: []byte{value}})
