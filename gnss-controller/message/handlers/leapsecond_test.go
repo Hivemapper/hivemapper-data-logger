@@ -229,3 +229,33 @@ func TestUpgradesAFileWithNoStoredTime(t *testing.T) {
 			time.Unix(state.UtcUnix, 0).UTC(), time.Unix(want, 0).UTC())
 	}
 }
+
+// A 0-byte file is what a power cut leaves behind when the rename is not synced.
+// Load must treat it as absent rather than as a usable zero leap second.
+func TestLoadRejectsAnEmptyFile(t *testing.T) {
+	s, path := store(t)
+	if err := os.WriteFile(path, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if state, ok := s.Load(); ok {
+		t.Fatalf("accepted an empty file: %+v", state)
+	}
+}
+
+// save must leave no temp file behind and must produce readable content.
+func TestSaveLeavesNoTempFile(t *testing.T) {
+	s, path := store(t)
+	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path + ".tmp"); !os.IsNotExist(err) {
+		t.Fatal("temp file left behind")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() == 0 {
+		t.Fatal("wrote a 0-byte file")
+	}
+}

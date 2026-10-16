@@ -156,19 +156,46 @@ func (s *LeapSecondStore) HandleUbxMessage(message interface{}) error {
 	return nil
 }
 
-// save writes via a temp file and rename, so an interrupted write cannot leave a
-// truncated file to be read back on the next boot.
+// save writes via a temp file and rename. Both the file and its directory are synced:
+// the whole point is to survive a power cut, and a rename alone only makes the name
+// swap atomic, not the data durable. Skipping the sync left a 0-byte file on bee after
+// a real power cycle, which read back as no stored value at all.
 func (s *LeapSecondStore) save(state LeapSecondState) error {
 	data, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+	dir := filepath.Dir(s.path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
+
 	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, s.path)
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmp, s.path); err != nil {
+		return err
+	}
+
+	// Sync the directory so the rename itself is durable.
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	return d.Sync()
 }
