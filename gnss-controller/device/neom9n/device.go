@@ -21,6 +21,7 @@ type Neom9n struct {
 	stream             *serial.Port
 	output             chan ubx.Message
 	mgaOfflineFilePath string
+	leapSecondPath     string
 	decoderDone        chan error
 	measxEnabled       bool
 	measurementRateHz  int
@@ -28,7 +29,7 @@ type Neom9n struct {
 	ackWaitCounter     int
 }
 
-func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int, constellations map[string]bool) *Neom9n {
+func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRate int, measxEnabled bool, measurementRateHz int, constellations map[string]bool, leapSecondPath string) *Neom9n {
 	n := &Neom9n{
 		startTime: time.Now().UTC(),
 		config: &serial.Config{
@@ -40,6 +41,7 @@ func NewNeom9n(serialConfigName string, mgaOfflineFilePath string, initialBaudRa
 		},
 		handlersRegistry:   message.NewHandlerRegistry(),
 		mgaOfflineFilePath: mgaOfflineFilePath,
+		leapSecondPath:     leapSecondPath,
 		output:             make(chan ubx.Message),
 		measxEnabled:       measxEnabled,
 		measurementRateHz:  measurementRateHz,
@@ -292,6 +294,19 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 			}
 		}()
 	}
+
+	// Seed UTC before the receiver has decoded it, so fusion is not blocked for up to
+	// a GPS superframe (12.5 min) after the fix.
+	leapSeconds := handlers.NewLeapSecondStore(n.leapSecondPath)
+	if state, ok := leapSeconds.Load(); ok {
+		fmt.Printf("Seeding GPS leap second %d (week %d) from %s\n",
+			state.LeapSeconds, state.GpsWeek, n.leapSecondPath)
+		n.output <- handlers.AidingMessage(state)
+	} else {
+		fmt.Printf("No stored GPS leap second at %s; waiting for the broadcast\n",
+			n.leapSecondPath)
+	}
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, leapSeconds)
 
 	fmt.Println("Registering logger ubx message handlers")
 

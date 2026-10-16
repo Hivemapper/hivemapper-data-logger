@@ -33,6 +33,7 @@ func init() {
 	LogCmd.Flags().String("gnss-config-file", "gnss-logger.json", "Neom9n logger config file. Default path is ./gnss-logger.json")
 	LogCmd.Flags().String("gnss-dev-path", "/dev/ttyAMA1", "Config serial location")
 	LogCmd.Flags().String("gnss-mga-offline-file-path", "/mnt/data/mgaoffline.ubx", "path to mga offline files")
+	LogCmd.Flags().String("gnss-leap-second-path", "/data/recording/gnss-leap-second.json", "where the last known GPS leap second is kept across power cycles")
 	LogCmd.Flags().Bool("gnss-fix-check", true, "check if gnss fix is set")
 	LogCmd.Flags().Bool("gnss-measx-enabled", false, "enable output of MEASX messages")
 	LogCmd.Flags().String("config-db-path", "/data/recording/odc-api.db", "path to the odc-api database holding the device config table")
@@ -142,6 +143,7 @@ func logRun(cmd *cobra.Command, _ []string) error {
 		axisMap,
 		mustGetString(cmd, "gnss-dev-path"),
 		mustGetString(cmd, "gnss-mga-offline-file-path"),
+		mustGetString(cmd, "gnss-leap-second-path"),
 		mustGetInt(cmd, "gnss-initial-baud-rate"),
 		mustGetBool(cmd, "gnss-measx-enabled"),
 		gnssMeasurementRateHz,
@@ -165,6 +167,7 @@ func initializeSensorThreads(
 	axisMap *iim42652.AxisMap,
 	gnssDevPath string,
 	mgaOfflineFilePath string,
+	leapSecondPath string,
 	gnssInitBaudRate int,
 	gnssMeasxEnabled bool,
 	gnssMeasurementRateHz int,
@@ -187,7 +190,7 @@ func initializeSensorThreads(
 	}()
 
 	if gnssReadFile == "" {
-		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled, gnssMeasurementRateHz, gnssConstellations)
+		gnssDevice := neom9n.NewNeom9n(gnssDevPath, mgaOfflineFilePath, gnssInitBaudRate, gnssMeasxEnabled, gnssMeasurementRateHz, gnssConstellations, leapSecondPath)
 		err = gnssDevice.Init(nil)
 		if err != nil {
 			return fmt.Errorf("initializing neom9n: %w", err)
