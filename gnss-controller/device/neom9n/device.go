@@ -296,17 +296,21 @@ func (n *Neom9n) Run(dataFeed *DataFeed, redisFeed message.UbxMessageHandler, re
 	}
 
 	// Seed UTC before the receiver has decoded it, so fusion is not blocked for up to
-	// a GPS superframe (12.5 min) after the fix.
+	// a GPS superframe (12.5 min) after the fix. The time has to go first: with no
+	// clock of its own the receiver rejects UTC assistance outright.
 	leapSeconds := handlers.NewLeapSecondStore(n.leapSecondPath)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, leapSeconds)
+	n.handlersRegistry.RegisterHandler(message.UbxMsgMgaAckData, leapSeconds)
 	if state, ok := leapSeconds.Load(); ok {
 		fmt.Printf("Seeding GPS leap second %d (week %d) from %s\n",
 			state.LeapSeconds, state.GpsWeek, n.leapSecondPath)
+		n.output <- handlers.TimeMessage(state)
+		time.Sleep(100 * time.Millisecond)
 		n.output <- handlers.AidingMessage(state)
 	} else {
 		fmt.Printf("No stored GPS leap second at %s; waiting for the broadcast\n",
 			n.leapSecondPath)
 	}
-	n.handlersRegistry.RegisterHandler(message.UbxMsgNavTimegps, leapSeconds)
 
 	fmt.Println("Registering logger ubx message handlers")
 
