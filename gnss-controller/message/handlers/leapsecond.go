@@ -138,8 +138,12 @@ func (s *LeapSecondStore) HandleUbxMessage(message interface{}) error {
 			GpsWeek:     m.Week,
 			UtcUnix:     utc.Unix(),
 		}
-		// The time moves constantly; only a new leap second is worth a write.
-		if state.LeapSeconds == s.state.LeapSeconds && state.GpsWeek == s.state.GpsWeek {
+		// The time moves constantly, so rewriting on every message would be pointless
+		// churn. Rewrite on a new leap second, and otherwise once an hour: a fresher
+		// stored time is a better seed, and it upgrades a file written before this
+		// field existed, which would otherwise seed 1970.
+		unchanged := state.LeapSeconds == s.state.LeapSeconds && state.GpsWeek == s.state.GpsWeek
+		if unchanged && utc.Sub(time.Unix(s.state.UtcUnix, 0)) < time.Hour {
 			return nil
 		}
 		if err := s.save(state); err != nil {

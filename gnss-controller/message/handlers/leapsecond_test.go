@@ -199,3 +199,33 @@ func TestAckReporting(t *testing.T) {
 		})
 	}
 }
+
+// A file written before utc_unix existed must be upgraded, not left alone by the
+// unchanged-value check. Otherwise the next boot seeds 1970 with a maximum accuracy
+// claim, which is worse than seeding nothing.
+func TestUpgradesAFileWithNoStoredTime(t *testing.T) {
+	s, path := store(t)
+	if err := os.WriteFile(path, []byte(`{"leap_seconds":18,"gps_week":2400}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if state, ok := s.Load(); !ok || state.UtcUnix != 0 {
+		t.Fatalf("fixture should load with no time: %+v ok=%v", state, ok)
+	}
+
+	// Same leap second and week as the stored file, so only the missing time differs.
+	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+		t.Fatal(err)
+	}
+
+	state, ok := NewLeapSecondStore(path).Load()
+	if !ok {
+		t.Fatal("expected a stored leap second")
+	}
+	if state.UtcUnix == 0 {
+		t.Fatal("stored time was not filled in; next boot would seed 1970")
+	}
+	if want := time.Date(2026, 1, 6, 23, 59, 42, 0, time.UTC).Unix(); state.UtcUnix != want {
+		t.Fatalf("got utc %s, want %s",
+			time.Unix(state.UtcUnix, 0).UTC(), time.Unix(want, 0).UTC())
+	}
+}
