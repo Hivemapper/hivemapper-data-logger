@@ -17,6 +17,10 @@ func store(t *testing.T) (*LeapSecondStore, string) {
 	return NewLeapSecondStore(path), path
 }
 
+// The receiver must report time of week, week number and leap seconds before a
+// message is worth storing; a leap second alone can be an echo of our own seeding.
+const allValid = ubx.NavTimegpsTowValid | ubx.NavTimegpsWeekValid | ubx.NavTimegpsLeapSValid
+
 func timegps(leap int8, week int16, valid ubx.NavTimegpsValid) *ubx.NavTimegps {
 	// 3 days into the week, so the derived UTC is not the week boundary.
 	return &ubx.NavTimegps{
@@ -34,7 +38,7 @@ func TestLoadWithNothingStored(t *testing.T) {
 
 func TestRoundTrip(t *testing.T) {
 	s, path := store(t)
-	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -77,7 +81,7 @@ func TestIgnoresOtherMessageTypes(t *testing.T) {
 
 func TestRewritesOnlyWhenTheValueChanges(t *testing.T) {
 	s, path := store(t)
-	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
 		t.Fatal(err)
 	}
 	first, err := os.Stat(path)
@@ -89,7 +93,7 @@ func TestRewritesOnlyWhenTheValueChanges(t *testing.T) {
 	}
 
 	// Same value again: nothing should be written back.
-	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
@@ -97,7 +101,7 @@ func TestRewritesOnlyWhenTheValueChanges(t *testing.T) {
 	}
 
 	// A new leap second must be persisted.
-	if err := s.HandleUbxMessage(timegps(19, 2401, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(19, 2401, allValid)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -208,12 +212,15 @@ func TestUpgradesAFileWithNoStoredTime(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"leap_seconds":18,"gps_week":2400}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if state, ok := s.Load(); !ok || state.UtcUnix != 0 {
-		t.Fatalf("fixture should load with no time: %+v ok=%v", state, ok)
+	loaded, ok := s.Load()
+	if !ok || loaded.UtcUnix != 0 {
+		t.Fatalf("fixture should load with no time: %+v ok=%v", loaded, ok)
 	}
+	// Seed as Run does, so the unchanged-value check has something to compare against.
+	s.Seed(loaded)
 
 	// Same leap second and week as the stored file, so only the missing time differs.
-	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -245,7 +252,7 @@ func TestLoadRejectsAnEmptyFile(t *testing.T) {
 // save must leave no temp file behind and must produce readable content.
 func TestSaveLeavesNoTempFile(t *testing.T) {
 	s, path := store(t)
-	if err := s.HandleUbxMessage(timegps(18, 2400, ubx.NavTimegpsLeapSValid)); err != nil {
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(path + ".tmp"); !os.IsNotExist(err) {
@@ -257,5 +264,55 @@ func TestSaveLeavesNoTempFile(t *testing.T) {
 	}
 	if info.Size() == 0 {
 		t.Fatal("wrote a 0-byte file")
+	}
+}
+
+// A leap second on its own is not enough: after seeding, the receiver can report one
+// that came from our injection while its week and time-of-week are still the stale
+// values we supplied. Storing that would freeze the saved time permanently.
+func TestIgnoresALeapSecondWithoutGpsTime(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		valid ubx.NavTimegpsValid
+	}{
+		{"leap only", ubx.NavTimegpsLeapSValid},
+		{"leap and week, no tow", ubx.NavTimegpsLeapSValid | ubx.NavTimegpsWeekValid},
+		{"leap and tow, no week", ubx.NavTimegpsLeapSValid | ubx.NavTimegpsTowValid},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			s, path := store(t)
+			if err := s.HandleUbxMessage(timegps(18, 2400, c.valid)); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatal("stored a leap second without confirmed GPS time")
+			}
+		})
+	}
+}
+
+// Load must not publish into the shared state the decoder goroutine reads; Run calls
+// it before registering the handler and seeds explicitly.
+func TestLoadDoesNotMutateSharedState(t *testing.T) {
+	s, path := store(t)
+	if err := os.WriteFile(path,
+		[]byte(`{"leap_seconds":18,"gps_week":2400,"utc_unix":1767743982}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Load(); !ok {
+		t.Fatal("expected the fixture to load")
+	}
+	// Remove it, so only a fresh write can put it back. The fixture's own time equals
+	// what this message derives, so a store that had seeded itself in Load would see
+	// an unchanged value inside the hour and write nothing.
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.HandleUbxMessage(timegps(18, 2400, allValid)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal("Load published into shared state; the handler then skipped the write")
 	}
 }

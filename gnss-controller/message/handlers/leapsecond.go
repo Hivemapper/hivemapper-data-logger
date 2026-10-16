@@ -40,6 +40,9 @@ func NewLeapSecondStore(path string) *LeapSecondStore {
 }
 
 // Load returns the stored leap second, or false if there is nothing usable on disk.
+// It deliberately does not touch s.state: the decoder goroutine is already running by
+// the time this is called, so writing shared state here would race HandleUbxMessage.
+// Call it before registering the handler and pass the result to Seed.
 func (s *LeapSecondStore) Load() (LeapSecondState, bool) {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
@@ -57,8 +60,13 @@ func (s *LeapSecondStore) Load() (LeapSecondState, bool) {
 	if state.LeapSeconds == 0 {
 		return LeapSecondState{}, false
 	}
-	s.state = state
 	return state, true
+}
+
+// Seed records what was loaded as the current state, so the hourly rule measures from
+// the stored time rather than from zero. Call before registering the handler.
+func (s *LeapSecondStore) Seed(state LeapSecondState) {
+	s.state = state
 }
 
 // TimeMessage carries the stored UTC. The receiver rejects UTC assistance while it has
@@ -126,7 +134,12 @@ func (s *LeapSecondStore) HandleUbxMessage(message interface{}) error {
 		fmt.Printf("%s: %s (infoCode %d: %s)\n",
 			name, verdict, m.InfoCode, mgaInfoCodes[m.InfoCode])
 	case *ubx.NavTimegps:
-		if m.Valid&ubx.NavTimegpsLeapSValid == 0 {
+		// All three flags, not just the leap second. After seeding, the receiver can
+		// report a valid leap second that came from our own injection while its week
+		// and time-of-week still reflect the stale time we gave it. Storing that would
+		// freeze the saved time and keep re-seeding it on every later boot.
+		const needed = ubx.NavTimegpsTowValid | ubx.NavTimegpsWeekValid | ubx.NavTimegpsLeapSValid
+		if m.Valid&needed != needed {
 			return nil
 		}
 		utc := gpsEpoch.
