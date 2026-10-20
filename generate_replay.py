@@ -42,7 +42,8 @@ def ned_to_ecef_vel(lat_deg, lon_deg, vel_n, vel_e, vel_d):
     
     return vx, vy, vz
 
-def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_lon, heading_deg, rate_hz=4.0):
+def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_lon, heading_deg, rate_hz=4.0,
+                        turn_rate_deg_s=0.0):
     # Calculate speed in meters/second
     speed_mps = speed_kmh / 3.6
     
@@ -63,8 +64,10 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
     lon = start_lon
     alt_m = 30.0  # Constant altitude (30 meters in SF)
     
-    heading_rad = math.radians(heading_deg)
-    
+    # Heading advances by turn_rate each step, so a non-zero rate traces a constant
+    # radius arc: r = speed / omega. Zero keeps the original straight line.
+    heading = heading_deg
+
     with open(output_path, 'w') as f:
         for step in range(steps):
             t_offset = step * dt
@@ -76,6 +79,7 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
             
             # 1. Update position (Dead reckoning)
             ds = speed_mps * dt  # distance traveled in this step
+            heading_rad = math.radians(heading)
             lat_rad = math.radians(lat)
             
             new_lat_rad = lat_rad + (ds * math.cos(heading_rad) / WGS84_A)
@@ -106,9 +110,11 @@ def generate_simulation(duration_sec, output_path, speed_kmh, start_lat, start_l
             ecef_vy_cm_s = int(round(ecef_vy_m_s * 100))
             ecef_vz_cm_s = int(round(ecef_vz_m_s * 100))
             
-            head_mot_dege5 = int(round(heading_deg * 100000))
-            head_veh_dege5 = int(round(heading_deg * 100000))
+            head_mot_dege5 = int(round(heading * 100000))
+            head_veh_dege5 = int(round(heading * 100000))
             
+            heading = (heading + turn_rate_deg_s * dt) % 360.0
+
             lon_dege7 = int(lon * 1e7)
             lat_dege7 = int(lat * 1e7)
             
@@ -212,6 +218,11 @@ if __name__ == '__main__':
     parser.add_argument('--lon', type=float, default=-122.4194, help="Starting Longitude (default: SF)")
     parser.add_argument('--heading', type=float, default=90.0, help="Heading direction in degrees (0=North, 90=East, etc.)")
     parser.add_argument('--rate', type=float, default=4.0, help="GNSS epoch rate in Hz")
+    parser.add_argument('--turn-rate', type=float, default=0.0,
+                        help="Heading change in degrees/second; 0 is a straight line. "
+                             "Traces a constant radius arc of r = speed / omega, so at "
+                             "50 km/h 2 deg/s is a ~400 m motorway curve and 10 deg/s is ~80 m")
     
     args = parser.parse_args()
-    generate_simulation(args.duration, args.output, args.speed, args.lat, args.lon, args.heading, args.rate)
+    generate_simulation(args.duration, args.output, args.speed, args.lat, args.lon, args.heading, args.rate,
+                        args.turn_rate)
